@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { getUpcomingSessions } from '@/lib/actions/sessions';
 import { getSubjects } from '@/lib/actions/subjects';
-import { SessionList } from '@/components/features/sessions/session-list';
+import { UnifiedCalendar } from '@/components/shared/calendar/unified-calendar';
 import { SessionFilters } from '@/components/features/sessions/session-filters';
 import { RescheduleDialog } from '@/components/features/sessions/reschedule-dialog';
 
@@ -64,22 +64,71 @@ export function SessionsClient({ userId }: SessionsClientProps) {
   }
 
   const pendingCount = sessions.filter((s) => s.status === 'PENDING').length;
+  const completedCount = sessions.filter((s) => s.status === 'COMPLETED').length;
+  const rescheduledCount = sessions.filter((s) => s.status === 'RESCHEDULED').length;
   const totalCount = sessions.length;
+  const progressPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
     <div className="space-y-6">
-      {/* Stats rápidos */}
-      <div className="rounded-lg border border-gray-200 bg-white p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-600">Próximos 30 días</p>
-            <p className="text-2xl font-bold text-gray-900">
-              {pendingCount} <span className="text-sm font-normal text-gray-500">/ {totalCount} sesiones</span>
-            </p>
+      {/* Stats con gráfico circular */}
+      <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+        <h3 className="mb-4 text-sm font-semibold text-gray-500 uppercase tracking-wide">Progreso Mensual</h3>
+        <div className="flex items-center gap-6">
+          {/* Gráfico circular simple */}
+          <div className="relative flex h-32 w-32 items-center justify-center">
+            <svg className="h-full w-full -rotate-90 transform">
+              <circle
+                cx="64"
+                cy="64"
+                r="56"
+                stroke="currentColor"
+                strokeWidth="12"
+                fill="none"
+                className="text-gray-200"
+              />
+              <circle
+                cx="64"
+                cy="64"
+                r="56"
+                stroke="currentColor"
+                strokeWidth="12"
+                fill="none"
+                strokeDasharray={`${2 * Math.PI * 56}`}
+                strokeDashoffset={`${2 * Math.PI * 56 * (1 - progressPercentage / 100)}`}
+                className="text-blue-600 transition-all duration-500"
+                strokeLinecap="round"
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <p className="text-3xl font-bold text-gray-900">{pendingCount}</p>
+              <p className="text-xs text-gray-500">/ {totalCount} sesiones</p>
+            </div>
           </div>
-          <div className="text-right text-sm text-gray-600">
-            <p>✅ {sessions.filter((s) => s.status === 'COMPLETED').length} completadas</p>
-            <p>🔄 {sessions.filter((s) => s.status === 'RESCHEDULED').length} reagendadas</p>
+
+          {/* Stats secundarias */}
+          <div className="flex-1 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-3 rounded-full bg-green-500"></div>
+                <span className="text-sm text-gray-700">Completadas</span>
+              </div>
+              <span className="text-sm font-semibold text-gray-900">{completedCount}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-3 rounded-full bg-blue-500"></div>
+                <span className="text-sm text-gray-700">Pendientes</span>
+              </div>
+              <span className="text-sm font-semibold text-gray-900">{pendingCount}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-3 rounded-full bg-orange-500"></div>
+                <span className="text-sm text-gray-700">Reagendadas</span>
+              </div>
+              <span className="text-sm font-semibold text-gray-900">{rescheduledCount}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -103,8 +152,9 @@ export function SessionsClient({ userId }: SessionsClientProps) {
         )}
       </div>
 
-      {/* Lista de sesiones */}
-      <SessionList 
+      {/* Calendario Unificado */}
+      <UnifiedCalendar
+        defaultView="month"
         sessions={filteredSessions}
         onStatusChange={loadData}
         onReschedule={setRescheduleSession}

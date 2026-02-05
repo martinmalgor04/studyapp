@@ -14,7 +14,10 @@ export async function getSubjects(includeAprobadas: boolean = false) {
 
   let query = supabase
     .from('subjects')
-    .select('*')
+    .select(`
+      *,
+      sessions(id, status)
+    `)
     .eq('is_active', true);
 
   // Por defecto, ocultar materias aprobadas
@@ -29,7 +32,25 @@ export async function getSubjects(includeAprobadas: boolean = false) {
     return [];
   }
 
-  return subjects;
+  // Calcular progreso para cada materia
+  const subjectsWithProgress = subjects?.map(subject => {
+    const sessions = (subject as any).sessions || [];
+    const totalSessions = sessions.length;
+    const completedSessions = sessions.filter((s: any) => s.status === 'COMPLETED').length;
+    const progressPercentage = totalSessions > 0 
+      ? Math.round((completedSessions / totalSessions) * 100) 
+      : 0;
+
+    return {
+      ...subject,
+      total_sessions: totalSessions,
+      completed_sessions: completedSessions,
+      progress_percentage: progressPercentage,
+      sessions: undefined, // Remover para no incluir en el resultado final
+    };
+  }) || [];
+
+  return subjectsWithProgress;
 }
 
 export async function getSubject(id: string) {

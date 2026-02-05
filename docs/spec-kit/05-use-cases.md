@@ -1484,4 +1484,328 @@ export async function deleteSession(id)
 
 ---
 
+## 5.16 UC-012: Send Notifications
+
+### Specification
+
+| Field | Value |
+|-------|-------|
+| **ID** | UC-012 |
+| **Priority** | P1 |
+| **Module** | Notification |
+| **Complexity** | 🟡 Medium |
+| **Status** | ⏳ En Progreso |
+| **Actor** | System (event-driven) |
+
+### User Story
+
+```
+AS A student
+I WANT TO receive reminders about my study sessions
+SO THAT I don't forget to study and stay on track
+```
+
+### Notification Types
+
+| Type | Trigger | Channels | Example |
+|------|---------|----------|---------|
+| `SESSION_REMINDER` | Sesión programada para hoy | In-App, Email, Telegram | "Hoy tenés 3 sesiones de estudio" |
+| `EXAM_APPROACHING` | Examen en 7/3/1 días | In-App, Email, Telegram | "Final de Análisis en 3 días" |
+| `STREAK_WARNING` | Día sin sesiones completadas | In-App, Telegram | "Tu racha de 5 días está en riesgo" |
+| `ACHIEVEMENT_UNLOCKED` | Nuevo logro desbloqueado | In-App | "Has alcanzado el nivel 'Dedicado'" |
+| `SESSION_RESCHEDULED` | Sesión reagendada | In-App | "Tu sesión se movió al 15/02" |
+| `GENERAL` | Manual/Admin | In-App, Email | Mensajes del sistema |
+
+### Notification Channels
+
+#### 1. In-App (Base Implementation)
+- Se guarda en tabla `notifications` en Supabase.
+- Visible en dropdown desde Navbar (campana).
+- Marca como leída con click.
+- Estado: **Implementar**.
+
+#### 2. Email (Preparado, no implementado)
+- Resumen diario a la hora configurada (default 08:00).
+- Provider recomendado: Resend (fácil integración).
+- Estado: **Stub (infraestructura lista, envío no implementado)**.
+
+#### 3. Telegram (Preparado, no implementado)
+- Notificaciones instantáneas vía Bot.
+- Requiere Bot Token y Chat ID del usuario.
+- Estado: **Stub (infraestructura lista, envío no implementado)**.
+
+### Data Model
+
+#### tabla `notifications` (ya existe)
+```sql
+CREATE TABLE notifications (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  type notification_type NOT NULL,
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  read BOOLEAN DEFAULT FALSE,
+  metadata JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+#### tabla `user_settings` (nueva)
+```sql
+CREATE TABLE user_settings (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email_notifications BOOLEAN DEFAULT TRUE,
+  telegram_notifications BOOLEAN DEFAULT FALSE,
+  in_app_notifications BOOLEAN DEFAULT TRUE,
+  daily_summary_time TIME DEFAULT '08:00:00',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### Implementation
+
+#### Notification Service (Facade Pattern)
+
+```typescript
+// src/lib/services/notifications/notification.service.ts
+export class NotificationService {
+  private channels: Map<string, INotificationChannel>;
+
+  constructor() {
+    this.channels = new Map([
+      ['in-app', new InAppChannel()],
+      ['email', new EmailChannel()],
+      ['telegram', new TelegramChannel()],
+    ]);
+  }
+
+  async send(notification: NotificationPayload) {
+    const settings = await this.getUserSettings(notification.userId);
+    
+    const activeChannels: string[] = [];
+    if (settings.in_app_notifications) activeChannels.push('in-app');
+    if (settings.email_notifications) activeChannels.push('email');
+    if (settings.telegram_notifications) activeChannels.push('telegram');
+
+    const results = await Promise.allSettled(
+      activeChannels.map(channelName => 
+        this.channels.get(channelName)?.send(notification)
+      )
+    );
+
+    return results;
+  }
+}
+```
+
+#### Channel Interface
+
+```typescript
+// src/lib/services/notifications/channels/notification-channel.interface.ts
+export interface NotificationPayload {
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  metadata?: Record<string, any>;
+}
+
+export interface INotificationChannel {
+  send(notification: NotificationPayload): Promise<void>;
+}
+```
+
+#### In-App Channel (Full Implementation)
+
+```typescript
+// src/lib/services/notifications/channels/in-app.channel.ts
+export class InAppChannel implements INotificationChannel {
+  async send(notification: NotificationPayload): Promise<void> {
+    const supabase = createClient();
+    
+    await supabase.from('notifications').insert({
+      user_id: notification.userId,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      metadata: notification.metadata,
+      read: false,
+    });
+  }
+}
+```
+
+#### Email Channel (Stub)
+
+```typescript
+// src/lib/services/notifications/channels/email.channel.ts
+export class EmailChannel implements INotificationChannel {
+  async send(notification: NotificationPayload): Promise<void> {
+    // TODO: Implementar con Resend
+    console.log('[EMAIL] Sending notification:', notification.title);
+    console.log('[EMAIL] To:', notification.userId);
+    // await resend.emails.send({ ... });
+  }
+}
+```
+
+#### Telegram Channel (Stub)
+
+```typescript
+// src/lib/services/notifications/channels/telegram.channel.ts
+export class TelegramChannel implements INotificationChannel {
+  async send(notification: NotificationPayload): Promise<void> {
+    // TODO: Implementar con Bot API
+    console.log('[TELEGRAM] Sending notification:', notification.title);
+    console.log('[TELEGRAM] Chat ID:', notification.userId);
+    // await fetch(`https://api.telegram.org/bot${token}/sendMessage`, ...);
+  }
+}
+```
+
+### Triggers (Event-Driven)
+
+Las notificaciones se disparan automáticamente cuando ocurren eventos:
+
+```typescript
+// Ejemplo: Al crear una sesión
+async function generateSessionsForTopic(topic: Topic) {
+  const sessions = await sessionGenerator.generate(topic);
+  await saveSessions(sessions);
+  
+  // Trigger notification
+  await notificationService.send({
+    userId: topic.user_id,
+    type: 'SESSION_REMINDER',
+    title: 'Nuevas sesiones generadas',
+    message: `Se crearon ${sessions.length} sesiones para "${topic.name}"`,
+    metadata: { topic_id: topic.id }
+  });
+}
+```
+
+### API Endpoints
+
+```http
+GET /api/v1/notifications
+Response 200:
+{
+  "notifications": [
+    {
+      "id": "uuid",
+      "type": "SESSION_REMINDER",
+      "title": "Hoy tenés 3 sesiones",
+      "message": "Sesiones de Análisis, Algebra y Diseño",
+      "read": false,
+      "created_at": "2026-01-30T08:00:00Z"
+    }
+  ],
+  "unreadCount": 5
+}
+
+PATCH /api/v1/notifications/:id/read
+Response 200: { success: true }
+
+GET /api/v1/settings/notifications
+Response 200:
+{
+  "email_notifications": true,
+  "telegram_notifications": false,
+  "in_app_notifications": true,
+  "daily_summary_time": "08:00"
+}
+
+PATCH /api/v1/settings/notifications
+Request:
+{
+  "email_notifications": false,
+  "telegram_notifications": true
+}
+Response 200: { success: true }
+```
+
+### UI Components
+
+#### Notification Bell (Navbar)
+
+```tsx
+export function NotificationBell() {
+  const [notifications, setNotifications] = useState([]);
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const unreadCount = notifications.filter(n => !n.read).length;
+  
+  return (
+    <div className="relative">
+      <button onClick={() => setIsOpen(!isOpen)}>
+        🔔
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5">
+            {unreadCount}
+          </span>
+        )}
+      </button>
+      
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-80 bg-white shadow-lg">
+          <NotificationList notifications={notifications} />
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Status
+⏳ En Progreso
+
+---
+
+## 5.17 UC-021: Manage Availability (Time Blocking)
+
+### Description
+Permite al usuario definir manualmente sus franjas horarias disponibles para estudio, para que el generador de sesiones no asigne tareas en horarios ocupados (trabajo, clases, sueño).
+
+### Actors
+- **Estudiante**: Usuario autenticado
+
+### Preconditions
+- Usuario está logueado
+
+### Flow
+1. Usuario va a "Configuración" -> "Disponibilidad"
+2. Sistema muestra un calendario semanal vacío (Lun-Dom)
+3. Usuario puede:
+   - Crear bloques de "Tiempo de Estudio" (verde)
+   - Crear bloques de "Ocupado" (rojo) - opcional, por defecto todo es ocupado salvo lo verde
+   - O definir "Horario Laboral/Clases" y el resto es libre
+4. Usuario define, por ejemplo:
+   - Lun-Vie: 18:00 - 22:00 (Estudio)
+   - Sáb: 10:00 - 14:00 (Estudio)
+5. Usuario guarda configuración
+6. Sistema almacena las franjas horarias en `user_availability`
+
+### Postconditions
+- Las futuras sesiones generadas (UC-006) respetarán estos horarios.
+- Si no hay hueco disponible en el día ideal, se moverá al siguiente hueco válido.
+
+### Future Extension (v1.5)
+- Integración con Google Calendar para bloquear automáticamente huecos ocupados por eventos externos.
+
+### Data Model
+```typescript
+interface TimeBlock {
+  dayOfWeek: number; // 0-6
+  startTime: string; // "18:00"
+  endTime: string;   // "22:00"
+  type: 'STUDY' | 'BUSY';
+}
+```
+
+### Status
+⏳ Pendiente
+
+---
+
 _Última actualización: Enero 2026_

@@ -9,6 +9,7 @@ import {
   type UpdateTopicInput,
 } from '@/lib/validations/topics';
 import { generateSessions } from './sessions';
+import { sendNotification } from './notifications';
 
 export async function getTopicsBySubject(subjectId: string) {
   const supabase = await createClient();
@@ -121,6 +122,19 @@ export async function createTopic(input: CreateTopicInput) {
     if (sessionsResult.error) {
       console.warn('Warning: Could not generate sessions:', sessionsResult.error);
       // No retornamos error, el topic ya fue creado exitosamente
+    } else if (sessionsResult.success && sessionsResult.count) {
+      // Enviar notificación sobre las sesiones generadas
+      await sendNotification({
+        userId: user.id,
+        type: 'SESSION_REMINDER',
+        title: 'Nuevas sesiones generadas',
+        message: `Se crearon ${sessionsResult.count} sesiones de repaso para "${data.name}"`,
+        metadata: {
+          topic_id: data.id,
+          subject_id: data.subject_id,
+          sessions_count: sessionsResult.count,
+        },
+      });
     }
   }
 

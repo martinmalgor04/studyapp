@@ -10,7 +10,7 @@ import { ExamList } from '@/components/features/exams/exam-list';
 import { ExamDialog } from '@/components/features/exams/exam-dialog';
 import { TopicList } from '@/components/features/topics/topic-list';
 import { TopicDialog } from '@/components/features/topics/topic-dialog';
-import { SubjectCalendar } from '@/components/features/subjects/subject-calendar';
+import { UnifiedCalendar } from '@/components/shared/calendar/unified-calendar';
 import type { ExamType } from '@/lib/validations/exams';
 
 interface PageProps {
@@ -146,11 +146,11 @@ export default function SubjectDetailPage({ params }: PageProps) {
       {/* Sección de Calendario */}
       <div className="mb-8">
         <h2 className="mb-4 text-xl font-semibold text-gray-900">Calendario</h2>
-        <SubjectCalendar
-          subjectId={params.id}
+        <UnifiedCalendar
+          defaultView="month"
           sessions={sessions}
           exams={exams}
-          topics={topics}
+          onStatusChange={loadData}
         />
       </div>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -56,6 +56,10 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
   const [showNewSubject, setShowNewSubject] = useState(false);
   const [newSubjectName, setNewSubjectName] = useState('');
   const [isCreatingSubject, setIsCreatingSubject] = useState(false);
+  const [createdSubjects, setCreatedSubjects] = useState<Array<{ id: string; name: string }>>([]);
+  
+  // Combinar materias existentes con las creadas localmente
+  const allSubjects = [...subjects, ...createdSubjects];
 
   const {
     register,
@@ -89,19 +93,36 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
     setIsCreatingSubject(true);
     setError(null);
 
-    const result = await createSubject({ name: newSubjectName.trim() });
+    try {
+      const result = await createSubject({ name: newSubjectName.trim() });
 
-    if (result.error) {
-      setError(result.error);
+      if (result.error) {
+        setError(result.error);
+        setIsCreatingSubject(false);
+      } else if (result.data) {
+        const newSubject = { id: result.data.id, name: result.data.name };
+        
+        // Agregar a la lista de materias creadas localmente
+        setCreatedSubjects([...createdSubjects, newSubject]);
+        
+        // Actualizar el form con la nueva materia
+        setValue('subject_id', result.data.id, {
+          shouldValidate: true,
+          shouldDirty: true,
+          shouldTouch: true,
+        });
+        
+        setShowNewSubject(false);
+        setNewSubjectName('');
+        setIsCreatingSubject(false);
+      } else {
+        setError('Error al crear la materia');
+        setIsCreatingSubject(false);
+      }
+    } catch (err) {
+      console.error('Error creating subject:', err);
+      setError('Error inesperado al crear la materia');
       setIsCreatingSubject(false);
-    } else if (result.data) {
-      // Actualizar el form con la nueva materia
-      setValue('subject_id', result.data.id);
-      setShowNewSubject(false);
-      setNewSubjectName('');
-      setIsCreatingSubject(false);
-      // Recargar para que la nueva materia aparezca en el selector
-      onSuccess?.();
     }
   };
 
@@ -178,21 +199,22 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
               <>
                 <select
                   id="subject_id"
-                  {...register('subject_id')}
-                  onChange={(e) => {
-                    if (e.target.value === '__new__') {
-                      setShowNewSubject(true);
-                      setValue('subject_id', '');
+                  {...register('subject_id', {
+                    onChange: (e) => {
+                      if (e.target.value === '__new__') {
+                        setShowNewSubject(true);
+                        setValue('subject_id', '');
+                      }
                     }
-                  }}
+                  })}
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 text-sm focus:border-green-500 focus:outline-none focus:ring-green-500"
                 >
-                  <option value="">Seleccionar...</option>
-                  {subjects.map((subject) => (
-                    <option key={subject.id} value={subject.id}>
-                      {subject.name}
-                    </option>
-                  ))}
+              <option value="">Seleccionar...</option>
+              {allSubjects.map((subject) => (
+                <option key={subject.id} value={subject.id}>
+                  {subject.name}
+                </option>
+              ))}
                   <option value="__new__" className="text-green-600 font-medium">
                     + Nueva Materia
                   </option>

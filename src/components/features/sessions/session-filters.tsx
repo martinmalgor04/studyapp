@@ -66,7 +66,7 @@ export function SessionFilters({ filters, subjects, onChange }: SessionFiltersPr
           <option value="">Todas</option>
           {subjects.map((subject) => (
             <option key={subject.id} value={subject.id}>
-              📚 {subject.name}
+              {subject.name}
             </option>
           ))}
         </select>

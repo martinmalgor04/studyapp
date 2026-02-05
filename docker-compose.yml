@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  app:
+    container_name: studyapp-web
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      # URL interna para que el servidor Next.js (en contenedor) vea a Supabase (en host)
+      - SUPABASE_INTERNAL_URL=http://host.docker.internal:54321
+    env_file:
+      - .env.local
+    command: pnpm dev

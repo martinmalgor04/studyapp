@@ -476,6 +476,36 @@ export type Database = {
           },
         ]
       }
+      user_settings: {
+        Row: {
+          created_at: string | null
+          daily_summary_time: string | null
+          email_notifications: boolean | null
+          in_app_notifications: boolean | null
+          telegram_notifications: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          daily_summary_time?: string | null
+          email_notifications?: boolean | null
+          in_app_notifications?: boolean | null
+          telegram_notifications?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          daily_summary_time?: string | null
+          email_notifications?: boolean | null
+          in_app_notifications?: boolean | null
+          telegram_notifications?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_stats: {
         Row: {
           completed_sessions: number | null

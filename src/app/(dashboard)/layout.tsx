@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { UserMenu } from '@/components/layout/user-menu';
+import { NotificationBell } from '@/components/features/notifications/notification-bell';
 
 export default async function DashboardLayout({
   children,
@@ -45,9 +46,16 @@ export default async function DashboardLayout({
                 >
                   Sesiones
                 </Link>
+                <Link
+                  href="/dashboard/settings"
+                  className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                >
+                  Configuración
+                </Link>
               </div>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center gap-4">
+              <NotificationBell />
               <UserMenu 
                 userEmail={data.user.email!} 
                 userName={data.user.user_metadata?.name}

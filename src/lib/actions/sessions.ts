@@ -88,7 +88,8 @@ export async function getSessionsBySubject(subjectId: string) {
     .from('sessions')
     .select(`
       *,
-      topic:topics(id, name)
+      topic:topics(id, name),
+      subject:subjects(id, name)
     `)
     .eq('user_id', user.id)
     .eq('subject_id', subjectId)

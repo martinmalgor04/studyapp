@@ -50,7 +50,7 @@ export async function getDashboardData() {
       return examDate >= now && examDate <= thirtyDaysLater;
     }).length || 0;
 
-  // Obtener sesiones próximas (próximos 30 días, limitadas a 10)
+  // Obtener sesiones próximas (próximos 30 días para vista semanal)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayStart = today.toISOString();
@@ -61,13 +61,12 @@ export async function getDashboardData() {
 
   const { data: sessions } = await supabase
     .from('sessions')
-    .select('*, topics(name, difficulty), subjects(name)')
+    .select('*, topic:topics(name, difficulty), subject:subjects(name)')
     .eq('user_id', user.id)
     .gte('scheduled_at', todayStart)
     .lt('scheduled_at', sessionsEnd)
     .eq('status', 'PENDING')
-    .order('scheduled_at', { ascending: true })
-    .limit(10);
+    .order('scheduled_at', { ascending: true });
 
   // Agregar conteos a las materias
   const subjectsWithCounts = subjects?.map((subject) => ({

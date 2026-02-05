@@ -5,8 +5,12 @@ import type { Database } from '@/types/database.types';
 export async function createClient() {
   const cookieStore = cookies();
 
+  // En Docker, usamos la URL interna para conectar al host.
+  // En producción o local normal, usamos la URL pública.
+  const supabaseUrl = process.env.SUPABASE_INTERNAL_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
+
   return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseUrl,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {

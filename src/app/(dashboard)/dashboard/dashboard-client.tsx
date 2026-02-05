@@ -7,7 +7,7 @@ import { StatsCards } from '@/components/features/dashboard/stats-cards';
 import { RecentSubjects } from '@/components/features/dashboard/recent-subjects';
 import { RecentTopics } from '@/components/features/dashboard/recent-topics';
 import { QuickAddTopic } from '@/components/features/dashboard/quick-add-topic';
-import { SessionList } from '@/components/features/sessions/session-list';
+import { UnifiedCalendar } from '@/components/shared/calendar/unified-calendar';
 
 interface DashboardClientProps {
   userName: string;
@@ -67,7 +67,7 @@ export function DashboardClient({ userName }: DashboardClientProps) {
         onSuccess={loadData}
       />
 
-      {/* Sesiones Próximas */}
+      {/* Sesiones Próximas - Vista Semanal */}
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <div>
@@ -83,10 +83,10 @@ export function DashboardClient({ userName }: DashboardClientProps) {
             Ver todas las sesiones →
           </Link>
         </div>
-        <SessionList 
+        <UnifiedCalendar 
+          defaultView="week"
           sessions={data.sessions} 
           onStatusChange={loadData}
-          onReschedule={() => {}} 
         />
       </div>
 
