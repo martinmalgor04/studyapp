@@ -15,14 +15,16 @@ export async function GET(request: Request) {
     
     if (user) {
       // Consultar si tiene onboarding completado
-      const { data: settings } = await supabase
+      const { data } = await supabase
         .from('user_settings')
         .select('onboarding_completed')
         .eq('user_id', user.id)
-        .single();
-      
+        .maybeSingle();
+
+      const onboardingCompleted = data?.onboarding_completed === true;
+
       // Si no completó onboarding, redirigir allí
-      if (!settings || !settings.onboarding_completed) {
+      if (!onboardingCompleted) {
         return NextResponse.redirect(`${origin}/onboarding`);
       }
     }
