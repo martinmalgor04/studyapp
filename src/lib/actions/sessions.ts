@@ -105,7 +105,7 @@ export async function getSessionsBySubject(subjectId: string) {
 
 export async function updateSessionStatus(
   id: string,
-  status: 'PENDING' | 'COMPLETED' | 'RESCHEDULED' | 'ABANDONED'
+  status: 'PENDING' | 'COMPLETED' | 'RESCHEDULED' | 'ABANDONED' | 'INCOMPLETE'
 ) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -129,6 +129,122 @@ export async function updateSessionStatus(
   return { success: true };
 }
 
+export async function startSession(id: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'No autenticado' };
+  }
+
+  const { error } = await supabase
+    .from('sessions')
+    .update({ 
+      started_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/sessions');
+  return { success: true };
+}
+
+export async function completeSessionWithRating(
+  id: string,
+  rating: 'EASY' | 'NORMAL' | 'HARD'
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'No autenticado' };
+  }
+
+  // Obtener sesión para calcular duración si tiene started_at
+  const { data: session } = await supabase
+    .from('sessions')
+    .select('started_at, duration')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single();
+
+  let actualDuration = null;
+  if (session?.started_at) {
+    const startTime = new Date(session.started_at).getTime();
+    const endTime = Date.now();
+    actualDuration = Math.round((endTime - startTime) / 60000); // Minutos
+  }
+
+  const { error } = await supabase
+    .from('sessions')
+    .update({ 
+      status: 'COMPLETED',
+      completed_at: new Date().toISOString(),
+      completion_rating: rating,
+      actual_duration: actualDuration,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  // Emitir evento para extensiones futuras (gamificación, analytics)
+  // Para activar: importar SessionEventRegistry y descomentar
+  // const { SessionEventRegistry } = await import('@/lib/services/session-events');
+  // await SessionEventRegistry.emitCompleted({
+  //   sessionId: id,
+  //   userId: user.id,
+  //   topicId: session.topic_id,
+  //   rating,
+  //   actualDuration,
+  //   plannedDuration: session.duration,
+  //   completedAt: new Date()
+  // });
+
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/sessions');
+  return { success: true };
+}
+
+export async function markSessionIncomplete(
+  id: string,
+  actualDuration: number
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'No autenticado' };
+  }
+
+  const { error } = await supabase
+    .from('sessions')
+    .update({
+      status: 'INCOMPLETE',
+      actual_duration: actualDuration,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/sessions');
+  return { success: true };
+}
+
 export async function rescheduleSession(id: string, newDate: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -137,10 +253,16 @@ export async function rescheduleSession(id: string, newDate: string) {
     return { error: 'No autenticado' };
   }
 
+  // Validar que la fecha sea futura
+  const scheduledDate = new Date(newDate);
+  if (scheduledDate <= new Date()) {
+    return { error: 'La fecha debe ser en el futuro' };
+  }
+
   // Obtener sesión actual para incrementar attempts
   const { data: session, error: fetchError } = await supabase
     .from('sessions')
-    .select('attempts')
+    .select('attempts, topic:topics(name), subject:subjects(name)')
     .eq('id', id)
     .eq('user_id', user.id)
     .single();
@@ -149,12 +271,31 @@ export async function rescheduleSession(id: string, newDate: string) {
     return { error: fetchError.message };
   }
 
+  const newAttempts = (session.attempts || 0) + 1;
+
+  // Si ya tiene 3+ intentos, auto-abandonar en vez de reagendar
+  if (newAttempts > 3) {
+    const { error: abandonError } = await supabase
+      .from('sessions')
+      .update({ status: 'ABANDONED', updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (abandonError) {
+      return { error: abandonError.message };
+    }
+
+    revalidatePath('/dashboard');
+    revalidatePath('/dashboard/sessions');
+    return { success: true, abandoned: true };
+  }
+
   const { error } = await supabase
     .from('sessions')
     .update({
       scheduled_at: newDate,
       status: 'RESCHEDULED',
-      attempts: (session.attempts || 0) + 1,
+      attempts: newAttempts,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
@@ -163,6 +304,19 @@ export async function rescheduleSession(id: string, newDate: string) {
   if (error) {
     return { error: error.message };
   }
+
+  // Enviar notificación de reagendado
+  const topicName = (session as any).topic?.name || 'Tema';
+  const formattedDate = scheduledDate.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+  
+  const { sendNotification } = await import('./notifications');
+  await sendNotification({
+    userId: user.id,
+    type: 'SESSION_RESCHEDULED',
+    title: 'Sesion reagendada',
+    message: `"${topicName}" se movio al ${formattedDate}`,
+    metadata: { session_id: id, new_date: newDate, attempts: newAttempts }
+  });
 
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/sessions');
@@ -292,4 +446,66 @@ export async function generateSessions(topicId: string) {
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Error generando sesiones' };
   }
+}
+
+/**
+ * Procesa sesiones vencidas (auto-abandono)
+ * Llamar desde DashboardLayout al renderizar
+ */
+export async function processOverdueSessions() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { processed: 0 };
+
+  const now = new Date();
+
+  // Obtener sesiones vencidas y PENDING
+  const { data: overdueSessions } = await supabase
+    .from('sessions')
+    .select('id, scheduled_at, topic:topics(name), user_id')
+    .eq('user_id', user.id)
+    .eq('status', 'PENDING')
+    .lt('scheduled_at', now.toISOString());
+
+  if (!overdueSessions || overdueSessions.length === 0) {
+    return { processed: 0 };
+  }
+
+  let notified = 0;
+  let abandoned = 0;
+
+  for (const session of overdueSessions) {
+    const scheduledDate = new Date(session.scheduled_at);
+    const hoursOverdue = (now.getTime() - scheduledDate.getTime()) / (1000 * 60 * 60);
+
+    if (hoursOverdue > 48) {
+      // Más de 2 días: auto-abandonar
+      await supabase
+        .from('sessions')
+        .update({ status: 'ABANDONED', updated_at: now.toISOString() })
+        .eq('id', session.id);
+      
+      abandoned++;
+    } else if (hoursOverdue > 24) {
+      // 1-2 días: notificar
+      const { sendNotification } = await import('./notifications');
+      await sendNotification({
+        userId: user.id,
+        type: 'SESSION_REMINDER',
+        title: 'Sesión pendiente',
+        message: `La sesión "${(session as any).topic.name}" está vencida. ¿La completaste?`,
+        metadata: { session_id: session.id }
+      });
+      
+      notified++;
+    }
+  }
+
+  if (abandoned > 0 || notified > 0) {
+    revalidatePath('/dashboard');
+    revalidatePath('/dashboard/sessions');
+  }
+
+  return { notified, abandoned, processed: notified + abandoned };
 }

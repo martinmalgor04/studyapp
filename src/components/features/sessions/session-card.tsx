@@ -1,7 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { updateSessionStatus, deleteSession } from '@/lib/actions/sessions';
+import { updateSessionStatus, deleteSession, completeSessionWithRating, startSession } from '@/lib/actions/sessions';
+import { CompleteSessionDialog } from './complete-session-dialog';
+import { StudyModeDialog } from './study-mode-dialog';
+
+// Helper para confirm
+// @ts-ignore - window exists in client components
+const safeConfirm = (message: string) => window.confirm(message);
 
 type Priority = 'CRITICAL' | 'URGENT' | 'IMPORTANT' | 'NORMAL' | 'LOW';
 type SessionStatus = 'PENDING' | 'COMPLETED' | 'RESCHEDULED' | 'ABANDONED';
@@ -38,6 +44,8 @@ const STATUS_CONFIG = {
 
 export function SessionCard({ session, onStatusChange, onReschedule }: SessionCardProps) {
   const [loading, setLoading] = useState(false);
+  const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+  const [showStudyMode, setShowStudyMode] = useState(false);
   
   const priorityStyle = PRIORITY_CONFIG[session.priority];
   const statusStyle = STATUS_CONFIG[session.status];
@@ -46,12 +54,47 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
   const dateStr = sessionDate.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: 'short' });
   const timeStr = sessionDate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
-  const handleComplete = async () => {
+  const handleCompleteWithRating = async (sessionId: string, rating: 'EASY' | 'NORMAL' | 'HARD') => {
     setLoading(true);
-    const result = await updateSessionStatus(session.id, 'COMPLETED');
+    const result = await completeSessionWithRating(sessionId, rating);
     if (!result.error) {
       onStatusChange();
     }
+    setLoading(false);
+  };
+
+  const handleStartStudy = async () => {
+    await startSession(session.id);
+    setShowStudyMode(true);
+  };
+
+  const handleComplete = () => {
+    setShowCompleteDialog(true);
+  };
+
+  const handleStudyComplete = () => {
+    setShowStudyMode(false);
+    setShowCompleteDialog(true);
+  };
+
+  const handleIncompleteFromStudy = async (actualMinutes: number) => {
+    setShowStudyMode(false);
+    setLoading(true);
+    
+    // Marcar como INCOMPLETE con duración real
+    const result = await updateSessionStatus(session.id, 'INCOMPLETE');
+    
+    if (!result.error) {
+      // Ofrecer reagendar el tiempo restante
+      const remaining = session.duration - actualMinutes;
+      if (remaining > 10 && safeConfirm(`Estudiaste ${actualMinutes} de ${session.duration} minutos. ¿Querés reagendar los ${remaining} minutos restantes?`)) {
+        // Crear una nueva sesión con el tiempo restante
+        // TODO: Implementar createPartialSession o usar reschedule modificado
+        onReschedule(session);
+      }
+      onStatusChange();
+    }
+    
     setLoading(false);
   };
 
@@ -65,7 +108,7 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
   };
 
   const handleDelete = async () => {
-    if (!confirm('¿Eliminar esta sesión?')) return;
+    if (!safeConfirm('¿Eliminar esta sesión?')) return;
     
     setLoading(true);
     const result = await deleteSession(session.id);
@@ -126,6 +169,13 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
       {session.status === 'PENDING' && (
         <div className="mt-4 flex gap-2">
           <button
+            onClick={handleStartStudy}
+            disabled={loading}
+            className="flex-1 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            Estudiar
+          </button>
+          <button
             onClick={handleComplete}
             disabled={loading}
             className="flex-1 rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
@@ -160,6 +210,23 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
           </button>
         </div>
       )}
+
+      {/* Complete Session Dialog */}
+      <CompleteSessionDialog
+        isOpen={showCompleteDialog}
+        session={session}
+        onComplete={handleCompleteWithRating}
+        onClose={() => setShowCompleteDialog(false)}
+      />
+
+      {/* Study Mode Dialog */}
+      <StudyModeDialog
+        isOpen={showStudyMode}
+        session={session}
+        onComplete={handleStudyComplete}
+        onIncomplete={handleIncompleteFromStudy}
+        onClose={() => setShowStudyMode(false)}
+      />
     </div>
   );
 }

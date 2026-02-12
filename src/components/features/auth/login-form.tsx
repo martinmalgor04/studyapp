@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import { GoogleAuthButton } from './google-auth-button';
 
 export function LoginForm() {
   const router = useRouter();
@@ -89,6 +90,17 @@ export function LoginForm() {
           {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
         </button>
       </div>
+
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-300" />
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="bg-gray-50 px-2 text-gray-500">O continuar con</span>
+        </div>
+      </div>
+
+      <GoogleAuthButton label="Continuar con Google" />
 
       <div className="text-center text-sm">
         <span className="text-gray-600">¿No tienes cuenta? </span>

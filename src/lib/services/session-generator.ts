@@ -1,6 +1,8 @@
 import { calculatePriority, daysBetween } from './priority-calculator';
 import type { Difficulty } from '@/lib/validations/topics';
 import type { Priority } from './priority-calculator';
+import { getGoogleCalendarService } from './google-calendar.service';
+import { createClient } from '@/lib/supabase/server';
 
 // Intervalos de repetición espaciada UNIVERSAL (Anki Standard)
 // Siempre 4 sesiones para TODOS los temas, independiente de dificultad
@@ -63,14 +65,73 @@ function determineMode(exam: Exam | null, source: string): 'PARCIAL' | 'FREE_STU
 }
 
 /**
+ * Busca un slot sin conflictos en Google Calendar
+ * Si hay conflicto, busca el siguiente slot disponible (hasta 14 intentos)
+ */
+async function findConflictFreeSlot(
+  userId: string,
+  preferredDate: Date,
+  duration: number,
+  maxAttempts: number = 14
+): Promise<{ date: Date; adjusted: boolean }> {
+  const googleService = getGoogleCalendarService();
+  const supabase = await createClient();
+
+  // Obtener tokens de Google Calendar
+  const { data: settings } = await supabase
+    .from('user_settings')
+    .select('google_access_token, google_refresh_token, google_token_expiry')
+    .eq('user_id', userId)
+    .single();
+
+  if (!settings?.google_access_token) {
+    // Si no hay tokens, devolver fecha preferida sin ajustes
+    return { date: preferredDate, adjusted: false };
+  }
+
+  const tokens = {
+    access_token: settings.google_access_token,
+    refresh_token: settings.google_refresh_token || undefined,
+    expiry_date: settings.google_token_expiry 
+      ? new Date(settings.google_token_expiry).getTime() 
+      : undefined,
+  };
+
+  let currentDate = new Date(preferredDate);
+  let attempts = 0;
+
+  while (attempts < maxAttempts) {
+    // Calcular hora de fin
+    const endDate = new Date(currentDate.getTime() + duration * 60 * 1000);
+
+    // Verificar conflictos en Google Calendar
+    const hasConflict = await googleService.checkConflicts(tokens, currentDate, endDate);
+
+    if (!hasConflict) {
+      // No hay conflicto, usar este slot
+      return { date: currentDate, adjusted: attempts > 0 };
+    }
+
+    // Hay conflicto, buscar siguiente slot (al día siguiente a la misma hora)
+    currentDate = new Date(currentDate);
+    currentDate.setDate(currentDate.getDate() + 1);
+    attempts++;
+  }
+
+  // Si no encuentra slot sin conflictos después de maxAttempts, usar el preferido
+  console.warn(`[SessionGenerator] No conflict-free slot found after ${maxAttempts} attempts, using preferred date`);
+  return { date: preferredDate, adjusted: false };
+}
+
+/**
  * Genera sesiones en modo PARCIAL (hacia adelante desde la clase)
  * Para parciales, recuperatorios, y temas con clase previa
  */
-function generateParcialSessions(
+async function generateParcialSessions(
   topic: Topic,
   exam: Exam | null,
   userId: string
-): SessionToCreate[] {
+): Promise<SessionToCreate[]> {
   const sessions: SessionToCreate[] = [];
   const sourceDate = new Date(topic.source_date!);
   sourceDate.setHours(0, 0, 0, 0);
@@ -88,13 +149,17 @@ function generateParcialSessions(
   // Calcular duración base con multiplicador de dificultad
   const baseDuration = topic.hours * DIFFICULTY_MULTIPLIERS[topic.difficulty];
 
+  // Verificar si Google Calendar está conectado
+  const googleService = getGoogleCalendarService();
+  const hasGoogleCalendar = await googleService.isConnected(userId);
+
   // Generar 4 sesiones con intervalos fijos
   for (let i = 0; i < SPACED_REPETITION_INTERVALS.length; i++) {
     const intervalDays = SPACED_REPETITION_INTERVALS[i];
     const sessionNumber = i + 1;
 
     // Calcular fecha de la sesión (source_date + intervalo)
-    const scheduledDate = new Date(sourceDate);
+    let scheduledDate = new Date(sourceDate);
     scheduledDate.setDate(scheduledDate.getDate() + intervalDays);
     scheduledDate.setHours(9, 0, 0, 0); // Default: 9:00 AM
 
@@ -107,6 +172,16 @@ function generateParcialSessions(
 
     // Calcular duración (base × factor de reducción, mínimo 15 minutos)
     const duration = Math.max(15, Math.round(baseDuration * DURATION_FACTORS[i]));
+
+    // NUEVO: Verificar conflictos con Google Calendar si está conectado
+    if (hasGoogleCalendar) {
+      const result = await findConflictFreeSlot(userId, scheduledDate, duration);
+      scheduledDate = result.date;
+      
+      if (result.adjusted) {
+        console.log(`[SessionGenerator] Session ${sessionNumber} adjusted to avoid conflict: ${scheduledDate.toISOString()}`);
+      }
+    }
 
     // Calcular días hasta esta sesión (desde hoy)
     const daysToSession = daysBetween(today, scheduledDate);
@@ -141,11 +216,11 @@ function generateParcialSessions(
  * Genera sesiones en modo FREE_STUDY (desde HOY hacia adelante)
  * Para finales y estudio libre - Primera sesión HOY/MAÑANA
  */
-function generateFreeStudySessions(
+async function generateFreeStudySessions(
   topic: Topic,
   exam: Exam | null,
   userId: string
-): SessionToCreate[] {
+): Promise<SessionToCreate[]> {
   const sessions: SessionToCreate[] = [];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -162,13 +237,17 @@ function generateFreeStudySessions(
   // Intervalos: [1, 3, 7, 14] días desde hoy
   const baseDuration = topic.hours * DIFFICULTY_MULTIPLIERS[topic.difficulty];
 
+  // Verificar si Google Calendar está conectado
+  const googleService = getGoogleCalendarService();
+  const hasGoogleCalendar = await googleService.isConnected(userId);
+
   for (let i = 0; i < SPACED_REPETITION_INTERVALS.length; i++) {
     const intervalDays = SPACED_REPETITION_INTERVALS[i];
     const sessionNumber = i + 1;
 
     // Calcular fecha (today + intervalo)
     // Garantiza que intervalDays es al menos 1 (ya definido como [1, 3, 7, 14])
-    const scheduledDate = new Date(today);
+    let scheduledDate = new Date(today);
     scheduledDate.setDate(scheduledDate.getDate() + intervalDays);
     scheduledDate.setHours(9, 0, 0, 0); // 9:00 AM
 
@@ -180,8 +259,18 @@ function generateFreeStudySessions(
     // Calcular duración con multiplicador de dificultad
     const duration = Math.max(15, Math.round(baseDuration * DURATION_FACTORS[i]));
 
+    // NUEVO: Verificar conflictos con Google Calendar si está conectado
+    if (hasGoogleCalendar) {
+      const result = await findConflictFreeSlot(userId, scheduledDate, duration);
+      scheduledDate = result.date;
+      
+      if (result.adjusted) {
+        console.log(`[SessionGenerator] Session ${sessionNumber} adjusted to avoid conflict: ${scheduledDate.toISOString()}`);
+      }
+    }
+
     // Calcular días hasta esta sesión
-    const daysToSession = intervalDays;
+    const daysToSession = daysBetween(today, scheduledDate);
 
     // Calcular prioridad (con bonus para finales)
     const priority = calculatePriority({
@@ -238,10 +327,10 @@ export async function generateSessionsForTopic(
   let sessions: SessionToCreate[];
   if (mode === 'FREE_STUDY') {
     // Para finales y estudio libre: desde HOY hacia adelante
-    sessions = generateFreeStudySessions(topic, exam, userId);
+    sessions = await generateFreeStudySessions(topic, exam, userId);
   } else {
     // Para clases de parciales: desde source_date hacia adelante
-    sessions = generateParcialSessions(topic, exam, userId);
+    sessions = await generateParcialSessions(topic, exam, userId);
   }
 
   // VALIDACIÓN FINAL: Verificar que todas las sesiones sean futuras

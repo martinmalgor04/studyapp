@@ -16,6 +16,24 @@ export default async function DashboardLayout({
     redirect('/login');
   }
 
+  // Verificar si completó el onboarding
+  const { data: settings } = await supabase
+    .from('user_settings')
+    .select('onboarding_completed')
+    .eq('user_id', data.user.id)
+    .single();
+
+  // Si no completó onboarding, redirigir
+  if (!settings || !settings.onboarding_completed) {
+    redirect('/onboarding');
+  }
+
+  // Procesar sesiones vencidas (auto-abandono + notificaciones)
+  // Ejecutar en background, no bloquear render
+  import('@/lib/actions/sessions').then(({ processOverdueSessions }) => {
+    processOverdueSessions().catch(err => console.error('Error processing overdue sessions:', err));
+  });
+
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="border-b bg-white">

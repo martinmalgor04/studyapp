@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import { GoogleAuthButton } from './google-auth-button';
 
 export function RegisterForm() {
   const router = useRouter();
@@ -18,9 +19,6 @@ export function RegisterForm() {
     setError(null);
     setLoading(true);
 
-// #region agent log
-// #endregion
-
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.signUp({
@@ -33,9 +31,6 @@ export function RegisterForm() {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
-
-      // #region agent log
-      // #endregion
 
       if (error) {
         setError(error.message);
@@ -117,6 +112,17 @@ export function RegisterForm() {
           {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
         </button>
       </div>
+
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-300" />
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="bg-gray-50 px-2 text-gray-500">O continuar con</span>
+        </div>
+      </div>
+
+      <GoogleAuthButton label="Registrarse con Google" />
 
       <div className="text-center text-sm">
         <span className="text-gray-600">¿Ya tienes cuenta? </span>

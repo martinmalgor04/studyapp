@@ -64,6 +64,36 @@ export type Database = {
         }
         Relationships: []
       }
+      availability_slots: {
+        Row: {
+          created_at: string | null
+          day_of_week: number
+          end_time: string
+          id: string
+          is_enabled: boolean | null
+          start_time: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_enabled?: boolean | null
+          start_time: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_enabled?: boolean | null
+          start_time?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       exams: {
         Row: {
           created_at: string | null
@@ -148,8 +178,10 @@ export type Database = {
       }
       sessions: {
         Row: {
+          actual_duration: number | null
           attempts: number | null
           completed_at: string | null
+          completion_rating: string | null
           created_at: string | null
           duration: number
           exam_id: string | null
@@ -157,6 +189,7 @@ export type Database = {
           number: number
           priority: Database["public"]["Enums"]["priority"]
           scheduled_at: string
+          started_at: string | null
           status: Database["public"]["Enums"]["session_status"] | null
           subject_id: string
           topic_id: string
@@ -164,8 +197,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          actual_duration?: number | null
           attempts?: number | null
           completed_at?: string | null
+          completion_rating?: string | null
           created_at?: string | null
           duration: number
           exam_id?: string | null
@@ -173,6 +208,7 @@ export type Database = {
           number: number
           priority: Database["public"]["Enums"]["priority"]
           scheduled_at: string
+          started_at?: string | null
           status?: Database["public"]["Enums"]["session_status"] | null
           subject_id: string
           topic_id: string
@@ -180,8 +216,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          actual_duration?: number | null
           attempts?: number | null
           completed_at?: string | null
+          completion_rating?: string | null
           created_at?: string | null
           duration?: number
           exam_id?: string | null
@@ -189,6 +227,7 @@ export type Database = {
           number?: number
           priority?: Database["public"]["Enums"]["priority"]
           scheduled_at?: string
+          started_at?: string | null
           status?: Database["public"]["Enums"]["session_status"] | null
           subject_id?: string
           topic_id?: string
@@ -481,7 +520,12 @@ export type Database = {
           created_at: string | null
           daily_summary_time: string | null
           email_notifications: boolean | null
+          google_access_token: string | null
+          google_calendar_enabled: boolean | null
+          google_refresh_token: string | null
+          google_token_expiry: string | null
           in_app_notifications: boolean | null
+          onboarding_completed: boolean | null
           telegram_notifications: boolean | null
           updated_at: string | null
           user_id: string
@@ -490,7 +534,12 @@ export type Database = {
           created_at?: string | null
           daily_summary_time?: string | null
           email_notifications?: boolean | null
+          google_access_token?: string | null
+          google_calendar_enabled?: boolean | null
+          google_refresh_token?: string | null
+          google_token_expiry?: string | null
           in_app_notifications?: boolean | null
+          onboarding_completed?: boolean | null
           telegram_notifications?: boolean | null
           updated_at?: string | null
           user_id: string
@@ -499,7 +548,12 @@ export type Database = {
           created_at?: string | null
           daily_summary_time?: string | null
           email_notifications?: boolean | null
+          google_access_token?: string | null
+          google_calendar_enabled?: boolean | null
+          google_refresh_token?: string | null
+          google_token_expiry?: string | null
           in_app_notifications?: boolean | null
+          onboarding_completed?: boolean | null
           telegram_notifications?: boolean | null
           updated_at?: string | null
           user_id?: string

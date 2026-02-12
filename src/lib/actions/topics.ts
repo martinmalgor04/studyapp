@@ -135,6 +135,15 @@ export async function createTopic(input: CreateTopicInput) {
           sessions_count: sessionsResult.count,
         },
       });
+
+      // Auto-sincronizar a Google Calendar si está conectado
+      try {
+        const { syncSessionsToGoogleCalendar } = await import('./google-calendar');
+        await syncSessionsToGoogleCalendar();
+      } catch (err) {
+        console.warn('Could not sync to Google Calendar:', err);
+        // No retornar error, las sesiones ya se crearon
+      }
     }
   }
 

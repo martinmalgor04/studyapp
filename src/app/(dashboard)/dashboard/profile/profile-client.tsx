@@ -125,7 +125,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
             />
           </div>
@@ -149,7 +149,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
             <input
               type="password"
               value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPassword(e.target.value)}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
               placeholder="Mínimo 6 caracteres"
             />
@@ -160,7 +160,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
             <input
               type="password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
             />
           </div>
@@ -214,7 +214,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
               <input
                 type="text"
                 value={deleteConfirmText}
-                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeleteConfirmText(e.target.value)}
                 className="mt-2 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
                 placeholder="ELIMINAR"
                 autoFocus

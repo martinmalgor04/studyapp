@@ -1,28 +1,80 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { getUserSettings, updateUserSettings } from '@/lib/actions/notifications';
+import { connectGoogleCalendar, disconnectGoogleCalendar, isGoogleCalendarConnected, syncSessionsToGoogleCalendar } from '@/lib/actions/google-calendar';
 
 export default function SettingsPage() {
+  const searchParams = useSearchParams();
   const [settings, setSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const loadSettings = async () => {
     setLoading(true);
     const data = await getUserSettings();
     setSettings(data);
+    const connected = await isGoogleCalendarConnected();
+    setGoogleConnected(connected);
     setLoading(false);
   };
 
   useEffect(() => {
     loadSettings();
-  }, []);
+    
+    // Verificar si viene de OAuth callback
+    const googleSuccess = searchParams?.get('google_connected');
+    if (googleSuccess === 'true') {
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    }
+  }, [searchParams]);
 
   const handleToggle = (field: string, value: boolean) => {
     setSettings((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  const handleConnectGoogle = async () => {
+    try {
+      await connectGoogleCalendar();
+    } catch (err) {
+      setError('Error al conectar con Google Calendar');
+    }
+  };
+
+  const handleDisconnectGoogle = async () => {
+    // @ts-ignore
+    if (!confirm('¿Desconectar Google Calendar? Se eliminarán los eventos sincronizados.')) return;
+    
+    const result = await disconnectGoogleCalendar();
+    if (result.error) {
+      setError(result.error);
+    } else {
+      setGoogleConnected(false);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    }
+  };
+
+  const handleSyncNow = async () => {
+    setSyncing(true);
+    setError(null);
+    
+    const result = await syncSessionsToGoogleCalendar();
+    
+    if (result.error) {
+      setError(result.error);
+    } else {
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    }
+    
+    setSyncing(false);
   };
 
   const handleSave = async () => {
@@ -171,6 +223,80 @@ export default function SettingsPage() {
                 onChange={(e) => handleToggle('daily_summary_time', e.target.value + ':00')}
                 className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Availability Link */}
+        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 flex-shrink-0">
+              <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="mb-1 text-base font-semibold text-gray-900">Disponibilidad Horaria</h3>
+              <p className="mb-3 text-sm text-gray-600">Definí tus horarios de estudio para mejorar la generación automática.</p>
+              <a
+                href="/dashboard/settings/availability"
+                className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-500"
+              >
+                Gestionar Disponibilidad &rarr;
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Google Calendar Sync */}
+        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 flex-shrink-0">
+              <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-base font-semibold text-gray-900">Google Calendar</h3>
+                {googleConnected && (
+                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                    Conectado
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-gray-600 mb-3">
+                {googleConnected 
+                  ? 'Tus sesiones se sincronizan automáticamente con Google Calendar'
+                  : 'Conectá tu cuenta para sincronizar sesiones automáticamente'}
+              </p>
+              
+              <div className="flex gap-2">
+                {!googleConnected ? (
+                  <button
+                    onClick={handleConnectGoogle}
+                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  >
+                    Conectar Google Calendar
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleSyncNow}
+                      disabled={syncing}
+                      className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {syncing ? 'Sincronizando...' : 'Sincronizar ahora'}
+                    </button>
+                    <button
+                      onClick={handleDisconnectGoogle}
+                      className="rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+                    >
+                      Desconectar
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>

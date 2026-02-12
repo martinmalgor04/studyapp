@@ -147,11 +147,26 @@
 | - Topic distribution | ✅ | 🟡 | 3h |
 | - UI countdown (warnings) | ✅ | ⬜ | 0.5h |
 | - Auto-convert Parcial → Final | ✅ | ⬜ | 1h |
-| Google Calendar OAuth | ⏳ | 🟠 | 6h |
-| Calendar sync service | ⏳ | 🟠 | 8h |
-| Calendar conflicts resolver | ⏳ | 🟡 | 6h |
+| **Google Calendar Integration (UC-011)** | 🟡 | 🟠 | ~35h |
+| UC-011a: Export Sessions to Calendar | ✅ | 🟡 | 8h |
+| - Google OAuth Setup | ✅ | 🟡 | 3h |
+| - GoogleCalendarService | ✅ | 🟡 | 3h |
+| - Sync button in Settings | ✅ | ⬜ | 2h |
+| UC-011b: Import Availability from Calendar | 🔄 | 🟠 | 15h |
+| - AvailabilityImporterService | ✅ | 🟠 | 6h |
+| - Detection algorithm | ✅ | 🟠 | 4h |
+| - Onboarding integration | ✅ | 🟡 | 3h |
+| - Preview UI component | ✅ | ⬜ | 2h |
+| UC-011c: Detect Schedule Conflicts | ⏳ | 🟠 | 8h |
+| - Conflict detection algorithm | ⏳ | 🟠 | 4h |
+| - Integration with Session Generator | ⏳ | 🟡 | 3h |
+| - UI warnings/indicators | ⏳ | ⬜ | 1h |
+| UC-011d: Sync Session Updates | ⏳ | 🟡 | 4h |
+| - Bidirectional sync | ⏳ | 🟡 | 2h |
+| - Event listeners | ⏳ | ⬜ | 1h |
+| - Color coding in Google Calendar | ⏳ | ⬜ | 1h |
 
-**Sprint Goal**: ✅ Modo estudio libre para finales completado. ⏳ Sincronización con Google Calendar pendiente.
+**Sprint Goal**: ✅ Modo estudio libre completado. 🔄 Google Calendar Integration parcial (UC-011a ✅, UC-011b 🔄 documentado, UC-011c/d ⏳).
 
 ---
 
