@@ -149,10 +149,3 @@ export function ImportPreviewDialog({
     </div>
   );
 }
-
-// Función auxiliar para calcular duración
-function calculateDuration(startTime: string, endTime: string): number {
-  const [startHour, startMin] = startTime.split(':').map(Number);
-  const [endHour, endMin] = endTime.split(':').map(Number);
-  return (endHour * 60 + endMin) - (startHour * 60 + startMin);
-}

@@ -306,7 +306,7 @@ export async function rescheduleSession(id: string, newDate: string) {
   }
 
   // Enviar notificación de reagendado
-  const topicName = (session as any).topic?.name || 'Tema';
+  const topicName = (session as { topic?: { name?: string } }).topic?.name || 'Tema';
   const formattedDate = scheduledDate.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
   
   const { sendNotification } = await import('./notifications');
@@ -494,7 +494,7 @@ export async function processOverdueSessions() {
         userId: user.id,
         type: 'SESSION_REMINDER',
         title: 'Sesión pendiente',
-        message: `La sesión "${(session as any).topic.name}" está vencida. ¿La completaste?`,
+        message: `La sesión "${(session as { topic: { name: string } }).topic.name}" está vencida. ¿La completaste?`,
         metadata: { session_id: session.id }
       });
       

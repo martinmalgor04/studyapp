@@ -33,7 +33,7 @@ export async function saveOnboardingAvailability(
     : [1, 2, 3, 4, 5];       // Lunes a Viernes
 
   // Generar slots
-  const slots: any[] = [];
+  const slots: Array<{ user_id: string; day_of_week: number; start_time: string; end_time: string; is_enabled: boolean }> = [];
   for (const day of days) {
     for (const shift of shifts) {
       const template = SHIFT_TEMPLATES[shift];

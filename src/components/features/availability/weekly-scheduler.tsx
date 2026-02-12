@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { AvailabilitySlot } from '@/lib/validations/availability';
 
 interface WeeklySchedulerProps {
-  initialSlots: any[];
+  initialSlots: Array<{ day_of_week: number; start_time: string; end_time: string; is_enabled?: boolean }>;
   onSave: (slots: AvailabilitySlot[]) => Promise<void>;
 }
 
@@ -59,7 +59,7 @@ export function WeeklyScheduler({ initialSlots, onSave }: WeeklySchedulerProps) 
     }));
   };
 
-  const updateSlot = (dayIndex: number, slotIndex: number, field: keyof AvailabilitySlot, value: any) => {
+  const updateSlot = (dayIndex: number, slotIndex: number, field: keyof AvailabilitySlot, value: string | boolean) => {
     setSlotsByDay(prev => {
       const newSlots = [...prev[dayIndex]];
       newSlots[slotIndex] = { ...newSlots[slotIndex], [field]: value };
@@ -93,7 +93,7 @@ export function WeeklyScheduler({ initialSlots, onSave }: WeeklySchedulerProps) 
       await onSave(allSlots);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
-    } catch (err) {
+    } catch {
       setError('Error al guardar la disponibilidad');
     } finally {
       setSaving(false);

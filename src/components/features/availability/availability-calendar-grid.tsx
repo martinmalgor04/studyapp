@@ -49,7 +49,7 @@ export function AvailabilityCalendarGrid({ slots, onSlotsChange }: AvailabilityC
   // Agrupar slots por día
   const slotsByDay: Record<number, AvailabilitySlot[]> = {};
   for (let i = 0; i <= 6; i++) slotsByDay[i] = [];
-  slots.forEach((slot, index) => {
+  slots.forEach((slot) => {
     if (slotsByDay[slot.day_of_week]) {
       slotsByDay[slot.day_of_week].push(slot);
     }

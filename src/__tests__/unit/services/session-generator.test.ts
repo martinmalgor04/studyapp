@@ -10,7 +10,7 @@ vi.mock('@/lib/services/priority-calculator', () => ({
 
 // Import after mocking
 import { generateSessionsForTopic } from '@/lib/services/session-generator';
-import { calculatePriority, daysBetween } from '@/lib/services/priority-calculator';
+import { calculatePriority } from '@/lib/services/priority-calculator';
 
 describe('UC-006: Session Generator', () => {
   beforeEach(() => {
@@ -348,7 +348,7 @@ describe('UC-006: Session Generator', () => {
 
     describe('Priority Calculation', () => {
       it('should call calculatePriority with correct params for PARCIAL', async () => {
-        const sessions = await generateSessionsForTopic(baseTopic, parcialExam, 'user-1');
+        await generateSessionsForTopic(baseTopic, parcialExam, 'user-1');
 
         expect(calculatePriority).toHaveBeenCalledTimes(4);
         expect(calculatePriority).toHaveBeenCalledWith(

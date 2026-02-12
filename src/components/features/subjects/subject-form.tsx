@@ -15,7 +15,7 @@ interface SubjectFormProps {
     semester?: SemesterType | null;
     status?: SubjectStatus;
     professors?: string[] | null;
-    schedule?: any | null;
+    schedule?: Record<string, unknown> | null;
   };
   onSuccess: () => void;
   onCancel: () => void;

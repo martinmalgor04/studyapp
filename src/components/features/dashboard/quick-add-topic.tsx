@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -81,7 +81,6 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
   });
 
   const selectedSource = watch('source');
-  const selectedSubjectId = watch('subject_id');
   const showSourceDate = selectedSource === 'CLASS';
 
   const handleCreateNewSubject = async () => {

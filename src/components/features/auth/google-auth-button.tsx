@@ -44,7 +44,7 @@ export function GoogleAuthButton({ label = 'Continuar con Google', className = '
         return;
       }
       // Si no hay error, Supabase redirige al usuario a Google (la página puede no actualizarse)
-    } catch (err) {
+    } catch {
       setError('Error al conectar con Google');
       setLoading(false);
     }

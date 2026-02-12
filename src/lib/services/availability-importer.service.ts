@@ -188,8 +188,9 @@ export class AvailabilityImporterService {
    */
   private consolidateWeeklyPattern(
     dailySlots: Map<string, TimeSlot[]>,
-    minSlotDuration: number
+    _minSlotDuration: number // Reserved for future min duration filter
   ): TimeSlot[] {
+    void _minSlotDuration;
     // Agrupar por día de semana
     const weeklyGroups = new Map<number, TimeSlot[]>();
 
@@ -205,7 +206,7 @@ export class AvailabilityImporterService {
     // Por cada día de semana, encontrar slots que se repiten
     const weeklyPattern: TimeSlot[] = [];
 
-    for (const [dayOfWeek, slots] of weeklyGroups.entries()) {
+    for (const [, slots] of weeklyGroups.entries()) {
       // Agrupar slots similares (misma hora ±30min)
       const slotGroups = this.groupSimilarSlots(slots);
 

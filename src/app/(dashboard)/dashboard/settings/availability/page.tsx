@@ -9,7 +9,7 @@ import { AvailabilitySlot } from '@/lib/validations/availability';
 import { isGoogleCalendarConnected, connectGoogleCalendar } from '@/lib/actions/google-calendar';
 
 export default function AvailabilityPage() {
-  const [initialSlots, setInitialSlots] = useState<any[]>([]);
+  const [initialSlots, setInitialSlots] = useState<Array<{ day_of_week: number; start_time: string; end_time: string; is_enabled: boolean }>>([]);
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -68,7 +68,7 @@ export default function AvailabilityPage() {
     setSaving(true);
     try {
       await connectGoogleCalendar();
-    } catch (err) {
+    } catch {
       setError('Error al conectar con Google Calendar');
       setSaving(false);
     }

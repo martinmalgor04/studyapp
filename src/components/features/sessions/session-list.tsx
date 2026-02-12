@@ -2,10 +2,22 @@
 
 import { SessionCard } from './session-card';
 
+interface SessionWithTopicSubject {
+  id: string;
+  scheduled_at: string;
+  duration_minutes?: number | null;
+  topic?: { id: string; name: string } | null;
+  subject?: { id: string; name: string } | null;
+  priority?: string | null;
+  status: string;
+  number?: number;
+  [key: string]: unknown;
+}
+
 interface SessionListProps {
-  sessions: any[];
+  sessions: SessionWithTopicSubject[];
   onStatusChange: () => void;
-  onReschedule: (session: any) => void;
+  onReschedule: (session: SessionWithTopicSubject) => void;
 }
 
 export function SessionList({ sessions, onStatusChange, onReschedule }: SessionListProps) {
@@ -27,7 +39,7 @@ export function SessionList({ sessions, onStatusChange, onReschedule }: SessionL
     }
     acc[dayKey].push(session);
     return acc;
-  }, {} as Record<string, any[]>);
+  }, {} as Record<string, SessionWithTopicSubject[]>);
 
   const sortedDays = Object.keys(sessionsByDay).sort();
 

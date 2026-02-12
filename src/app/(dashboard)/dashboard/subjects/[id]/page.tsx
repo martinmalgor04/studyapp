@@ -11,7 +11,32 @@ import { ExamDialog } from '@/components/features/exams/exam-dialog';
 import { TopicList } from '@/components/features/topics/topic-list';
 import { TopicDialog } from '@/components/features/topics/topic-dialog';
 import { UnifiedCalendar } from '@/components/shared/calendar/unified-calendar';
-import type { ExamType } from '@/lib/validations/exams';
+
+interface SubjectRow {
+  id: string;
+  name: string;
+  description?: string | null;
+  [key: string]: unknown;
+}
+
+interface ExamRow {
+  id: string;
+  date: string;
+  type: string;
+  [key: string]: unknown;
+}
+
+interface TopicRow {
+  id: string;
+  name: string;
+  [key: string]: unknown;
+}
+
+interface SessionRow {
+  id: string;
+  scheduled_at: string;
+  [key: string]: unknown;
+}
 
 interface PageProps {
   params: {
@@ -20,14 +45,14 @@ interface PageProps {
 }
 
 export default function SubjectDetailPage({ params }: PageProps) {
-  const [subject, setSubject] = useState<any>(null);
-  const [exams, setExams] = useState<any[]>([]);
-  const [topics, setTopics] = useState<any[]>([]);
-  const [sessions, setSessions] = useState<any[]>([]);
+  const [subject, setSubject] = useState<SubjectRow | null>(null);
+  const [exams, setExams] = useState<ExamRow[]>([]);
+  const [topics, setTopics] = useState<TopicRow[]>([]);
+  const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [isExamDialogOpen, setIsExamDialogOpen] = useState(false);
   const [isTopicDialogOpen, setIsTopicDialogOpen] = useState(false);
-  const [editingExam, setEditingExam] = useState<any>(null);
-  const [editingTopic, setEditingTopic] = useState<any>(null);
+  const [editingExam, setEditingExam] = useState<ExamRow | null>(null);
+  const [editingTopic, setEditingTopic] = useState<TopicRow | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
@@ -47,6 +72,7 @@ export default function SubjectDetailPage({ params }: PageProps) {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadData depends on params.id only
   }, [params.id]);
 
   const handleEditExam = async (id: string) => {

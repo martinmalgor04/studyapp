@@ -4,8 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { 
   updateAvailabilitySchema, 
-  type UpdateAvailabilityInput,
-  type AvailabilitySlot 
+  type UpdateAvailabilityInput
 } from '@/lib/validations/availability';
 import { getAvailabilityImporterService } from '@/lib/services/availability-importer.service';
 

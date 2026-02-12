@@ -34,9 +34,9 @@ export async function getSubjects(includeAprobadas: boolean = false) {
 
   // Calcular progreso para cada materia
   const subjectsWithProgress = subjects?.map(subject => {
-    const sessions = (subject as any).sessions || [];
+    const sessions = (subject as { sessions?: Array<{ status: string }> }).sessions || [];
     const totalSessions = sessions.length;
-    const completedSessions = sessions.filter((s: any) => s.status === 'COMPLETED').length;
+    const completedSessions = sessions.filter((s: { status: string }) => s.status === 'COMPLETED').length;
     const progressPercentage = totalSessions > 0 
       ? Math.round((completedSessions / totalSessions) * 100) 
       : 0;

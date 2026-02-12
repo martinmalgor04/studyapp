@@ -21,7 +21,8 @@ export async function GET(request: Request) {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      const onboardingCompleted = data?.onboarding_completed === true;
+      const settings = data as { onboarding_completed: boolean | null } | null;
+      const onboardingCompleted = settings?.onboarding_completed === true;
 
       // Si no completó onboarding, redirigir allí
       if (!onboardingCompleted) {

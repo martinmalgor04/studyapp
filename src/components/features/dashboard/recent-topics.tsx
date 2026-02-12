@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import type { Difficulty, TopicSource } from '@/lib/validations/topics';
+import type { Difficulty } from '@/lib/validations/topics';
 
 const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   EASY: 'Fácil',

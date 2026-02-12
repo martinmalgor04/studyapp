@@ -37,7 +37,7 @@ export function RegisterForm() {
       } else {
         router.push('/login');
       }
-    } catch (err) {
+    } catch {
       setError('Error al crear cuenta');
     } finally {
       setLoading(false);

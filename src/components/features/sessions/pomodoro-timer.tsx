@@ -44,6 +44,7 @@ export function PomodoroTimer({
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleCycleComplete is stable and used inside setState callback
   }, [isRunning, timeLeft]);
 
   const handleCycleComplete = () => {

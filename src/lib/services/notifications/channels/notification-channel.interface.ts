@@ -11,7 +11,7 @@ export interface NotificationPayload {
   type: NotificationType;
   title: string;
   message: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface INotificationChannel {

@@ -20,7 +20,7 @@ export function SubjectList({ subjects, onEdit, onDelete }: SubjectListProps) {
     return (
       <div className="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
         <p className="text-gray-500">No tienes materias creadas aún.</p>
-        <p className="mt-1 text-sm text-gray-400">Hace click en "Nueva Materia" para empezar.</p>
+        <p className="mt-1 text-sm text-gray-400">Hace click en &quot;Nueva Materia&quot; para empezar.</p>
       </div>
     );
   }

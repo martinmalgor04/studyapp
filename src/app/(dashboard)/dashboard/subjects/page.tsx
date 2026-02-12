@@ -5,11 +5,20 @@ import { getSubjects } from '@/lib/actions/subjects';
 import { SubjectList } from '@/components/features/subjects/subject-list';
 import { SubjectDialog } from '@/components/features/subjects/subject-dialog';
 
+interface SubjectRow {
+  id: string;
+  name: string;
+  description?: string | null;
+  created_at?: string;
+  progress_percentage?: number;
+  [key: string]: unknown;
+}
+
 export default function SubjectsPage() {
-  const [subjects, setSubjects] = useState<any[]>([]);
-  const [filteredSubjects, setFilteredSubjects] = useState<any[]>([]);
+  const [subjects, setSubjects] = useState<SubjectRow[]>([]);
+  const [filteredSubjects, setFilteredSubjects] = useState<SubjectRow[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingSubject, setEditingSubject] = useState<any>(null);
+  const [editingSubject, setEditingSubject] = useState<SubjectRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAprobadas, setShowAprobadas] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,6 +34,7 @@ export default function SubjectsPage() {
 
   useEffect(() => {
     loadSubjects();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only reload when showAprobadas changes
   }, [showAprobadas]);
 
   // Aplicar búsqueda y ordenamiento
@@ -120,7 +130,7 @@ export default function SubjectsPage() {
           
           <select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
+            onChange={(e) => setSortBy((e.target as HTMLSelectElement).value as 'fecha' | 'nombre' | 'progreso')}
             className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
           >
             <option value="fecha">Ordenar por Fecha</option>

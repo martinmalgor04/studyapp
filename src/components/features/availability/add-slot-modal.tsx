@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { AvailabilitySlot } from '@/lib/validations/availability';
-import { WEEKDAYS_FULL } from '@/lib/utils/calendar-helpers';
 
 interface AddSlotModalProps {
   isOpen: boolean;

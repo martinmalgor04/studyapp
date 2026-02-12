@@ -181,6 +181,7 @@ export function UnifiedCalendar({
   onStatusChange,
   onReschedule,
 }: UnifiedCalendarProps) {
+  void onReschedule; // Reserved for future reschedule from calendar
   const [view, setView] = useState<'week' | '2weeks' | 'month'>(defaultView);
   const [weekOffset, setWeekOffset] = useState(0);
   const [twoWeekOffset, setTwoWeekOffset] = useState(0);

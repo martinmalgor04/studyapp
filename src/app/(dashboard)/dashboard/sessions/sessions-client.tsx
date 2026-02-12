@@ -11,13 +11,26 @@ interface SessionsClientProps {
   userId: string;
 }
 
+interface SessionWithRelations {
+  id: string;
+  scheduled_at: string;
+  duration_minutes: number | null;
+  status: string;
+  priority: string | null;
+  topic?: { name: string; difficulty: string } | null;
+  subject?: { name: string } | null;
+  subject_id?: string;
+  [key: string]: unknown;
+}
+
 export function SessionsClient({ userId }: SessionsClientProps) {
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [filteredSessions, setFilteredSessions] = useState<any[]>([]);
-  const [subjects, setSubjects] = useState<any[]>([]);
+  void userId; // Reserved for future use (e.g. filtering by user)
+  const [sessions, setSessions] = useState<SessionWithRelations[]>([]);
+  const [filteredSessions, setFilteredSessions] = useState<SessionWithRelations[]>([]);
+  const [subjects, setSubjects] = useState<Array<{ id: string; name: string }>>([]);
   const [filters, setFilters] = useState<{ status?: string; priority?: string; subjectId?: string }>({});
   const [loading, setLoading] = useState(true);
-  const [rescheduleSession, setRescheduleSession] = useState<any>(null);
+  const [rescheduleSession, setRescheduleSession] = useState<SessionWithRelations | null>(null);
 
   const loadData = async () => {
     setLoading(true);

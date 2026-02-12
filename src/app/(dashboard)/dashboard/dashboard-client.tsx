@@ -16,9 +16,9 @@ interface DashboardClientProps {
 export function DashboardClient({ userName }: DashboardClientProps) {
   const [data, setData] = useState<{
     stats: { subjects: number; exams: number; topics: number; upcomingExams: number; todaySessions: number };
-    subjects: any[];
-    topics: any[];
-    sessions: any[];
+    subjects: Array<{ id: string; name: string; description?: string | null; created_at?: string | null; topics_count?: number; exams_count?: number }>;
+    topics: Array<Record<string, unknown>>;
+    sessions: Array<Record<string, unknown>>;
   } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -101,7 +101,7 @@ export function DashboardClient({ userName }: DashboardClientProps) {
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-6">
           <h3 className="font-semibold text-blue-900">¿Por dónde empezar?</h3>
           <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-blue-800">
-            <li>Creá una <strong>materia</strong> haciendo click en "Materias" en el menú</li>
+            <li>Creá una <strong>materia</strong> haciendo click en &quot;Materias&quot; en el menú</li>
             <li>Agregá los <strong>exámenes</strong> de esa materia con sus fechas</li>
             <li>Registrá los <strong>temas</strong> a medida que vas teniendo clases</li>
             <li>El sistema generará automáticamente tus <strong>sesiones de repaso</strong></li>

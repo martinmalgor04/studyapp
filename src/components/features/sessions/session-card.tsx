@@ -5,9 +5,10 @@ import { updateSessionStatus, deleteSession, completeSessionWithRating, startSes
 import { CompleteSessionDialog } from './complete-session-dialog';
 import { StudyModeDialog } from './study-mode-dialog';
 
-// Helper para confirm
-// @ts-ignore - window exists in client components
-const safeConfirm = (message: string) => window.confirm(message);
+const safeConfirm = (message: string): boolean => {
+  if (typeof window !== 'undefined') return window.confirm(message);
+  return false;
+};
 
 type Priority = 'CRITICAL' | 'URGENT' | 'IMPORTANT' | 'NORMAL' | 'LOW';
 type SessionStatus = 'PENDING' | 'COMPLETED' | 'RESCHEDULED' | 'ABANDONED';
@@ -24,7 +25,7 @@ interface SessionCardProps {
     number: number;
   };
   onStatusChange: () => void;
-  onReschedule: (session: any) => void;
+  onReschedule: (session: SessionCardProps['session']) => void;
 }
 
 const PRIORITY_CONFIG = {

@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { saveOnboardingAvailability } from '@/lib/actions/onboarding';
-import { importAvailabilityFromGoogleCalendar } from '@/lib/actions/availability';
 import { connectGoogleCalendar } from '@/lib/actions/google-calendar';
 
 type Shift = 'MORNING' | 'AFTERNOON' | 'NIGHT';
@@ -57,7 +56,7 @@ export default function OnboardingPage() {
       // La redirección de OAuth traerá al usuario de vuelta,
       // y en el callback detectaremos que viene del onboarding
       // y ejecutaremos importAvailabilityFromGoogleCalendar()
-    } catch (err) {
+    } catch {
       setError('Error al conectar con Google Calendar');
       setSaving(false);
     }

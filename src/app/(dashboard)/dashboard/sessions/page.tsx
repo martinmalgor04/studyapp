@@ -3,7 +3,7 @@ import { SessionsClient } from './sessions-client';
 
 export default async function SessionsPage() {
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.getUser();
+  const { data } = await supabase.auth.getUser();
   
   if (!data?.user) {
     // Redirect if no user

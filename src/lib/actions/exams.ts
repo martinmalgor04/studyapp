@@ -191,7 +191,7 @@ export async function updateExam(id: string, input: UpdateExamInput) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || (exam.subjects as any).user_id !== user.id) {
+  if (!user || (exam.subjects as { user_id: string }).user_id !== user.id) {
     return {
       error: 'No autorizado',
     };
@@ -238,7 +238,7 @@ export async function deleteExam(id: string) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || (exam.subjects as any).user_id !== user.id) {
+  if (!user || (exam.subjects as { user_id: string }).user_id !== user.id) {
     return {
       error: 'No autorizado',
     };

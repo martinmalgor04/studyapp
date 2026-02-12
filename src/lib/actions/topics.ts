@@ -181,7 +181,7 @@ export async function updateTopic(id: string, input: UpdateTopicInput) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || (topic.subjects as any).user_id !== user.id) {
+  if (!user || (topic.subjects as { user_id: string }).user_id !== user.id) {
     return {
       error: 'No autorizado',
     };
@@ -235,7 +235,7 @@ export async function deleteTopic(id: string) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || (topic.subjects as any).user_id !== user.id) {
+  if (!user || (topic.subjects as { user_id: string }).user_id !== user.id) {
     return {
       error: 'No autorizado',
     };

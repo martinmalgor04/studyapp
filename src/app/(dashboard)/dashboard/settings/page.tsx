@@ -4,10 +4,13 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getUserSettings, updateUserSettings } from '@/lib/actions/notifications';
 import { connectGoogleCalendar, disconnectGoogleCalendar, isGoogleCalendarConnected, syncSessionsToGoogleCalendar } from '@/lib/actions/google-calendar';
+import type { Database } from '@/types/database.types';
+
+type UserSettingsRow = Database['public']['Tables']['user_settings']['Row'] | null;
 
 export default function SettingsPage() {
   const searchParams = useSearchParams();
-  const [settings, setSettings] = useState<any>(null);
+  const [settings, setSettings] = useState<UserSettingsRow>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -36,20 +39,19 @@ export default function SettingsPage() {
   }, [searchParams]);
 
   const handleToggle = (field: string, value: boolean) => {
-    setSettings((prev: any) => ({ ...prev, [field]: value }));
+    setSettings((prev) => (prev ? { ...prev, [field]: value } : prev));
   };
 
   const handleConnectGoogle = async () => {
     try {
       await connectGoogleCalendar();
-    } catch (err) {
+    } catch {
       setError('Error al conectar con Google Calendar');
     }
   };
 
   const handleDisconnectGoogle = async () => {
-    // @ts-ignore
-    if (!confirm('¿Desconectar Google Calendar? Se eliminarán los eventos sincronizados.')) return;
+    if (typeof window !== 'undefined' && !window.confirm('¿Desconectar Google Calendar? Se eliminarán los eventos sincronizados.')) return;
     
     const result = await disconnectGoogleCalendar();
     if (result.error) {

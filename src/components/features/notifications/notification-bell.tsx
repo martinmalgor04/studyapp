@@ -5,7 +5,7 @@ import { getNotifications, markAllNotificationsAsRead } from '@/lib/actions/noti
 import { NotificationItem } from './notification-item';
 
 export function NotificationBell() {
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Array<{ id: string; title?: string; body?: string; read: boolean; created_at: string; [key: string]: unknown }>>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(true);

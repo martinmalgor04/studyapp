@@ -131,7 +131,7 @@ export class GoogleCalendarService {
     let errors = 0;
 
     for (const session of sessions) {
-      const eventId = await this.createEventForSession(tokens, session as any);
+      const eventId = await this.createEventForSession(tokens, session as { id: string; scheduled_at: string; duration_minutes: number | null; topic?: { name: string } | null; subject?: { name: string } | null });
       if (eventId) {
         synced++;
         
@@ -241,7 +241,7 @@ export class GoogleCalendarService {
       this.oauth2Client.setCredentials(tokens);
       const calendar = google.calendar({ version: 'v3', auth: this.oauth2Client });
 
-      const requestBody: any = {};
+      const requestBody: { summary?: string; colorId?: string; start?: { dateTime: string; timeZone: string }; end?: { dateTime: string; timeZone: string } } = {};
 
       if (updates.summary) {
         requestBody.summary = updates.summary;
