@@ -9,8 +9,26 @@ import {
   type UpdateSubjectInput,
 } from '@/lib/validations/subjects';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getSupabase = async () => await createClient() as any;
+
+interface SubjectRow {
+  id: string;
+  name: string;
+  description: string | null;
+  year: number | null;
+  semester: number | null;
+  status: string;
+  professors: string[] | null;
+  schedule: unknown;
+  user_id: string;
+  is_active: boolean;
+  created_at: string;
+  sessions?: Array<{ id: string; status: string }>;
+}
+
 export async function getSubjects(includeAprobadas: boolean = false) {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
 
   let query = supabase
     .from('subjects')
@@ -25,7 +43,7 @@ export async function getSubjects(includeAprobadas: boolean = false) {
     query = query.neq('status', 'APROBADA');
   }
 
-  const { data: subjects, error } = await query.order('created_at', { ascending: false });
+  const { data: subjects, error } = await query.order('created_at', { ascending: false }) as { data: SubjectRow[] | null; error: unknown };
 
   if (error) {
     console.error('Error fetching subjects:', error);
@@ -33,12 +51,12 @@ export async function getSubjects(includeAprobadas: boolean = false) {
   }
 
   // Calcular progreso para cada materia
-  const subjectsWithProgress = subjects?.map(subject => {
-    const sessions = (subject as { sessions?: Array<{ status: string }> }).sessions || [];
+  const subjectsWithProgress = subjects?.map((subject: SubjectRow) => {
+    const sessions = subject.sessions || [];
     const totalSessions = sessions.length;
-    const completedSessions = sessions.filter((s: { status: string }) => s.status === 'COMPLETED').length;
-    const progressPercentage = totalSessions > 0 
-      ? Math.round((completedSessions / totalSessions) * 100) 
+    const completedSessions = sessions.filter((s) => s.status === 'COMPLETED').length;
+    const progressPercentage = totalSessions > 0
+      ? Math.round((completedSessions / totalSessions) * 100)
       : 0;
 
     return {
@@ -54,7 +72,7 @@ export async function getSubjects(includeAprobadas: boolean = false) {
 }
 
 export async function getSubject(id: string) {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
 
   const { data: subject, error } = await supabase
     .from('subjects')
@@ -70,8 +88,8 @@ export async function getSubject(id: string) {
   return subject;
 }
 
-export async function createSubject(input: CreateSubjectInput) {
-  const supabase = await createClient();
+export async function createSubject(input: CreateSubjectInput): Promise<{ error?: string; data?: { id: string; name: string } }> {
+  const supabase = await getSupabase();
 
   // Validar input
   const validationResult = createSubjectSchema.safeParse(input);
@@ -116,11 +134,11 @@ export async function createSubject(input: CreateSubjectInput) {
   }
 
   revalidatePath('/dashboard/subjects');
-  return { data };
+  return { data: data as { id: string; name: string } };
 }
 
 export async function updateSubject(id: string, input: UpdateSubjectInput) {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
 
   // Validar input
   const validationResult = updateSubjectSchema.safeParse(input);
@@ -156,7 +174,7 @@ export async function updateSubject(id: string, input: UpdateSubjectInput) {
 }
 
 export async function deleteSubject(id: string) {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
 
   // Soft delete (marcar como inactivo)
   const { error } = await supabase.from('subjects').update({ is_active: false }).eq('id', id);
@@ -177,7 +195,7 @@ export async function deleteSubject(id: string) {
  * Marca todas las sesiones PENDING como ABANDONED
  */
 export async function setSubjectLibre(subjectId: string) {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
 
   // 1. Marcar sesiones PENDING como ABANDONED
   const { error: sessionsError } = await supabase

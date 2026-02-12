@@ -14,13 +14,15 @@ interface SessionsClientProps {
 interface SessionWithRelations {
   id: string;
   scheduled_at: string;
-  duration_minutes: number | null;
+  duration_minutes?: number | null;
+  duration: number;
+  number: number;
   status: string;
-  priority: string | null;
-  topic?: { name: string; difficulty: string } | null;
+  priority: string;
+  topic?: { id: string; name: string; difficulty?: string };
   subject?: { name: string } | null;
   subject_id?: string;
-  [key: string]: unknown;
+  topic_id?: string;
 }
 
 export function SessionsClient({ userId }: SessionsClientProps) {

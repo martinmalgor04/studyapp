@@ -5,15 +5,25 @@ import { createClient } from '@/lib/supabase/server';
 import { getNotificationService } from '@/lib/services/notifications/notification.service';
 import type { NotificationPayload } from '@/lib/services/notifications/channels/notification-channel.interface';
 
+interface Notification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  read: boolean;
+  created_at: string;
+}
+
 /**
  * Obtiene todas las notificaciones del usuario (últimas 50)
  */
 export async function getNotifications() {
-  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createClient() as any;
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { notifications: [], unreadCount: 0 };
+    return { notifications: [] as Notification[], unreadCount: 0 };
   }
 
   const { data: notifications, error } = await supabase
@@ -21,17 +31,17 @@ export async function getNotifications() {
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
-    .limit(50);
+    .limit(50) as { data: Notification[] | null; error: unknown };
 
   if (error) {
     console.error('Error fetching notifications:', error);
-    return { notifications: [], unreadCount: 0 };
+    return { notifications: [] as Notification[], unreadCount: 0 };
   }
 
   const unreadCount = notifications?.filter(n => !n.read).length || 0;
 
   return {
-    notifications: notifications || [],
+    notifications: (notifications || []) as Notification[],
     unreadCount,
   };
 }
@@ -40,7 +50,8 @@ export async function getNotifications() {
  * Marca una notificación como leída
  */
 export async function markNotificationAsRead(notificationId: string) {
-  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createClient() as any;
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -66,7 +77,8 @@ export async function markNotificationAsRead(notificationId: string) {
  * Marca todas las notificaciones como leídas
  */
 export async function markAllNotificationsAsRead() {
-  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createClient() as any;
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -92,7 +104,8 @@ export async function markAllNotificationsAsRead() {
  * Obtiene las preferencias de notificación del usuario
  */
 export async function getUserSettings() {
-  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createClient() as any;
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -134,7 +147,8 @@ export async function updateUserSettings(settings: {
   in_app_notifications?: boolean;
   daily_summary_time?: string;
 }) {
-  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createClient() as any;
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {

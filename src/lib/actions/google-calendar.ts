@@ -31,7 +31,8 @@ export async function disconnectGoogleCalendar() {
     return { error: 'No autenticado' };
   }
 
-  const { error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
     .from('user_settings')
     .update({
       google_access_token: null,
@@ -60,11 +61,12 @@ export async function isGoogleCalendarConnected() {
     return false;
   }
 
-  const { data: settings } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: settings } = await (supabase as any)
     .from('user_settings')
     .select('google_calendar_enabled, google_access_token')
     .eq('user_id', user.id)
-    .single();
+    .single() as { data: { google_calendar_enabled?: boolean; google_access_token?: string } | null };
 
   return !!(settings?.google_calendar_enabled && settings?.google_access_token);
 }

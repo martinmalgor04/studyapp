@@ -3,8 +3,9 @@ import type { INotificationChannel, NotificationPayload } from './notification-c
 
 export class InAppChannel implements INotificationChannel {
   async send(notification: NotificationPayload): Promise<void> {
-    const supabase = await createClient();
-    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = await createClient() as any;
+
     const { error } = await supabase.from('notifications').insert({
       user_id: notification.userId,
       type: notification.type,

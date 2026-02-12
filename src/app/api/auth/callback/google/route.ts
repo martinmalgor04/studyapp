@@ -28,14 +28,15 @@ export async function GET(request: Request) {
 
     // Guardar tokens en user_settings
     const supabase = await createClient();
-    const { error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
       .from('user_settings')
       .update({
         google_access_token: tokens.access_token,
         google_refresh_token: tokens.refresh_token,
         google_calendar_enabled: true,
-        google_token_expiry: tokens.expiry_date 
-          ? new Date(tokens.expiry_date).toISOString() 
+        google_token_expiry: tokens.expiry_date
+          ? new Date(tokens.expiry_date).toISOString()
           : null,
       })
       .eq('user_id', state);

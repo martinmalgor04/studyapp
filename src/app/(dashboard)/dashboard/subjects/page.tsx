@@ -8,10 +8,9 @@ import { SubjectDialog } from '@/components/features/subjects/subject-dialog';
 interface SubjectRow {
   id: string;
   name: string;
-  description?: string | null;
-  created_at?: string;
+  description: string | null;
+  created_at: string;
   progress_percentage?: number;
-  [key: string]: unknown;
 }
 
 export default function SubjectsPage() {
@@ -56,7 +55,7 @@ export default function SubjectsPage() {
       filtered.sort((a, b) => (b.progress_percentage || 0) - (a.progress_percentage || 0));
     } else {
       // Por fecha (default)
-      filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      filtered.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
     }
 
     setFilteredSubjects(filtered);
@@ -64,7 +63,7 @@ export default function SubjectsPage() {
 
   const handleEdit = async (id: string) => {
     const subject = subjects.find((s) => s.id === id);
-    setEditingSubject(subject);
+    setEditingSubject(subject ?? null);
     setIsDialogOpen(true);
   };
 
@@ -156,7 +155,7 @@ export default function SubjectsPage() {
       <SubjectDialog
         isOpen={isDialogOpen}
         onClose={handleCloseDialog}
-        subject={editingSubject}
+        subject={editingSubject ?? undefined}
       />
     </div>
   );

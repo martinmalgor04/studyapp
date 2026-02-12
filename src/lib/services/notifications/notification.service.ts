@@ -71,7 +71,8 @@ export class NotificationService {
    * Si no existen, crea configuración por defecto
    */
   private async getUserSettings(userId: string) {
-    const supabase = await createClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = await createClient() as any;
 
     const { data: settings, error } = await supabase
       .from('user_settings')

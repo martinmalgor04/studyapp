@@ -1,10 +1,20 @@
 import { google } from 'googleapis';
 import { createClient } from '@/lib/supabase/server';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getSupabase = async () => await createClient() as any;
+
 interface GoogleTokens {
   access_token: string;
   refresh_token?: string;
   expiry_date?: number;
+}
+
+interface UserSettings {
+  google_access_token: string | null;
+  google_refresh_token: string | null;
+  google_token_expiry: string | null;
+  google_calendar_enabled: boolean | null;
 }
 
 interface Session {
@@ -87,14 +97,14 @@ export class GoogleCalendarService {
    * Sincroniza todas las sesiones pendientes de un usuario a Google Calendar
    */
   async syncSessions(userId: string): Promise<{ synced: number; errors: number }> {
-    const supabase = await createClient();
+    const supabase = await getSupabase();
 
     // Obtener tokens
     const { data: settings } = await supabase
       .from('user_settings')
       .select('google_access_token, google_refresh_token, google_token_expiry')
       .eq('user_id', userId)
-      .single();
+      .single() as { data: UserSettings | null };
 
     if (!settings?.google_access_token) {
       return { synced: 0, errors: 0 };
@@ -103,8 +113,8 @@ export class GoogleCalendarService {
     const tokens: GoogleTokens = {
       access_token: settings.google_access_token,
       refresh_token: settings.google_refresh_token || undefined,
-      expiry_date: settings.google_token_expiry 
-        ? new Date(settings.google_token_expiry).getTime() 
+      expiry_date: settings.google_token_expiry
+        ? new Date(settings.google_token_expiry).getTime()
         : undefined,
     };
 
@@ -131,7 +141,15 @@ export class GoogleCalendarService {
     let errors = 0;
 
     for (const session of sessions) {
-      const eventId = await this.createEventForSession(tokens, session as { id: string; scheduled_at: string; duration_minutes: number | null; topic?: { name: string } | null; subject?: { name: string } | null });
+      const mappedSession: Session = {
+        id: session.id,
+        scheduled_at: session.scheduled_at,
+        duration: session.duration || 30,
+        topic: { name: session.topic?.name || 'Sin tema' },
+        subject: { name: session.subject?.name || 'Sin materia' },
+        number: session.number || 1,
+      };
+      const eventId = await this.createEventForSession(tokens, mappedSession);
       if (eventId) {
         synced++;
         
@@ -279,13 +297,13 @@ export class GoogleCalendarService {
    * Verifica si el usuario tiene Google Calendar conectado
    */
   async isConnected(userId: string): Promise<boolean> {
-    const supabase = await createClient();
+    const supabase = await getSupabase();
 
     const { data: settings } = await supabase
       .from('user_settings')
       .select('google_access_token, google_calendar_enabled')
       .eq('user_id', userId)
-      .single();
+      .single() as { data: UserSettings | null };
 
     return !!(settings?.google_access_token && settings?.google_calendar_enabled !== false);
   }

@@ -7,10 +7,11 @@ interface StudyModeDialogProps {
   isOpen: boolean;
   session: {
     id: string;
-    topic: { name: string };
-    subject: { name: string };
-    number: number;
-    duration: number;
+    topic?: { name: string } | null;
+    subject?: { name: string } | null;
+    number?: number;
+    duration?: number | null;
+    duration_minutes?: number | null;
   } | null;
   onComplete: () => void;
   onIncomplete: (actualMinutes: number) => void;
@@ -28,6 +29,8 @@ export function StudyModeDialog({
 
   if (!isOpen || !session) return null;
 
+  const duration = session.duration ?? session.duration_minutes ?? 30;
+
   const handleStudyComplete = () => {
     // El timer terminó un pomodoro
     console.log('Pomodoro cycle completed');
@@ -35,7 +38,7 @@ export function StudyModeDialog({
 
   const handleEndSession = (totalMinutes: number) => {
     // Usuario terminó antes
-    if (totalMinutes >= session.duration) {
+    if (totalMinutes >= duration) {
       // Estudió todo el tiempo planeado o más
       onComplete();
     } else {
@@ -59,12 +62,12 @@ export function StudyModeDialog({
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <p className="text-sm text-gray-600">{session.subject.name}</p>
+            <p className="text-sm text-gray-600">{session.subject?.name ?? 'Sin materia'}</p>
             <h1 className="text-3xl font-bold text-gray-900">
-              {session.topic.name} - R{session.number}
+              {session.topic?.name ?? 'Sin tema'} - R{session.number ?? 1}
             </h1>
             <p className="mt-1 text-sm text-gray-600">
-              Duración estimada: {session.duration} minutos
+              Duración estimada: {duration} minutos
             </p>
           </div>
           <button
@@ -87,7 +90,7 @@ export function StudyModeDialog({
         {/* Timer Central */}
         <div className="flex justify-center">
           <PomodoroTimer
-            studyMinutes={Math.min(session.duration, 50)} // Max 50min por pomodoro
+            studyMinutes={Math.min(duration, 50)} // Max 50min por pomodoro
             breakMinutes={5}
             onStudyComplete={handleStudyComplete}
             onSessionEnd={handleEndSession}

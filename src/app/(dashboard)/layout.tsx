@@ -24,7 +24,8 @@ export default async function DashboardLayout({
     .single();
 
   // Si no completó onboarding, redirigir
-  if (!settings || !settings.onboarding_completed) {
+  const settingsData = settings as { onboarding_completed: boolean } | null;
+  if (!settingsData || !settingsData.onboarding_completed) {
     redirect('/onboarding');
   }
 

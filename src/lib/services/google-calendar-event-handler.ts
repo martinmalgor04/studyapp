@@ -5,13 +5,16 @@
  * Se ejecuta automáticamente cuando se completan, abandonan o reagendan sesiones
  */
 
-import { 
-  ISessionEventHandler, 
-  SessionCompletedEvent, 
-  SessionAbandonedEvent 
+import {
+  ISessionEventHandler,
+  SessionCompletedEvent,
+  SessionAbandonedEvent
 } from './session-events';
 import { getGoogleCalendarService } from './google-calendar.service';
 import { createClient } from '@/lib/supabase/server';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getSupabase = async () => await createClient() as any;
 
 interface GoogleTokens {
   access_token: string;
@@ -19,17 +22,23 @@ interface GoogleTokens {
   expiry_date?: number;
 }
 
+interface UserSettings {
+  google_access_token: string | null;
+  google_refresh_token: string | null;
+  google_token_expiry: string | null;
+}
+
 /**
  * Obtiene tokens de Google Calendar del usuario
  */
 async function getGoogleTokens(userId: string): Promise<GoogleTokens | null> {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
 
   const { data: settings } = await supabase
     .from('user_settings')
     .select('google_access_token, google_refresh_token, google_token_expiry')
     .eq('user_id', userId)
-    .single();
+    .single() as { data: UserSettings | null };
 
   if (!settings?.google_access_token) {
     return null;
@@ -38,8 +47,8 @@ async function getGoogleTokens(userId: string): Promise<GoogleTokens | null> {
   return {
     access_token: settings.google_access_token,
     refresh_token: settings.google_refresh_token || undefined,
-    expiry_date: settings.google_token_expiry 
-      ? new Date(settings.google_token_expiry).getTime() 
+    expiry_date: settings.google_token_expiry
+      ? new Date(settings.google_token_expiry).getTime()
       : undefined,
   };
 }
@@ -48,7 +57,7 @@ async function getGoogleTokens(userId: string): Promise<GoogleTokens | null> {
  * Obtiene una sesión de la base de datos
  */
 async function getSessionById(sessionId: string) {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
 
   const { data: session } = await supabase
     .from('sessions')

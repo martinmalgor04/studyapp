@@ -42,7 +42,7 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
       semester: subject?.semester || undefined,
       status: subject?.status || 'CURSANDO',
       professors: subject?.professors || [],
-      schedule: subject?.schedule || [],
+      schedule: (Array.isArray(subject?.schedule) ? subject.schedule : []) as CreateSubjectInput['schedule'],
     },
   });
 

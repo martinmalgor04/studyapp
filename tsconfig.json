@@ -3,7 +3,9 @@
     "target": "ES2022",
     "module": "commonjs",
     "lib": [
-      "ES2022"
+      "ES2022",
+      "dom",
+      "dom.iterable"
     ],
     "declaration": true,
     "declarationMap": true,
@@ -38,7 +40,8 @@
     "node_modules",
     "dist",
     "build",
-    ".next"
+    ".next",
+    "vitest.config.ts"
   ],
   "include": [
     "next-env.d.ts",

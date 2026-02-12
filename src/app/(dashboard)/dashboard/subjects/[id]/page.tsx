@@ -22,20 +22,31 @@ interface SubjectRow {
 interface ExamRow {
   id: string;
   date: string;
-  type: string;
-  [key: string]: unknown;
+  type: 'PARCIAL_THEORY' | 'FINAL_THEORY' | 'PARCIAL_PRACTICE' | 'RECUPERATORIO_THEORY' | 'RECUPERATORIO_PRACTICE' | 'FINAL_PRACTICE' | 'TP';
+  number: number | null;
+  description: string | null;
 }
 
 interface TopicRow {
   id: string;
   name: string;
-  [key: string]: unknown;
+  description: string | null;
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  hours: number;
+  source: 'CLASS' | 'FREE_STUDY' | 'PROGRAM';
+  source_date: string | null;
+  exam_id: string | null;
 }
 
 interface SessionRow {
   id: string;
   scheduled_at: string;
-  [key: string]: unknown;
+  number: number;
+  duration: number;
+  priority: string;
+  status: string;
+  topic?: { id: string; name: string };
+  topic_id?: string;
 }
 
 interface PageProps {
@@ -77,7 +88,7 @@ export default function SubjectDetailPage({ params }: PageProps) {
 
   const handleEditExam = async (id: string) => {
     const exam = exams.find((e) => e.id === id);
-    setEditingExam(exam);
+    setEditingExam(exam ?? null);
     setIsExamDialogOpen(true);
   };
 
@@ -98,7 +109,7 @@ export default function SubjectDetailPage({ params }: PageProps) {
 
   const handleEditTopic = async (id: string) => {
     const topic = topics.find((t) => t.id === id);
-    setEditingTopic(topic);
+    setEditingTopic(topic ?? null);
     setIsTopicDialogOpen(true);
   };
 
@@ -199,7 +210,7 @@ export default function SubjectDetailPage({ params }: PageProps) {
         isOpen={isExamDialogOpen}
         onClose={handleCloseExamDialog}
         subjectId={params.id}
-        exam={editingExam}
+        exam={editingExam ?? undefined}
       />
 
       <TopicDialog
@@ -207,7 +218,7 @@ export default function SubjectDetailPage({ params }: PageProps) {
         onClose={handleCloseTopicDialog}
         subjectId={params.id}
         exams={exams}
-        topic={editingTopic}
+        topic={editingTopic ?? undefined}
       />
     </div>
   );

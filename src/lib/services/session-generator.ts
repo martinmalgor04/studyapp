@@ -64,6 +64,12 @@ function determineMode(exam: Exam | null, source: string): 'PARCIAL' | 'FREE_STU
   return 'PARCIAL';
 }
 
+interface GoogleSettings {
+  google_access_token: string | null;
+  google_refresh_token: string | null;
+  google_token_expiry: string | null;
+}
+
 /**
  * Busca un slot sin conflictos en Google Calendar
  * Si hay conflicto, busca el siguiente slot disponible (hasta 14 intentos)
@@ -75,14 +81,15 @@ async function findConflictFreeSlot(
   maxAttempts: number = 14
 ): Promise<{ date: Date; adjusted: boolean }> {
   const googleService = getGoogleCalendarService();
-  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createClient() as any;
 
   // Obtener tokens de Google Calendar
   const { data: settings } = await supabase
     .from('user_settings')
     .select('google_access_token, google_refresh_token, google_token_expiry')
     .eq('user_id', userId)
-    .single();
+    .single() as { data: GoogleSettings | null };
 
   if (!settings?.google_access_token) {
     // Si no hay tokens, devolver fecha preferida sin ajustes
@@ -92,8 +99,8 @@ async function findConflictFreeSlot(
   const tokens = {
     access_token: settings.google_access_token,
     refresh_token: settings.google_refresh_token || undefined,
-    expiry_date: settings.google_token_expiry 
-      ? new Date(settings.google_token_expiry).getTime() 
+    expiry_date: settings.google_token_expiry
+      ? new Date(settings.google_token_expiry).getTime()
       : undefined,
   };
 

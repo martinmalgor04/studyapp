@@ -6,12 +6,13 @@ interface SessionWithTopicSubject {
   id: string;
   scheduled_at: string;
   duration_minutes?: number | null;
+  duration?: number | null;
   topic?: { id: string; name: string } | null;
   subject?: { id: string; name: string } | null;
   priority?: string | null;
   status: string;
   number?: number;
-  [key: string]: unknown;
+  topic_id?: string;
 }
 
 interface SessionListProps {

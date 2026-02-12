@@ -32,7 +32,7 @@ export function WeeklyScheduler({ initialSlots, onSave }: WeeklySchedulerProps) 
         day_of_week: slot.day_of_week,
         start_time: slot.start_time.substring(0, 5), // HH:MM
         end_time: slot.end_time.substring(0, 5),     // HH:MM
-        is_enabled: slot.is_enabled
+        is_enabled: slot.is_enabled ?? true
       });
     });
     return map;

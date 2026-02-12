@@ -42,6 +42,10 @@ export default function SettingsPage() {
     setSettings((prev) => (prev ? { ...prev, [field]: value } : prev));
   };
 
+  const handleTimeChange = (field: string, value: string) => {
+    setSettings((prev) => (prev ? { ...prev, [field]: value } : prev));
+  };
+
   const handleConnectGoogle = async () => {
     try {
       await connectGoogleCalendar();
@@ -80,15 +84,17 @@ export default function SettingsPage() {
   };
 
   const handleSave = async () => {
+    if (!settings) return;
+
     setSaving(true);
     setError(null);
     setSuccess(false);
 
     const result = await updateUserSettings({
-      email_notifications: settings.email_notifications,
-      telegram_notifications: settings.telegram_notifications,
-      in_app_notifications: settings.in_app_notifications,
-      daily_summary_time: settings.daily_summary_time,
+      email_notifications: settings.email_notifications ?? undefined,
+      telegram_notifications: settings.telegram_notifications ?? undefined,
+      in_app_notifications: settings.in_app_notifications ?? undefined,
+      daily_summary_time: settings.daily_summary_time ?? undefined,
     });
 
     if (result.error) {
@@ -222,7 +228,7 @@ export default function SettingsPage() {
               <input
                 type="time"
                 value={settings?.daily_summary_time?.substring(0, 5) || '08:00'}
-                onChange={(e) => handleToggle('daily_summary_time', e.target.value + ':00')}
+                onChange={(e) => handleTimeChange('daily_summary_time', e.target.value + ':00')}
                 className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
               />
             </div>

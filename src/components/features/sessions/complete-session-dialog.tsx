@@ -4,8 +4,8 @@ interface CompleteSessionDialogProps {
   isOpen: boolean;
   session: {
     id: string;
-    topic: { name: string };
-    number: number;
+    topic?: { name: string } | null;
+    number?: number;
   } | null;
   onComplete: (sessionId: string, rating: 'EASY' | 'NORMAL' | 'HARD') => Promise<void>;
   onClose: () => void;
@@ -31,7 +31,7 @@ export function CompleteSessionDialog({ isOpen, session, onComplete, onClose }: 
             ¡Excelente trabajo!
           </h2>
           <p className="mb-6 text-center text-gray-600">
-            Completaste: <span className="font-semibold">{session.topic.name} - R{session.number}</span>
+            Completaste: <span className="font-semibold">{session.topic?.name ?? 'Tema'} - R{session.number ?? 1}</span>
           </p>
 
           <h3 className="mb-4 text-center text-lg font-medium text-gray-900">

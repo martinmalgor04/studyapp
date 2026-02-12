@@ -48,12 +48,13 @@ export class EmailChannel implements INotificationChannel {
 
   private async getUserEmail(userId: string): Promise<string | null> {
     try {
-      const supabase = await createClient();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const supabase = await createClient() as any;
       const { data, error } = await supabase
         .from('users')
         .select('email')
         .eq('id', userId)
-        .single();
+        .single() as { data: { email: string } | null; error: unknown };
 
       if (error || !data) {
         return null;

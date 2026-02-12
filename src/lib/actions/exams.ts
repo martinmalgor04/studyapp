@@ -77,7 +77,8 @@ export async function createExam(input: CreateExamInput) {
   }
 
   // Crear exam
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
     .from('exams')
     .insert({
       subject_id: validationResult.data.subject_id,
@@ -102,7 +103,8 @@ export async function createExam(input: CreateExamInput) {
     await convertTopicsToFinal(data.id, data.subject_id);
     
     // Cambiar estado de materia a REGULAR automáticamente
-    await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
       .from('subjects')
       .update({ status: 'REGULAR' })
       .eq('id', data.subject_id);
@@ -121,13 +123,14 @@ export async function createExam(input: CreateExamInput) {
  * - Regenera sesiones en modo countdown
  */
 async function convertTopicsToFinal(finalExamId: string, subjectId: string) {
-  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createClient() as any;
 
   // 1. Obtener todos los topics de la materia
   const { data: topics, error: topicsError } = await supabase
     .from('topics')
     .select('id, exam_id')
-    .eq('subject_id', subjectId);
+    .eq('subject_id', subjectId) as { data: Array<{ id: string; exam_id: string | null }> | null; error: unknown };
 
   if (topicsError || !topics || topics.length === 0) {
     console.warn('No topics found to convert or error:', topicsError);
@@ -163,7 +166,8 @@ async function convertTopicsToFinal(finalExamId: string, subjectId: string) {
 }
 
 export async function updateExam(id: string, input: UpdateExamInput) {
-  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createClient() as any;
 
   // Validar input
   const validationResult = updateExamSchema.safeParse(input);
@@ -178,7 +182,7 @@ export async function updateExam(id: string, input: UpdateExamInput) {
     .from('exams')
     .select('subject_id, subjects!inner(user_id)')
     .eq('id', id)
-    .single();
+    .single() as { data: { subject_id: string; subjects: { user_id: string } } | null };
 
   if (!exam) {
     return {
@@ -218,14 +222,15 @@ export async function updateExam(id: string, input: UpdateExamInput) {
 }
 
 export async function deleteExam(id: string) {
-  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createClient() as any;
 
   // Obtener el exam para verificar permisos y subject_id
   const { data: exam } = await supabase
     .from('exams')
     .select('subject_id, subjects!inner(user_id)')
     .eq('id', id)
-    .single();
+    .single() as { data: { subject_id: string; subjects: { user_id: string } } | null };
 
   if (!exam) {
     return {

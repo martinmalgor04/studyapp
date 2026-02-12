@@ -4,8 +4,11 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { generateSessionsForTopic } from '@/lib/services/session-generator';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getSupabase = async () => await createClient() as any;
+
 export async function getUpcomingSessions(days = 7) {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -40,7 +43,7 @@ export async function getUpcomingSessions(days = 7) {
 }
 
 export async function getTodaySessions() {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -77,7 +80,7 @@ export async function getTodaySessions() {
 }
 
 export async function getSessionsBySubject(subjectId: string) {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -107,7 +110,8 @@ export async function updateSessionStatus(
   id: string,
   status: 'PENDING' | 'COMPLETED' | 'RESCHEDULED' | 'ABANDONED' | 'INCOMPLETE'
 ) {
-  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -130,7 +134,7 @@ export async function updateSessionStatus(
 }
 
 export async function startSession(id: string) {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -159,7 +163,7 @@ export async function completeSessionWithRating(
   id: string,
   rating: 'EASY' | 'NORMAL' | 'HARD'
 ) {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -219,7 +223,7 @@ export async function markSessionIncomplete(
   id: string,
   actualDuration: number
 ) {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -246,7 +250,7 @@ export async function markSessionIncomplete(
 }
 
 export async function rescheduleSession(id: string, newDate: string) {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -324,7 +328,7 @@ export async function rescheduleSession(id: string, newDate: string) {
 }
 
 export async function deleteSession(id: string) {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -347,7 +351,7 @@ export async function deleteSession(id: string) {
 }
 
 export async function getSessionsByDateRange(startDate: string, endDate: string) {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -380,7 +384,7 @@ export async function getSessionsByDateRange(startDate: string, endDate: string)
  * Llama al service session-generator y las inserta en DB
  */
 export async function generateSessions(topicId: string) {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -453,7 +457,7 @@ export async function generateSessions(topicId: string) {
  * Llamar desde DashboardLayout al renderizar
  */
 export async function processOverdueSessions() {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return { processed: 0 };

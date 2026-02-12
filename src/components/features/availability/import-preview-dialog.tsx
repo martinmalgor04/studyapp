@@ -12,6 +12,12 @@ interface ImportPreviewDialogProps {
 
 const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
+function calculateDuration(start: string, end: string): number {
+  const [startHour, startMin] = start.split(':').map(Number);
+  const [endHour, endMin] = end.split(':').map(Number);
+  return (endHour * 60 + endMin) - (startHour * 60 + startMin);
+}
+
 export function ImportPreviewDialog({
   slots,
   onConfirm,
@@ -70,7 +76,7 @@ export function ImportPreviewDialog({
                             {slot.start_time} - {slot.end_time}
                           </span>
                           <span className="ml-2 text-xs text-blue-700">
-                            ({this.calculateDuration(slot.start_time, slot.end_time)} min)
+                            ({calculateDuration(slot.start_time, slot.end_time)} min)
                           </span>
                         </div>
                       </div>

@@ -13,19 +13,22 @@ const safeConfirm = (message: string): boolean => {
 type Priority = 'CRITICAL' | 'URGENT' | 'IMPORTANT' | 'NORMAL' | 'LOW';
 type SessionStatus = 'PENDING' | 'COMPLETED' | 'RESCHEDULED' | 'ABANDONED';
 
+interface Session {
+  id: string;
+  topic?: { id: string; name: string } | null;
+  subject?: { id: string; name: string } | null;
+  scheduled_at: string;
+  duration?: number | null;
+  duration_minutes?: number | null;
+  priority?: Priority | string | null;
+  status: SessionStatus | string;
+  number?: number;
+}
+
 interface SessionCardProps {
-  session: {
-    id: string;
-    topic: { id: string; name: string };
-    subject: { id: string; name: string };
-    scheduled_at: string;
-    duration: number;
-    priority: Priority;
-    status: SessionStatus;
-    number: number;
-  };
+  session: Session;
   onStatusChange: () => void;
-  onReschedule: (session: SessionCardProps['session']) => void;
+  onReschedule: (session: Session) => void;
 }
 
 const PRIORITY_CONFIG = {
@@ -48,8 +51,12 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [showStudyMode, setShowStudyMode] = useState(false);
   
-  const priorityStyle = PRIORITY_CONFIG[session.priority];
-  const statusStyle = STATUS_CONFIG[session.status];
+  const priority = (session.priority as Priority) || 'NORMAL';
+  const status = (session.status as SessionStatus) || 'PENDING';
+  const duration = session.duration ?? session.duration_minutes ?? 30;
+
+  const priorityStyle = PRIORITY_CONFIG[priority];
+  const statusStyle = STATUS_CONFIG[status];
   
   const sessionDate = new Date(session.scheduled_at);
   const dateStr = sessionDate.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: 'short' });
@@ -84,11 +91,11 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
     
     // Marcar como INCOMPLETE con duración real
     const result = await updateSessionStatus(session.id, 'INCOMPLETE');
-    
+
     if (!result.error) {
       // Ofrecer reagendar el tiempo restante
-      const remaining = session.duration - actualMinutes;
-      if (remaining > 10 && safeConfirm(`Estudiaste ${actualMinutes} de ${session.duration} minutos. ¿Querés reagendar los ${remaining} minutos restantes?`)) {
+      const remaining = duration - actualMinutes;
+      if (remaining > 10 && safeConfirm(`Estudiaste ${actualMinutes} de ${duration} minutos. ¿Querés reagendar los ${remaining} minutos restantes?`)) {
         // Crear una nueva sesión con el tiempo restante
         // TODO: Implementar createPartialSession o usar reschedule modificado
         onReschedule(session);
@@ -139,13 +146,13 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
               <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
-              <span>{session.subject.name}</span>
+              <span>{session.subject?.name ?? 'Sin materia'}</span>
             </p>
             <h3 className="flex items-center gap-1 text-sm font-semibold text-gray-900 mt-1">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <span>{session.topic.name} - R{session.number}</span>
+              <span>{session.topic?.name ?? 'Sin tema'} - R{session.number ?? 1}</span>
             </h3>
           </div>
         </div>
@@ -161,13 +168,13 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            {session.duration} min
+            {duration} min
           </span>
         </div>
       </div>
 
       {/* Actions: Botones */}
-      {session.status === 'PENDING' && (
+      {status === 'PENDING' && (
         <div className="mt-4 flex gap-2">
           <button
             onClick={handleStartStudy}
@@ -200,7 +207,7 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
         </div>
       )}
 
-      {session.status === 'COMPLETED' && (
+      {status === 'COMPLETED' && (
         <div className="mt-4 flex gap-2">
           <button
             onClick={handleIncomplete}

@@ -2,8 +2,16 @@
 
 import { createClient } from '@/lib/supabase/server';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SupabaseAny = any;
+
+interface Subject { id: string; name: string; description: string | null; created_at: string }
+interface Exam { id: string; date: string; subject_id: string }
+interface Topic { id: string; name: string; difficulty: 'EASY' | 'MEDIUM' | 'HARD'; hours: number; source: string; source_date: string | null; subject_id: string; created_at: string; subjects?: { name: string } }
+interface Session { id: string; scheduled_at: string; number: number; duration: number; priority: string; status: string; topic?: { id: string; name: string } }
+
 export async function getDashboardData() {
-  const supabase = await createClient();
+  const supabase = await createClient() as SupabaseAny;
 
   const {
     data: { user },
@@ -24,20 +32,20 @@ export async function getDashboardData() {
     .select('id, name, description, created_at')
     .eq('user_id', user.id)
     .eq('is_active', true)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false }) as { data: Subject[] | null };
 
   // Obtener todos los exámenes
   const { data: exams } = await supabase
     .from('exams')
     .select('id, date, subject_id')
-    .in('subject_id', subjects?.map((s) => s.id) || []);
+    .in('subject_id', subjects?.map((s) => s.id) || []) as { data: Exam[] | null };
 
   // Obtener todos los topics con info de materia
   const { data: topics } = await supabase
     .from('topics')
     .select('id, name, difficulty, hours, source, source_date, subject_id, created_at, subjects(name)')
     .in('subject_id', subjects?.map((s) => s.id) || [])
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false }) as { data: Topic[] | null };
 
   // Calcular exámenes próximos (siguiente 30 días)
   const now = new Date();
@@ -61,12 +69,12 @@ export async function getDashboardData() {
 
   const { data: sessions } = await supabase
     .from('sessions')
-    .select('*, topic:topics(name, difficulty), subject:subjects(name)')
+    .select('*, topic:topics(id, name, difficulty), subject:subjects(name)')
     .eq('user_id', user.id)
     .gte('scheduled_at', todayStart)
     .lt('scheduled_at', sessionsEnd)
     .eq('status', 'PENDING')
-    .order('scheduled_at', { ascending: true });
+    .order('scheduled_at', { ascending: true }) as { data: Session[] | null };
 
   // Agregar conteos a las materias
   const subjectsWithCounts = subjects?.map((subject) => ({

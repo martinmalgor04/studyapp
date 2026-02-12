@@ -11,8 +11,11 @@ import {
 import { generateSessions } from './sessions';
 import { sendNotification } from './notifications';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getSupabase = async () => await createClient() as any;
+
 export async function getTopicsBySubject(subjectId: string) {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
 
   const { data: topics, error } = await supabase
     .from('topics')
@@ -29,7 +32,7 @@ export async function getTopicsBySubject(subjectId: string) {
 }
 
 export async function getTopic(id: string) {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
 
   const { data: topic, error } = await supabase.from('topics').select('*').eq('id', id).single();
 
@@ -42,7 +45,7 @@ export async function getTopic(id: string) {
 }
 
 export async function createTopic(input: CreateTopicInput) {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
 
   // Validar input
   const validationResult = createTopicSchema.safeParse(input);
@@ -153,7 +156,7 @@ export async function createTopic(input: CreateTopicInput) {
 }
 
 export async function updateTopic(id: string, input: UpdateTopicInput) {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
 
   // Validar input
   const validationResult = updateTopicSchema.safeParse(input);
@@ -215,7 +218,7 @@ export async function updateTopic(id: string, input: UpdateTopicInput) {
 }
 
 export async function deleteTopic(id: string) {
-  const supabase = await createClient();
+  const supabase = await getSupabase();
 
   // Obtener el topic para verificar permisos y subject_id
   const { data: topic } = await supabase

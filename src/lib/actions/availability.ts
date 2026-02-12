@@ -8,7 +8,14 @@ import {
 } from '@/lib/validations/availability';
 import { getAvailabilityImporterService } from '@/lib/services/availability-importer.service';
 
-export async function getAvailability() {
+export async function getAvailability(): Promise<Array<{
+  id: string;
+  user_id: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  is_enabled: boolean;
+}>> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -28,7 +35,14 @@ export async function getAvailability() {
     return [];
   }
 
-  return data || [];
+  return (data || []) as Array<{
+    id: string;
+    user_id: string;
+    day_of_week: number;
+    start_time: string;
+    end_time: string;
+    is_enabled: boolean;
+  }>;
 }
 
 export async function updateAvailability(input: UpdateAvailabilityInput) {
@@ -69,7 +83,8 @@ export async function updateAvailability(input: UpdateAvailabilityInput) {
       is_enabled: slot.is_enabled,
     }));
 
-    const { error: insertError } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: insertError } = await (supabase as any)
       .from('availability_slots')
       .insert(slotsToInsert);
 
@@ -94,11 +109,12 @@ export async function importAvailabilityFromGoogleCalendar(
   }
 
   // Obtener tokens de Google Calendar
-  const { data: settings } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: settings } = await (supabase as any)
     .from('user_settings')
     .select('google_access_token, google_refresh_token, google_token_expiry')
     .eq('user_id', user.id)
-    .single();
+    .single() as { data: { google_access_token?: string; google_refresh_token?: string; google_token_expiry?: string } | null };
 
   if (!settings?.google_access_token) {
     return { error: 'Google Calendar no conectado. Conectá tu cuenta primero.' };
@@ -107,8 +123,8 @@ export async function importAvailabilityFromGoogleCalendar(
   const tokens = {
     access_token: settings.google_access_token,
     refresh_token: settings.google_refresh_token || undefined,
-    expiry_date: settings.google_token_expiry 
-      ? new Date(settings.google_token_expiry).getTime() 
+    expiry_date: settings.google_token_expiry
+      ? new Date(settings.google_token_expiry).getTime()
       : undefined,
   };
 
@@ -142,15 +158,16 @@ export async function importAvailabilityFromGoogleCalendar(
 
     // Si estrategia es MERGE, solo eliminar slots que se solapan
     if (strategy === 'MERGE') {
-      const { data: existingSlots } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: existingSlots } = await (supabase as any)
         .from('availability_slots')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id) as { data: Array<{ day_of_week: number; start_time: string; end_time: string }> | null };
 
       if (existingSlots) {
         // Filtrar detectedSlots para excluir los que ya existen
         const newSlots = detectedSlots.filter(detected => {
-          return !existingSlots.some(existing => 
+          return !existingSlots.some(existing =>
             existing.day_of_week === detected.day_of_week &&
             existing.start_time === detected.start_time &&
             existing.end_time === detected.end_time
@@ -172,7 +189,8 @@ export async function importAvailabilityFromGoogleCalendar(
       is_enabled: slot.is_enabled,
     }));
 
-    const { error: insertError } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: insertError } = await (supabase as any)
       .from('availability_slots')
       .insert(slotsToInsert);
 

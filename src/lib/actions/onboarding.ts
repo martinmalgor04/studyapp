@@ -15,7 +15,8 @@ export async function saveOnboardingAvailability(
   shifts: Shift[],
   includeWeekends: boolean
 ) {
-  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createClient() as any;
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -86,7 +87,8 @@ export async function saveOnboardingAvailability(
 }
 
 export async function checkOnboardingStatus() {
-  const supabase = await createClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createClient() as any;
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -97,7 +99,7 @@ export async function checkOnboardingStatus() {
     .from('user_settings')
     .select('onboarding_completed')
     .eq('user_id', user.id)
-    .single();
+    .single() as { data: { onboarding_completed?: boolean } | null };
 
   return { completed: settings?.onboarding_completed || false };
 }
