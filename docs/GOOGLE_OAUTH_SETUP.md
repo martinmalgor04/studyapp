@@ -4,9 +4,31 @@ La app tiene preparado el flujo de **Iniciar sesión / Registrarse con Google**.
 
 ---
 
+## ¿Un solo cliente o dos (Login vs Calendar)?
+
+En StudyApp hay **dos usos** de Google OAuth:
+
+| Uso | Dónde se configura | Redirect / Callback |
+|-----|--------------------|---------------------|
+| **Login/Registro** ("Continuar con Google") | **Supabase Dashboard** → Authentication → Providers → Google | `https://[project].supabase.co/auth/v1/callback` |
+| **Google Calendar** (conectar calendario, import/export) | **.env / Vercel** → `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` | `https://tu-dominio/api/auth/callback/google` |
+
+**Podés usar el mismo Client ID y Secret para ambos** (recomendado):
+
+- En **Google Cloud** creás **un** cliente OAuth (Web application).
+- En ese cliente agregás **las dos** URIs de redirección: la de Supabase (arriba) y la de tu app (`https://tu-dominio.vercel.app/api/auth/callback/google`).
+- En la pantalla de consentimiento, los scopes pueden incluir tanto los que pide Supabase (email, profile, openid) como los de Calendar (`calendar.events`, `calendar.readonly`) si vas a usar Calendar.
+- Ese mismo **Client ID** y **Client Secret** los ponés:
+  1. En **Supabase** (Authentication → Google) para login.
+  2. En **.env / Vercel** como `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` para Calendar.
+
+**O podés usar dos clientes distintos** (uno solo para login, otro solo para Calendar). En ese caso: un Client ID/Secret solo en Supabase, y otro Client ID/Secret en las variables `GOOGLE_*` de la app.
+
+---
+
 ## 1. Configuración en Google Cloud Console
 
-Usá el proyecto donde tenés el cliente OAuth (ej. **NEURA OAUTH**).
+Usá el proyecto donde tenés el cliente OAuth (el mismo que para Calendar si usás uno solo).
 
 ### Orígenes de JavaScript autorizados
 
@@ -24,8 +46,8 @@ Reemplazá `[TU-PROJECT-REF]` por el **Reference ID** de tu proyecto en Supabase
 
 ### Credenciales
 
-- **Client ID:** el que usás para este cliente OAuth (ej. el de NEURA OAUTH).
-- **Client Secret:** el secret de ese mismo cliente. **No lo subas al repo ni lo pongas en .env del frontend.**
+- **Client ID** y **Client Secret** del cliente OAuth (puede ser el mismo que usás para Calendar en `GOOGLE_*`).
+- Para **login**, estos solo se configuran en **Supabase Dashboard** (Authentication → Google). **No van en .env del frontend.**
 
 ---
 

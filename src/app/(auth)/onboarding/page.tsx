@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { saveOnboardingAvailability } from '@/lib/actions/onboarding';
 import { connectGoogleCalendar } from '@/lib/actions/google-calendar';
 
@@ -10,11 +10,20 @@ type OnboardingMode = 'selection' | 'manual' | 'google';
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<OnboardingMode>('selection');
   const [selectedShifts, setSelectedShifts] = useState<Shift[]>([]);
   const [includeWeekends, setIncludeWeekends] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [googleConnectedSuccess, setGoogleConnectedSuccess] = useState(false);
+
+  useEffect(() => {
+    if (searchParams?.get('google_connected') === 'true') {
+      setGoogleConnectedSuccess(true);
+      router.replace('/onboarding', { scroll: false });
+    }
+  }, [searchParams, router]);
 
   const toggleShift = (shift: Shift) => {
     if (selectedShifts.includes(shift)) {
@@ -51,11 +60,8 @@ export default function OnboardingPage() {
 
     try {
       // Primero conectar Google Calendar (OAuth)
-      await connectGoogleCalendar();
-      
-      // La redirección de OAuth traerá al usuario de vuelta,
-      // y en el callback detectaremos que viene del onboarding
-      // y ejecutaremos importAvailabilityFromGoogleCalendar()
+      await connectGoogleCalendar('onboarding');
+      // Tras autorizar en Google, el callback redirige a /onboarding?google_connected=true
     } catch {
       setError('Error al conectar con Google Calendar');
       setSaving(false);
@@ -72,6 +78,13 @@ export default function OnboardingPage() {
             Configuremos tus horarios de estudio para empezar
           </p>
         </div>
+
+        {googleConnectedSuccess && (
+          <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 text-center text-green-800">
+            <p className="font-medium">Google Calendar conectado.</p>
+            <p className="text-sm mt-1">Podés elegir otra opción o continuar al dashboard.</p>
+          </div>
+        )}
 
         {/* Pantalla de selección de modo */}
         {mode === 'selection' && (

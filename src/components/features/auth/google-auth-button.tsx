@@ -27,10 +27,12 @@ export function GoogleAuthButton({ label = 'Continuar con Google', className = '
 
     try {
       const supabase = createClient();
+      // Usar variable de entorno en producción, fallback a window.location.origin en desarrollo
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
       const { error: authError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${baseUrl}/auth/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',

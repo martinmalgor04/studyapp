@@ -6,9 +6,10 @@ import { createClient } from '@/lib/supabase/server';
 import { getGoogleCalendarService } from '@/lib/services/google-calendar.service';
 
 /**
- * Inicia el flujo de OAuth para conectar Google Calendar
+ * Inicia el flujo de OAuth para conectar Google Calendar.
+ * @param returnTo - Si es 'onboarding', tras autorizar Google se redirige a /onboarding en vez de a Settings.
  */
-export async function connectGoogleCalendar() {
+export async function connectGoogleCalendar(returnTo?: 'onboarding' | 'settings') {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -16,8 +17,8 @@ export async function connectGoogleCalendar() {
     return { error: 'No autenticado' };
   }
 
-  // Redirigir a la ruta que inicia OAuth
-  redirect('/api/auth/google');
+  const query = returnTo === 'onboarding' ? '?returnTo=onboarding' : '';
+  redirect(`/api/auth/google${query}`);
 }
 
 /**

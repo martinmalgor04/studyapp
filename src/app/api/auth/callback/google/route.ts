@@ -5,12 +5,16 @@ import { createClient } from '@/lib/supabase/server';
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
-  const state = requestUrl.searchParams.get('state'); // userId
+  const state = requestUrl.searchParams.get('state'); // userId o "userId|onboarding"
   const origin = requestUrl.origin;
 
   if (!code || !state) {
     return NextResponse.redirect(`${origin}/dashboard/settings?error=invalid_callback`);
   }
+
+  const stateParts = state.includes('|') ? state.split('|') : [state, null];
+  const userId = stateParts[0];
+  const returnTo = stateParts[1] ?? null; // 'onboarding' si vino del onboarding
 
   const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
@@ -39,16 +43,20 @@ export async function GET(request: Request) {
           ? new Date(tokens.expiry_date).toISOString()
           : null,
       })
-      .eq('user_id', state);
+      .eq('user_id', userId);
 
     if (error) {
       console.error('Error saving Google tokens:', error);
-      return NextResponse.redirect(`${origin}/dashboard/settings?error=save_failed`);
+      const to = returnTo === 'onboarding' ? '/onboarding' : '/dashboard/settings';
+      return NextResponse.redirect(`${origin}${to}?error=save_failed`);
     }
 
+    if (returnTo === 'onboarding') {
+      return NextResponse.redirect(`${origin}/onboarding?google_connected=true`);
+    }
     return NextResponse.redirect(`${origin}/dashboard/settings?google_connected=true`);
   } catch (error) {
     console.error('Error in Google OAuth callback:', error);
-    return NextResponse.redirect(`${origin}/dashboard/settings?error=auth_failed`);
+    const to = returnTo === 'onboarding' ? '/onboarding' : '/dashboard/settings';
+    return NextResponse.redirect(`${origin}${to}?error=auth_failed`);
   }
-}
