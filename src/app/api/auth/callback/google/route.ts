@@ -60,3 +60,4 @@ export async function GET(request: Request) {
     const to = returnTo === 'onboarding' ? '/onboarding' : '/dashboard/settings';
     return NextResponse.redirect(`${origin}${to}?error=auth_failed`);
   }
+}
