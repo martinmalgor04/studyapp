@@ -30,29 +30,55 @@ export async function GET(request: Request) {
       throw new Error('No tokens received from Google');
     }
 
-    // Guardar tokens en user_settings
+    // Guardar tokens en user_settings. Si vino del onboarding, hacer UPSERT para crear la fila si no existe.
     const supabase = await createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
-      .from('user_settings')
-      .update({
-        google_access_token: tokens.access_token,
-        google_refresh_token: tokens.refresh_token,
-        google_calendar_enabled: true,
-        google_token_expiry: tokens.expiry_date
-          ? new Date(tokens.expiry_date).toISOString()
-          : null,
-      })
-      .eq('user_id', userId);
+    const basePayload = {
+      google_access_token: tokens.access_token,
+      google_refresh_token: tokens.refresh_token,
+      google_calendar_enabled: true,
+      google_token_expiry: tokens.expiry_date
+        ? new Date(tokens.expiry_date).toISOString()
+        : null,
+    };
 
-    if (error) {
-      console.error('Error saving Google tokens:', error);
-      const to = returnTo === 'onboarding' ? '/onboarding' : '/dashboard/settings';
-      return NextResponse.redirect(`${origin}${to}?error=save_failed`);
+    if (returnTo === 'onboarding') {
+      // UPSERT: crea la fila con onboarding_completed=true si no existía (usuario nuevo que solo conectó Google)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: upsertError } = await (supabase as any)
+        .from('user_settings')
+        .upsert(
+          {
+            user_id: userId,
+            ...basePayload,
+            onboarding_completed: true,
+            email_notifications: true,
+            telegram_notifications: false,
+            in_app_notifications: true,
+            daily_summary_time: '08:00:00',
+          },
+          { onConflict: 'user_id' }
+        );
+
+      if (upsertError) {
+        console.error('Error saving Google tokens (onboarding upsert):', upsertError);
+        return NextResponse.redirect(`${origin}/onboarding?error=save_failed`);
+      }
+    } else {
+      // Update normal para quien ya tiene fila (Settings)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
+        .from('user_settings')
+        .update(basePayload)
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error saving Google tokens:', error);
+        return NextResponse.redirect(`${origin}/dashboard/settings?error=save_failed`);
+      }
     }
 
     if (returnTo === 'onboarding') {
-      return NextResponse.redirect(`${origin}/onboarding?google_connected=true`);
+      return NextResponse.redirect(`${origin}/dashboard`);
     }
     return NextResponse.redirect(`${origin}/dashboard/settings?google_connected=true`);
   } catch (error) {
