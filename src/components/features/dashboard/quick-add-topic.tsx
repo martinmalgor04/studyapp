@@ -64,6 +64,7 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
   // Combinar materias existentes con las creadas localmente
   const allSubjects = [...subjects, ...createdSubjects];
 
+
   // Declarar useForm PRIMERO antes de usar watch
   const {
     register,
@@ -85,8 +86,19 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
     },
   });
 
+  // Ahora sí podemos usar watch
+  const selectedSubjectId = watch('subject_id');
   const selectedSource = watch('source');
   const showSourceDate = selectedSource === 'CLASS';
+
+  // Effect para cargar exámenes cuando cambia la materia seleccionada
+  useEffect(() => {
+    if (!selectedSubjectId || selectedSubjectId === '__new__') {
+      setExamsForSubject([]);
+      return;
+    }
+    getExamsBySubject(selectedSubjectId).then(setExamsForSubject);
+  }, [selectedSubjectId]);
 
   const handleCreateNewSubject = async () => {
     if (!newSubjectName.trim()) {
@@ -396,25 +408,6 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
             disabled={isSubmitting}
             className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
           >
-            {isSubmitting ? 'Guardando...' : 'Agregar Tema'}
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
-  // Ahora sí podemos usar watch
-
-  const selectedSubjectId = watch('subject_id');
-  useEffect(() => {
-    if (!selectedSubjectId || selectedSubjectId === '__new__') {
-      setExamsForSubject([]);
-      return;
-    }
-    getExamsBySubject(selectedSubjectId).then(setExamsForSubject);
-  }, [selectedSubjectId]);
-
             {isSubmitting ? 'Guardando...' : 'Agregar Tema'}
           </button>
         </div>
