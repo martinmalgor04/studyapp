@@ -152,11 +152,11 @@
 | - Google OAuth Setup | ✅ | 🟡 | 3h |
 | - GoogleCalendarService | ✅ | 🟡 | 3h |
 | - Sync button in Settings | ✅ | ⬜ | 2h |
-| UC-011b: Import Availability from Calendar | 🟡 | 🟠 | 15h (backend ✅, UI falta preview) |
+| UC-011b: Import Availability from Calendar | ✅ | 🟠 | 15h |
 | - AvailabilityImporterService | ✅ | 🟠 | 6h |
 | - Detection algorithm | ✅ | 🟠 | 4h |
 | - Onboarding integration | ✅ | 🟡 | 3h |
-| - Preview UI component | ⏳ | ⬜ | 2-3h (falta) |
+| - Preview UI component | ✅ | ⬜ | 2.5h |
 | UC-011c: Detect Schedule Conflicts | 🟡 | 🟠 | 8h (backend ✅, faltan indicadores UI) |
 | - Conflict detection algorithm | ✅ | 🟠 | 4h |
 | - Integration with Session Generator | ✅ | 🟡 | 3h |
@@ -166,7 +166,7 @@
 | - Event listeners (emitCompleted/Abandoned) | ✅ | ⬜ | - |
 | - Color coding in Google Calendar | ✅ | ⬜ | 1h |
 
-**Sprint Goal**: ✅ Modo estudio libre completado. ✅ Google Calendar: UC-011a completado, UC-011b/c/d backend implementado (85%). 🟡 Falta UI avanzada: preview de importación (2-3h), indicadores de conflictos (3h). Ver análisis detallado: [`GOOGLE_CALENDAR_GAPS_ANALYSIS.md`](../GOOGLE_CALENDAR_GAPS_ANALYSIS.md)
+**Sprint Goal**: ✅ Modo estudio libre completado. ✅ Google Calendar: UC-011a y UC-011b completados, UC-011c/d backend implementado (90%). 🟡 Solo falta: indicadores de conflictos UI (3h). Ver análisis: [`GOOGLE_CALENDAR_GAPS_ANALYSIS.md`](../GOOGLE_CALENDAR_GAPS_ANALYSIS.md)
 
 ---
 
@@ -388,6 +388,7 @@ e2e/
 35. ✅ **Specs técnicas para features pendientes** - 4 documentos detallados ([PENDING_FEATURES.md](PENDING_FEATURES.md))
 36. ✅ **Troubleshooting Email Notifications** - Logging extensivo + guía de debugging ([TROUBLESHOOTING_EMAIL_NOTIFICATIONS.md](../TROUBLESHOOTING_EMAIL_NOTIFICATIONS.md))
 37. ✅ **Análisis Google Calendar Gaps** - Documentación de lo que falta (85% → 100%) ([GOOGLE_CALENDAR_GAPS_ANALYSIS.md](../GOOGLE_CALENDAR_GAPS_ANALYSIS.md))
+38. ✅ **UC-011b Preview Dialog** - Diálogo de preview con stats y comparación antes de importar disponibilidad ([TESTING_IMPORT_PREVIEW.md](../TESTING_IMPORT_PREVIEW.md))
 
 ### 🎉 MVP + FREE STUDY MODE + TRACKING + UC-011d COMPLETADO
 
