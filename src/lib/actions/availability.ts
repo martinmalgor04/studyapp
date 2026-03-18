@@ -212,3 +212,85 @@ export async function importAvailabilityFromGoogleCalendar(
     return { error: 'Error al importar desde Google Calendar' };
   }
 }
+
+/**
+ * Preview de disponibilidad desde Google Calendar sin guardar
+ * Retorna slots detectados, estadísticas y slots existentes para comparación
+ */
+export async function previewAvailabilityFromGoogleCalendar() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'No autenticado' };
+  }
+
+  // Obtener tokens de Google Calendar
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: settings } = await (supabase as any)
+    .from('user_settings')
+    .select('google_access_token, google_refresh_token, google_token_expiry')
+    .eq('user_id', user.id)
+    .single() as { data: { google_access_token?: string; google_refresh_token?: string; google_token_expiry?: string } | null };
+
+  if (!settings?.google_access_token) {
+    return { error: 'Google Calendar no conectado. Conectá tu cuenta primero.' };
+  }
+
+  const tokens = {
+    access_token: settings.google_access_token,
+    refresh_token: settings.google_refresh_token || undefined,
+    expiry_date: settings.google_token_expiry
+      ? new Date(settings.google_token_expiry).getTime()
+      : undefined,
+  };
+
+  try {
+    // Importar disponibilidad desde Google Calendar (sin guardar)
+    const importer = getAvailabilityImporterService();
+    const allDetectedSlots = await importer.importFromGoogleCalendar(tokens, {
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // próximos 30 días
+      minSlotDuration: 30,
+    });
+
+    // Calcular estadísticas
+    const validSlots = allDetectedSlots;
+    const totalSlots = allDetectedSlots.length;
+    
+    // Calcular slots descartados (menores a 30min)
+    // Nota: El servicio ya filtra por minSlotDuration, así que detectedSlots ya son válidos
+    const discardedSlots = 0; // Ya filtrados por el servicio
+
+    // Calcular total de horas disponibles
+    const totalHours = validSlots.reduce((acc, slot) => {
+      const [startHour, startMin] = slot.start_time.split(':').map(Number);
+      const [endHour, endMin] = slot.end_time.split(':').map(Number);
+      const durationMinutes = (endHour * 60 + endMin) - (startHour * 60 + startMin);
+      return acc + (durationMinutes / 60);
+    }, 0);
+
+    // Obtener slots existentes para comparación
+    const existingSlotsData = await getAvailability();
+    const existingSlots = existingSlotsData.map(slot => ({
+      day_of_week: slot.day_of_week,
+      start_time: slot.start_time.substring(0, 5),
+      end_time: slot.end_time.substring(0, 5),
+      is_enabled: slot.is_enabled,
+    }));
+
+    return {
+      detectedSlots: validSlots,
+      existingSlots,
+      stats: {
+        total: totalSlots,
+        valid: validSlots.length,
+        discarded: discardedSlots,
+        totalHours: Math.round(totalHours * 10) / 10, // Redondear a 1 decimal
+      },
+    };
+  } catch (error) {
+    console.error('Error previewing from Google Calendar:', error);
+    return { error: 'Error al obtener preview desde Google Calendar' };
+  }
+}

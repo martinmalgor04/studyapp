@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAvailability, updateAvailability, importAvailabilityFromGoogleCalendar } from '@/lib/actions/availability';
+import { getAvailability, updateAvailability, importAvailabilityFromGoogleCalendar, previewAvailabilityFromGoogleCalendar } from '@/lib/actions/availability';
 import { WeeklyScheduler } from '@/components/features/availability/weekly-scheduler';
 import { AvailabilityCalendarGrid } from '@/components/features/availability/availability-calendar-grid';
 import { AvailabilitySlot } from '@/lib/validations/availability';
 import { isGoogleCalendarConnected, connectGoogleCalendar } from '@/lib/actions/google-calendar';
+import { ImportPreviewDialog } from '@/components/features/availability/import-preview-dialog';
+import type { TimeSlot } from '@/lib/services/availability-importer.service';
 
 export default function AvailabilityPage() {
   const [initialSlots, setInitialSlots] = useState<Array<{ day_of_week: number; start_time: string; end_time: string; is_enabled: boolean }>>([]);
@@ -18,6 +20,10 @@ export default function AvailabilityPage() {
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
   const [configMethod, setConfigMethod] = useState<'manual' | 'google'>('manual');
   const [isGoogleConnected, setIsGoogleConnected] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [previewSlots, setPreviewSlots] = useState<TimeSlot[]>([]);
+  const [previewStats, setPreviewStats] = useState<any>(null);
+  const [existingSlots, setExistingSlots] = useState<TimeSlot[]>([]);
 
   const router = useRouter();
 
@@ -78,12 +84,35 @@ export default function AvailabilityPage() {
     setSaving(true);
     setError(null);
     
-    const result = await importAvailabilityFromGoogleCalendar('REPLACE');
+    // Obtener preview sin guardar
+    const result = await previewAvailabilityFromGoogleCalendar();
+    
+    if (result.error) {
+      setError(result.error);
+      setSaving(false);
+      return;
+    }
+    
+    // Guardar datos del preview y mostrar diálogo
+    setPreviewSlots(result.detectedSlots || []);
+    setPreviewStats(result.stats);
+    setExistingSlots(result.existingSlots || []);
+    setShowImportDialog(true);
+    setSaving(false);
+  };
+
+  const handleConfirmImport = async (strategy: 'REPLACE' | 'MERGE') => {
+    setSaving(true);
+    setError(null);
+    
+    // Ahora sí ejecutar la importación real
+    const result = await importAvailabilityFromGoogleCalendar(strategy);
     
     if (result.error) {
       setError(result.error);
     } else {
       setSuccess(true);
+      setShowImportDialog(false);
       setTimeout(() => {
         setSuccess(false);
         router.refresh();
@@ -91,6 +120,12 @@ export default function AvailabilityPage() {
     }
     
     setSaving(false);
+  };
+
+  const handleCancelImport = () => {
+    setShowImportDialog(false);
+    setPreviewSlots([]);
+    setPreviewStats(null);
   };
 
   if (loading) {
@@ -282,6 +317,18 @@ export default function AvailabilityPage() {
             />
           )}
         </>
+      )}
+
+      {/* Import Preview Dialog */}
+      {showImportDialog && (
+        <ImportPreviewDialog
+          slots={previewSlots}
+          existingSlots={existingSlots}
+          stats={previewStats}
+          showStrategyOption={existingSlots.length > 0}
+          onConfirm={handleConfirmImport}
+          onCancel={handleCancelImport}
+        />
       )}
     </div>
   );

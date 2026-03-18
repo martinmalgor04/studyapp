@@ -118,6 +118,18 @@ export async function updateSessionStatus(
     return { error: 'No autenticado' };
   }
 
+  // Si se va a abandonar manualmente, obtener datos para emitir evento
+  let sessionData = null;
+  if (status === 'ABANDONED') {
+    const { data } = await supabase
+      .from('sessions')
+      .select('topic_id, scheduled_at')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .single();
+    sessionData = data;
+  }
+
   const { error } = await supabase
     .from('sessions')
     .update({ status, updated_at: new Date().toISOString() })
@@ -126,6 +138,18 @@ export async function updateSessionStatus(
 
   if (error) {
     return { error: error.message };
+  }
+
+  // Emitir evento de abandono manual si corresponde
+  if (status === 'ABANDONED' && sessionData?.topic_id) {
+    const { SessionEventRegistry } = await import('@/lib/services/session-events');
+    await SessionEventRegistry.emitAbandoned({
+      sessionId: id,
+      userId: user.id,
+      topicId: sessionData.topic_id,
+      reason: 'MANUAL',
+      scheduledAt: new Date(sessionData.scheduled_at)
+    });
   }
 
   revalidatePath('/dashboard');
@@ -173,7 +197,7 @@ export async function completeSessionWithRating(
   // Obtener sesión para calcular duración si tiene started_at
   const { data: session } = await supabase
     .from('sessions')
-    .select('started_at, duration')
+    .select('started_at, duration, topic_id')
     .eq('id', id)
     .eq('user_id', user.id)
     .single();
@@ -201,18 +225,19 @@ export async function completeSessionWithRating(
     return { error: error.message };
   }
 
-  // Emitir evento para extensiones futuras (gamificación, analytics)
-  // Para activar: importar SessionEventRegistry y descomentar
-  // const { SessionEventRegistry } = await import('@/lib/services/session-events');
-  // await SessionEventRegistry.emitCompleted({
-  //   sessionId: id,
-  //   userId: user.id,
-  //   topicId: session.topic_id,
-  //   rating,
-  //   actualDuration,
-  //   plannedDuration: session.duration,
-  //   completedAt: new Date()
-  // });
+  // Emitir evento para Google Calendar sync, gamificación, analytics
+  if (session?.topic_id) {
+    const { SessionEventRegistry } = await import('@/lib/services/session-events');
+    await SessionEventRegistry.emitCompleted({
+      sessionId: id,
+      userId: user.id,
+      topicId: session.topic_id,
+      rating,
+      actualDuration,
+      plannedDuration: session.duration,
+      completedAt: new Date()
+    });
+  }
 
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/sessions');
@@ -266,7 +291,7 @@ export async function rescheduleSession(id: string, newDate: string) {
   // Obtener sesión actual para incrementar attempts
   const { data: session, error: fetchError } = await supabase
     .from('sessions')
-    .select('attempts, topic:topics(name), subject:subjects(name)')
+    .select('attempts, topic_id, scheduled_at, topic:topics(name), subject:subjects(name)')
     .eq('id', id)
     .eq('user_id', user.id)
     .single();
@@ -287,6 +312,18 @@ export async function rescheduleSession(id: string, newDate: string) {
 
     if (abandonError) {
       return { error: abandonError.message };
+    }
+
+    // Emitir evento de abandono automático por intentos
+    if (session.topic_id) {
+      const { SessionEventRegistry } = await import('@/lib/services/session-events');
+      await SessionEventRegistry.emitAbandoned({
+        sessionId: id,
+        userId: user.id,
+        topicId: session.topic_id,
+        reason: 'AUTO',
+        scheduledAt: new Date(session.scheduled_at)
+      });
     }
 
     revalidatePath('/dashboard');
@@ -313,14 +350,21 @@ export async function rescheduleSession(id: string, newDate: string) {
   const topicName = (session as { topic?: { name?: string } }).topic?.name || 'Tema';
   const formattedDate = scheduledDate.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
   
-  const { sendNotification } = await import('./notifications');
-  await sendNotification({
-    userId: user.id,
-    type: 'SESSION_RESCHEDULED',
-    title: 'Sesion reagendada',
-    message: `"${topicName}" se movio al ${formattedDate}`,
-    metadata: { session_id: id, new_date: newDate, attempts: newAttempts }
-  });
+  try {
+    console.log('[rescheduleSession] Sending notification for user:', user.id);
+    const { sendNotification } = await import('./notifications');
+    await sendNotification({
+      userId: user.id,
+      type: 'SESSION_RESCHEDULED',
+      title: 'Sesión reagendada',
+      message: `"${topicName}" se movió al ${formattedDate}`,
+      metadata: { session_id: id, new_date: newDate, attempts: newAttempts }
+    });
+    console.log('[rescheduleSession] Notification sent successfully');
+  } catch (notifError) {
+    console.error('[rescheduleSession] Failed to send notification:', notifError);
+    // No fallar la operación si falla la notificación
+  }
 
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/sessions');
@@ -467,7 +511,7 @@ export async function processOverdueSessions() {
   // Obtener sesiones vencidas y PENDING
   const { data: overdueSessions } = await supabase
     .from('sessions')
-    .select('id, scheduled_at, topic:topics(name), user_id')
+    .select('id, scheduled_at, topic_id, topic:topics(name), user_id')
     .eq('user_id', user.id)
     .eq('status', 'PENDING')
     .lt('scheduled_at', now.toISOString());
@@ -490,19 +534,36 @@ export async function processOverdueSessions() {
         .update({ status: 'ABANDONED', updated_at: now.toISOString() })
         .eq('id', session.id);
       
+      // Emitir evento de abandono automático por vencimiento
+      if (session.topic_id) {
+        const { SessionEventRegistry } = await import('@/lib/services/session-events');
+        await SessionEventRegistry.emitAbandoned({
+          sessionId: session.id,
+          userId: user.id,
+          topicId: session.topic_id,
+          reason: 'AUTO',
+          scheduledAt: scheduledDate
+        });
+      }
+      
       abandoned++;
     } else if (hoursOverdue > 24) {
       // 1-2 días: notificar
-      const { sendNotification } = await import('./notifications');
-      await sendNotification({
-        userId: user.id,
-        type: 'SESSION_REMINDER',
-        title: 'Sesión pendiente',
-        message: `La sesión "${(session as { topic: { name: string } }).topic.name}" está vencida. ¿La completaste?`,
-        metadata: { session_id: session.id }
-      });
-      
-      notified++;
+      try {
+        console.log('[processOverdueSessions] Sending notification for session:', session.id);
+        const { sendNotification } = await import('./notifications');
+        await sendNotification({
+          userId: user.id,
+          type: 'SESSION_REMINDER',
+          title: 'Sesión pendiente',
+          message: `La sesión "${(session as { topic: { name: string } }).topic.name}" está vencida. ¿La completaste?`,
+          metadata: { session_id: session.id }
+        });
+        console.log('[processOverdueSessions] Notification sent successfully');
+        notified++;
+      } catch (notifError) {
+        console.error('[processOverdueSessions] Failed to send notification:', notifError);
+      }
     }
   }
 

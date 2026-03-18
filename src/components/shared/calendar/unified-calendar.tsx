@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { updateSessionStatus } from '@/lib/actions/sessions';
+import { updateSessionStatus, completeSessionWithRating } from '@/lib/actions/sessions';
+import { CompleteSessionDialog } from '@/components/features/sessions/complete-session-dialog';
 
 interface Session {
   id: string;
@@ -72,7 +73,7 @@ function getExamColor(date: string) {
 interface SessionCardItemProps {
   session: Session;
   loadingSession: string | null;
-  onComplete: (sessionId: string) => void;
+  onComplete: (session: Session) => void;
 }
 
 function SessionCardItem({ session, loadingSession, onComplete }: SessionCardItemProps) {
@@ -103,7 +104,7 @@ function SessionCardItem({ session, loadingSession, onComplete }: SessionCardIte
         <span>{session.duration}min</span>
       </div>
       <button
-        onClick={() => onComplete(session.id)}
+        onClick={() => onComplete(session)}
         disabled={loadingSession === session.id}
         className="mt-2 w-full rounded bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-1"
       >
@@ -187,6 +188,8 @@ export function UnifiedCalendar({
   const [twoWeekOffset, setTwoWeekOffset] = useState(0);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [loadingSession, setLoadingSession] = useState<string | null>(null);
+  const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+  const [sessionToComplete, setSessionToComplete] = useState<Session | null>(null);
 
   // Lógica de navegación semanal
   const getWeekDays = () => {
@@ -241,13 +244,20 @@ export function UnifiedCalendar({
     return date.toDateString() === today.toDateString();
   };
 
-  const handleComplete = async (sessionId: string) => {
+  const handleComplete = (session: Session) => {
+    setSessionToComplete(session);
+    setShowCompleteDialog(true);
+  };
+
+  const handleCompleteWithRating = async (sessionId: string, rating: 'EASY' | 'NORMAL' | 'HARD') => {
     setLoadingSession(sessionId);
-    const result = await updateSessionStatus(sessionId, 'COMPLETED');
+    const result = await completeSessionWithRating(sessionId, rating);
     if (!result.error && onStatusChange) {
       await Promise.resolve(onStatusChange());
     }
     setLoadingSession(null);
+    setShowCompleteDialog(false);
+    setSessionToComplete(null);
   };
 
   // Navegación semanal
@@ -596,6 +606,17 @@ export function UnifiedCalendar({
           );
         })}
       </div>
+
+      {/* Complete Session Dialog */}
+      <CompleteSessionDialog
+        isOpen={showCompleteDialog}
+        session={sessionToComplete}
+        onComplete={handleCompleteWithRating}
+        onClose={() => {
+          setShowCompleteDialog(false);
+          setSessionToComplete(null);
+        }}
+      />
     </div>
   );
 }

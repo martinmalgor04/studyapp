@@ -24,6 +24,17 @@
 | —   | [Codebase Analysis](./CODEBASE_ANALYSIS.md)            | Gaps, mejoras y estado vs roadmap   |
 | 10  | [Fixes Documentation](./fixes/README.md)               | Registro de fixes y correcciones    |
 
+### Especificaciones Técnicas Detalladas
+
+| Doc | Descripción | Prioridad | Estimación |
+|-----|-------------|-----------|------------|
+| [Email Notifications Setup](./EMAIL_NOTIFICATIONS_SETUP.md) | Configurar Resend API (código ya hecho) | 🟢 Baja | 30min |
+| [Troubleshooting Email Notifications](../TROUBLESHOOTING_EMAIL_NOTIFICATIONS.md) | Debugging y logs para emails | ✅ Implementado | — |
+| [Telegram Integration](./TELEGRAM_INTEGRATION.md) | Notificaciones por Telegram Bot | 🔴 Alta | 6-8h |
+| [Error Handling](./ERROR_HANDLING.md) | Error boundaries y loading states | 🔴 Alta | 4-6h |
+| [CI/CD Deployment](./CICD_DEPLOYMENT.md) | GitHub Actions y automatización | 🟡 Media | 3-4h |
+| [E2E Testing](./E2E_TESTING.md) | Tests para UC-008 y UC-009 | 🟡 Media | 8-10h |
+
 
 ---
 

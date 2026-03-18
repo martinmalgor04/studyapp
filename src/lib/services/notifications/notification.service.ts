@@ -26,9 +26,22 @@ export class NotificationService {
    */
   async send(notification: NotificationPayload): Promise<void> {
     try {
+      console.log('[NotificationService] Processing notification:', {
+        type: notification.type,
+        userId: notification.userId,
+        title: notification.title
+      });
+
       // Obtener configuración del usuario
       const settings = await this.getUserSettings(notification.userId);
       
+      console.log('[NotificationService] User settings:', {
+        userId: notification.userId,
+        email_notifications: settings.email_notifications,
+        telegram_notifications: settings.telegram_notifications,
+        in_app_notifications: settings.in_app_notifications
+      });
+
       // Determinar canales activos
       const activeChannels: string[] = [];
       if (settings.in_app_notifications) activeChannels.push('in-app');
@@ -40,6 +53,8 @@ export class NotificationService {
         console.warn('[NotificationService] No active channels for user:', notification.userId);
         return;
       }
+
+      console.log('[NotificationService] Active channels:', activeChannels);
 
       // Enviar a cada canal (en paralelo)
       const results = await Promise.allSettled(
@@ -57,6 +72,8 @@ export class NotificationService {
       results.forEach((result, index) => {
         if (result.status === 'rejected') {
           console.error(`[NotificationService] Channel "${activeChannels[index]}" failed:`, result.reason);
+        } else {
+          console.log(`[NotificationService] Channel "${activeChannels[index]}" succeeded`);
         }
       });
 
