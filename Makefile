@@ -83,3 +83,35 @@ dev-docker: docker-up ## Iniciar con Docker
 clean-cache: ## Limpiar cache de Next.js
 	docker-compose exec app rm -rf .next
 	docker-compose restart app
+
+# ----------------
+# Desarrollo Híbrido (pnpm dev + DB Docker)
+# ----------------
+db-start: ## Iniciar solo PostgreSQL en Docker
+	docker-compose -f docker-compose.db.yml up -d
+	@echo ""
+	@echo "✅ PostgreSQL iniciado"
+	@echo "🔗 postgresql://postgres:postgres@localhost:5433/studyapp"
+	@echo "🌐 Adminer: http://localhost:8080"
+	@echo ""
+	@echo "▶️  Ejecutá: pnpm dev"
+
+db-stop: ## Detener PostgreSQL
+	docker-compose -f docker-compose.db.yml stop
+
+db-restart: ## Reiniciar PostgreSQL
+	docker-compose -f docker-compose.db.yml restart db
+
+db-logs: ## Ver logs de PostgreSQL
+	docker-compose -f docker-compose.db.yml logs -f db
+
+db-shell: ## Conectarse a PostgreSQL (psql)
+	docker-compose -f docker-compose.db.yml exec db psql -U postgres -d studyapp
+
+db-reset: ## Reset completo de PostgreSQL (¡CUIDADO!)
+	docker-compose -f docker-compose.db.yml down -v
+	docker-compose -f docker-compose.db.yml up -d
+	@echo "✅ PostgreSQL reseteado con migrations aplicadas"
+
+db-status: ## Ver estado de PostgreSQL
+	docker-compose -f docker-compose.db.yml ps
