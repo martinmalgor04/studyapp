@@ -19,6 +19,12 @@ export class EmailChannel implements INotificationChannel {
 
   async send(notification: NotificationPayload): Promise<void> {
     try {
+      console.log('[EmailChannel] Attempting to send email:', {
+        type: notification.type,
+        userId: notification.userId,
+        title: notification.title
+      });
+
       // Obtener email del usuario
       const email = await this.getUserEmail(notification.userId);
       if (!email) {
@@ -26,8 +32,10 @@ export class EmailChannel implements INotificationChannel {
         return;
       }
 
+      console.log('[EmailChannel] Sending to:', email);
+
       // Enviar email
-      const { error } = await this.resend.emails.send({
+      const { data, error } = await this.resend.emails.send({
         from: 'StudyApp <onboarding@resend.dev>', // Dominio de prueba de Resend
         to: email,
         subject: notification.title,
@@ -35,11 +43,19 @@ export class EmailChannel implements INotificationChannel {
       });
 
       if (error) {
-        console.error('[EmailChannel] Error sending email:', error);
+        console.error('[EmailChannel] Resend API error:', {
+          error,
+          type: notification.type,
+          email
+        });
         throw new Error(`Failed to send email: ${error.message}`);
       }
 
-      console.log('[EmailChannel] Email sent successfully to:', email);
+      console.log('[EmailChannel] Email sent successfully:', {
+        to: email,
+        messageId: data?.id,
+        type: notification.type
+      });
     } catch (error) {
       console.error('[EmailChannel] Unexpected error:', error);
       throw error;
@@ -50,18 +66,27 @@ export class EmailChannel implements INotificationChannel {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const supabase = await createClient() as any;
+      
+      // El email se sincroniza desde auth.users a public.users via trigger
       const { data, error } = await supabase
         .from('users')
         .select('email')
         .eq('id', userId)
         .single() as { data: { email: string } | null; error: unknown };
 
-      if (error || !data) {
+      if (error) {
+        console.error('[EmailChannel] Error fetching user email:', error);
+        return null;
+      }
+
+      if (!data?.email) {
+        console.warn('[EmailChannel] No email found for user:', userId);
         return null;
       }
 
       return data.email;
-    } catch {
+    } catch (error) {
+      console.error('[EmailChannel] Exception getting user email:', error);
       return null;
     }
   }

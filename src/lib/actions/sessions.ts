@@ -350,14 +350,21 @@ export async function rescheduleSession(id: string, newDate: string) {
   const topicName = (session as { topic?: { name?: string } }).topic?.name || 'Tema';
   const formattedDate = scheduledDate.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
   
-  const { sendNotification } = await import('./notifications');
-  await sendNotification({
-    userId: user.id,
-    type: 'SESSION_RESCHEDULED',
-    title: 'Sesion reagendada',
-    message: `"${topicName}" se movio al ${formattedDate}`,
-    metadata: { session_id: id, new_date: newDate, attempts: newAttempts }
-  });
+  try {
+    console.log('[rescheduleSession] Sending notification for user:', user.id);
+    const { sendNotification } = await import('./notifications');
+    await sendNotification({
+      userId: user.id,
+      type: 'SESSION_RESCHEDULED',
+      title: 'Sesión reagendada',
+      message: `"${topicName}" se movió al ${formattedDate}`,
+      metadata: { session_id: id, new_date: newDate, attempts: newAttempts }
+    });
+    console.log('[rescheduleSession] Notification sent successfully');
+  } catch (notifError) {
+    console.error('[rescheduleSession] Failed to send notification:', notifError);
+    // No fallar la operación si falla la notificación
+  }
 
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/sessions');
@@ -542,16 +549,21 @@ export async function processOverdueSessions() {
       abandoned++;
     } else if (hoursOverdue > 24) {
       // 1-2 días: notificar
-      const { sendNotification } = await import('./notifications');
-      await sendNotification({
-        userId: user.id,
-        type: 'SESSION_REMINDER',
-        title: 'Sesión pendiente',
-        message: `La sesión "${(session as { topic: { name: string } }).topic.name}" está vencida. ¿La completaste?`,
-        metadata: { session_id: session.id }
-      });
-      
-      notified++;
+      try {
+        console.log('[processOverdueSessions] Sending notification for session:', session.id);
+        const { sendNotification } = await import('./notifications');
+        await sendNotification({
+          userId: user.id,
+          type: 'SESSION_REMINDER',
+          title: 'Sesión pendiente',
+          message: `La sesión "${(session as { topic: { name: string } }).topic.name}" está vencida. ¿La completaste?`,
+          metadata: { session_id: session.id }
+        });
+        console.log('[processOverdueSessions] Notification sent successfully');
+        notified++;
+      } catch (notifError) {
+        console.error('[processOverdueSessions] Failed to send notification:', notifError);
+      }
     }
   }
 
