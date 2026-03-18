@@ -123,18 +123,18 @@
 ### Objetivo
 > Sistema completo de tracking, reagendado, y sincronización con calendario externo.
 
-### Sprint 3 (Semana 5-6): Tracking & Reschedule
+### Sprint 3 (Semana 5-6): Tracking & Reschedule ✅ COMPLETADO
 
 | Tarea | Estado | Complejidad | Horas Est. |
 |-------|--------|-------------|------------|
-| Session tracking (complete/incomplete) | ⏳ | ⬜ | 4h |
-| Reschedule logic | ⏳ | 🟡 | 6h |
-| Frontend: Session actions | ⏳ | 🟡 | 6h |
-| Frontend: Week view | ⏳ | 🟡 | 8h |
-| Notifications module setup | ⏳ | ⬜ | 3h |
-| Email notifications | ⏳ | 🟡 | 5h |
+| Session tracking (complete/incomplete) | ✅ | ⬜ | 4h |
+| Reschedule logic | ✅ | 🟡 | 6h |
+| Frontend: Session actions | ✅ | 🟡 | 6h |
+| Frontend: Week view | ✅ | 🟡 | 8h |
+| Notifications module setup | ✅ | ⬜ | 3h |
+| Email notifications | 🟡 | 🟡 | 5h |
 
-**Sprint Goal**: Usuario puede marcar sesiones como completadas y reagendar.
+**Sprint Goal**: ✅ Usuario puede marcar sesiones como completadas y reagendar (UC-008, UC-009). Vista semanal en UnifiedCalendar.
 
 ---
 
@@ -157,16 +157,16 @@
 | - Detection algorithm | ✅ | 🟠 | 4h |
 | - Onboarding integration | ✅ | 🟡 | 3h |
 | - Preview UI component | ✅ | ⬜ | 2h |
-| UC-011c: Detect Schedule Conflicts | ⏳ | 🟠 | 8h |
-| - Conflict detection algorithm | ⏳ | 🟠 | 4h |
-| - Integration with Session Generator | ⏳ | 🟡 | 3h |
-| - UI warnings/indicators | ⏳ | ⬜ | 1h |
-| UC-011d: Sync Session Updates | ⏳ | 🟡 | 4h |
-| - Bidirectional sync | ⏳ | 🟡 | 2h |
-| - Event listeners | ⏳ | ⬜ | 1h |
-| - Color coding in Google Calendar | ⏳ | ⬜ | 1h |
+| UC-011c: Detect Schedule Conflicts | ✅ | 🟠 | 8h |
+| - Conflict detection algorithm | ✅ | 🟠 | 4h |
+| - Integration with Session Generator | ✅ | 🟡 | 3h |
+| - UI warnings/indicators | 🟡 | ⬜ | 1h |
+| UC-011d: Sync Session Updates | 🟡 | 🟡 | 4h |
+| - Bidirectional sync (handler + color) | ✅ | 🟡 | 2h |
+| - Event listeners | 🟡 | ⬜ | 1h |
+| - Color coding in Google Calendar | ✅ | ⬜ | 1h |
 
-**Sprint Goal**: ✅ Modo estudio libre completado. 🔄 Google Calendar Integration parcial (UC-011a ✅, UC-011b 🔄 documentado, UC-011c/d ⏳).
+**Sprint Goal**: ✅ Modo estudio libre completado. ✅ Google Calendar: UC-011a, 011b, 011c implementados. UC-011d: handler listo pero **emit desactivado** en `sessions.ts` (activar para producción).
 
 ---
 
@@ -283,26 +283,29 @@ e2e/
 
 ## 9.7 Technical Debt & Improvements
 
+📋 **Ver especificaciones detalladas:** [`PENDING_FEATURES.md`](PENDING_FEATURES.md)
+
 ### High Priority
 
-| Item | Razón | Horas Est. | Estado |
-|------|-------|------------|--------|
-| Unit tests (Session Generator) | Core algorithm | 3h | ✅ Hecho |
-| Unit tests (Priority Calculator) | Core algorithm | 1h | ✅ Hecho |
-| E2E tests (Auth flow) | Prevent regressions | 6h | 🟡 En progreso |
-| Error boundaries | Better UX on errors | 3h | ⏳ |
-| Loading states | Better perceived performance | 4h | ⏳ |
+| Item | Razón | Horas Est. | Estado | Spec |
+|------|-------|------------|--------|------|
+| Unit tests (Session Generator) | Core algorithm | 3h | ✅ Hecho | — |
+| Unit tests (Priority Calculator) | Core algorithm | 1h | ✅ Hecho | — |
+| **Error boundaries** | Better UX on errors | 4-6h | ⏳ | [ERROR_HANDLING.md](ERROR_HANDLING.md) |
+| **Loading states** | Better perceived performance | *incluido* | ⏳ | [ERROR_HANDLING.md](ERROR_HANDLING.md) |
+| **Telegram Notifications** | Notificaciones inmediatas | 6-8h | ⏳ | [TELEGRAM_INTEGRATION.md](TELEGRAM_INTEGRATION.md) |
 
 ### Medium Priority
 
-| Item | Razón | Horas Est. | Estado |
-|------|-------|------------|--------|
-| Unit tests (CRUD Actions) | Quality assurance | 4h | ⏳ |
-| E2E tests (Study flows) | Full coverage | 6h | ⏳ |
-| Optimistic updates | Mejor UX | 5h | ⏳ |
-| Offline support (PWA) | Funciona sin red | 10h | ⏳ |
-| Dark mode | Accesibilidad | 6h | ⏳ |
-| Accessibility audit | WCAG compliance | 8h | ⏳ |
+| Item | Razón | Horas Est. | Estado | Spec |
+|------|-------|------------|--------|------|
+| **CI/CD Automation** | GitHub Actions + branch protection | 3-4h | ⏳ | [CICD_DEPLOYMENT.md](CICD_DEPLOYMENT.md) |
+| **E2E tests (UC-008/009)** | Completar y reagendar sesiones | 8-10h | ⏳ | [E2E_TESTING.md](E2E_TESTING.md) |
+| Unit tests (CRUD Actions) | Quality assurance | 4h | ⏳ | — |
+| Optimistic updates | Mejor UX | 5h | ⏳ | — |
+| Offline support (PWA) | Funciona sin red | 10h | ⏳ | — |
+| Dark mode | Accesibilidad | 6h | ⏳ | — |
+| Accessibility audit | WCAG compliance | 8h | ⏳ | — |
 
 ### Low Priority
 
@@ -377,8 +380,14 @@ e2e/
 27. ✅ **Documentación actualizada** - SESSION_GENERATION_LOGIC_V2.md
 28. ✅ **Sistema de Documentación de Fixes** - docs/spec-kit/fixes/ con 24 fixes documentados
 29. ✅ **Actualización Design Patterns** - Documentación con implementaciones reales
+30. ✅ **Sprint 3 (Tracking & Reschedule)** - UC-008, UC-009, vista semanal, acciones de sesión
+31. ✅ **UC-011c Conflict detection** - findConflictFreeSlot + checkConflicts en Session Generator
+32. ✅ **Análisis codebase vs roadmap** - [`CODEBASE_ANALYSIS.md`](CODEBASE_ANALYSIS.md) (gaps + mejoras + producción)
+33. ✅ **Activación UC-011d** - Eventos de sesión para sync bidireccional con Google Calendar
+34. ✅ **Fix: Completar sesiones desde calendario** - Diálogo de rating en UnifiedCalendar
+35. ✅ **Specs técnicas para features pendientes** - 4 documentos detallados ([PENDING_FEATURES.md](PENDING_FEATURES.md))
 
-### 🎉 MVP + FREE STUDY MODE COMPLETADO
+### 🎉 MVP + FREE STUDY MODE + TRACKING + UC-011d COMPLETADO
 
 **Estado:** Sprint 1 ✅ + Sprint 2 ✅ + Sprint 4 (Free Study) ✅ = **MVP + UC-010 100%**
 
@@ -401,7 +410,7 @@ e2e/
 4. Warning si se crea topic con final en < 25 días
 5. Prioridad URGENT/CRITICAL por defecto para finales
 
-**Próximo paso:** Sprint 3 - Tracking & Reschedule (UC-008, UC-009)
+**Próximo paso:** Activar UC-011d (emit en sessions.ts). Luego Sprint 5 - Gamificación.
 
 ---
 
@@ -502,11 +511,11 @@ El MVP se considera exitoso si:
 
 ## Summary
 
-**Estado actual:** Sprint 1 ✅, Sprint 2 ✅, Sprint 4 (Free Study) ✅
+**Estado actual:** Sprint 1 ✅, Sprint 2 ✅, Sprint 3 (Tracking & Reschedule) ✅, Sprint 4 (Free Study + Calendar) ✅
 
-**Próximo paso:** Sprint 3 - Tracking & Reschedule (UC-008, UC-009)
+**Próximo paso:** Activar emit de SessionEventRegistry en completar/abandonar sesión (UC-011d en producción). Luego Sprint 5 - Gamificación.
 
-**MVP + UC-010:** ✅ COMPLETADO - Ready for testing
+**MVP + v1.0 (parcial):** ✅ COMPLETADO. Ver análisis detallado en [`CODEBASE_ANALYSIS.md`](CODEBASE_ANALYSIS.md).
 
 **Cambios principales vs plan original:**
 - ✅ Arquitectura simplificada (Next.js Full Stack)

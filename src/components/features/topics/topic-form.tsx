@@ -262,7 +262,7 @@ export function TopicForm({ subjectId, exams, topic, onSuccess, onCancel }: Topi
         </div>
       )}
 
-      {!isAutoMode && (
+      {exams.length > 0 && (
         <div>
           <label htmlFor="exam_id" className="block text-sm font-medium text-gray-700">
             Examen (opcional)

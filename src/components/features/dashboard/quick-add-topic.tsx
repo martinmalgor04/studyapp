@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createTopic } from '@/lib/actions/topics';
 import { createSubject } from '@/lib/actions/subjects';
+import { getExamsBySubject } from '@/lib/actions/exams';
 import { difficulties, topicSources, type Difficulty, type TopicSource } from '@/lib/validations/topics';
 
 const DIFFICULTY_LABELS: Record<Difficulty, string> = {
@@ -23,6 +24,7 @@ const SOURCE_LABELS: Record<TopicSource, string> = {
 const quickAddSchema = z
   .object({
     subject_id: z.string().min(1, 'Seleccioná una materia'),
+    exam_id: z.string().uuid().optional().or(z.literal('')).transform((v) => (v === '' ? undefined : v)),
     name: z.string().min(1, 'El nombre es requerido').max(200),
     difficulty: z.enum(difficulties),
     hours: z.number().positive().max(600),
@@ -57,9 +59,19 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
   const [newSubjectName, setNewSubjectName] = useState('');
   const [isCreatingSubject, setIsCreatingSubject] = useState(false);
   const [createdSubjects, setCreatedSubjects] = useState<Array<{ id: string; name: string }>>([]);
-  
+  const [examsForSubject, setExamsForSubject] = useState<Array<{ id: string; type: string; number: number | null; date: string }>>([]);
+
   // Combinar materias existentes con las creadas localmente
   const allSubjects = [...subjects, ...createdSubjects];
+
+  const selectedSubjectId = watch('subject_id');
+  useEffect(() => {
+    if (!selectedSubjectId || selectedSubjectId === '__new__') {
+      setExamsForSubject([]);
+      return;
+    }
+    getExamsBySubject(selectedSubjectId).then(setExamsForSubject);
+  }, [selectedSubjectId]);
 
   const {
     register,
@@ -72,6 +84,7 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
     resolver: zodResolver(quickAddSchema),
     defaultValues: {
       subject_id: '',
+      exam_id: '',
       name: '',
       difficulty: 'MEDIUM',
       hours: 60,
@@ -129,7 +142,11 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
     setError(null);
     setSuccess(false);
 
-    const result = await createTopic(data);
+    const payload = {
+      ...data,
+      exam_id: data.exam_id || undefined,
+    };
+    const result = await createTopic(payload);
 
     if (result.error) {
       setError(result.error);
@@ -278,6 +295,27 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
             {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
           </div>
         </div>
+
+        {examsForSubject.length > 0 && (
+          <div>
+            <label htmlFor="exam_id" className="block text-sm font-medium text-gray-700">
+              Examen (opcional)
+            </label>
+            <select
+              id="exam_id"
+              {...register('exam_id')}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 text-sm focus:border-green-500 focus:outline-none focus:ring-green-500"
+            >
+              <option value="">Sin examen asignado</option>
+              {examsForSubject.map((exam) => (
+                <option key={exam.id} value={exam.id}>
+                  {exam.type} {exam.number != null ? `${exam.number}` : ''} -{' '}
+                  {new Date(exam.date).toLocaleDateString('es-AR')}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="grid gap-3 md:grid-cols-4">
           {/* Dificultad */}

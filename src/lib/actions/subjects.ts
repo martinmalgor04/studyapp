@@ -50,7 +50,11 @@ export async function getSubjects(includeAprobadas: boolean = false) {
     return [];
   }
 
-  // Calcular progreso para cada materia
+  // Progreso de la materia (caso de uso actual).
+  // Hoy: % = (sesiones COMPLETED / total sesiones de la materia). Las sesiones vienen de topics
+  // vinculados a la materia. Sirve para ver avance en repasos generados.
+  // Futuro: se va a virar esto hacia el programa de la materia (temas del programa vs. completados),
+  // para que el progreso refleje cobertura del programa en lugar de solo sesiones completadas.
   const subjectsWithProgress = subjects?.map((subject: SubjectRow) => {
     const sessions = subject.sessions || [];
     const totalSessions = sessions.length;
