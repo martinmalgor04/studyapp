@@ -152,18 +152,18 @@
 | - Google OAuth Setup | ✅ | 🟡 | 3h |
 | - GoogleCalendarService | ✅ | 🟡 | 3h |
 | - Sync button in Settings | ✅ | ⬜ | 2h |
-| UC-011b: Import Availability from Calendar | 🔄 | 🟠 | 15h |
+| UC-011b: Import Availability from Calendar | 🟡 | 🟠 | 15h (backend ✅, UI falta preview) |
 | - AvailabilityImporterService | ✅ | 🟠 | 6h |
 | - Detection algorithm | ✅ | 🟠 | 4h |
 | - Onboarding integration | ✅ | 🟡 | 3h |
-| - Preview UI component | ✅ | ⬜ | 2h |
-| UC-011c: Detect Schedule Conflicts | ✅ | 🟠 | 8h |
+| - Preview UI component | ⏳ | ⬜ | 2-3h (falta) |
+| UC-011c: Detect Schedule Conflicts | 🟡 | 🟠 | 8h (backend ✅, faltan indicadores UI) |
 | - Conflict detection algorithm | ✅ | 🟠 | 4h |
 | - Integration with Session Generator | ✅ | 🟡 | 3h |
-| - UI warnings/indicators | 🟡 | ⬜ | 1h |
-| UC-011d: Sync Session Updates | 🟡 | 🟡 | 4h |
+| - UI warnings/indicators | ⏳ | ⬜ | 3h (falta migration + badges) |
+| UC-011d: Sync Session Updates | ✅ | 🟡 | 4h (activado, feedback opcional) |
 | - Bidirectional sync (handler + color) | ✅ | 🟡 | 2h |
-| - Event listeners | 🟡 | ⬜ | 1h |
+| - Event listeners (emitCompleted/Abandoned) | ✅ | ⬜ | - |
 | - Color coding in Google Calendar | ✅ | ⬜ | 1h |
 
 **Sprint Goal**: ✅ Modo estudio libre completado. ✅ Google Calendar: UC-011a completado, UC-011b/c/d backend implementado (85%). 🟡 Falta UI avanzada: preview de importación (2-3h), indicadores de conflictos (3h). Ver análisis detallado: [`GOOGLE_CALENDAR_GAPS_ANALYSIS.md`](../GOOGLE_CALENDAR_GAPS_ANALYSIS.md)
