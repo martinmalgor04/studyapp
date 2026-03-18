@@ -11,16 +11,43 @@ Este documento índice reúne todas las especificaciones técnicas para features
 
 | Feature | Prioridad | Estimación | Bloqueadores | Spec |
 |---------|-----------|------------|--------------|------|
+| **Email Notifications** | 🟢 Baja | 30min | API key de Resend | [EMAIL_NOTIFICATIONS_SETUP.md](EMAIL_NOTIFICATIONS_SETUP.md) |
 | **Telegram Notifications** | 🔴 Alta | 6-8h | Bot token pendiente | [TELEGRAM_INTEGRATION.md](TELEGRAM_INTEGRATION.md) |
 | **Error Boundaries** | 🔴 Alta | 4-6h | Ninguno | [ERROR_HANDLING.md](ERROR_HANDLING.md) |
 | **CI/CD Automation** | 🟡 Media | 3-4h | Ninguno | [CICD_DEPLOYMENT.md](CICD_DEPLOYMENT.md) |
 | **E2E Tests (UC-008/009)** | 🟡 Media | 8-10h | Setup Supabase local | [E2E_TESTING.md](E2E_TESTING.md) |
 
-**Total estimado:** 21-28 horas de desarrollo
+**Total estimado:** 22-29 horas de desarrollo
 
 ---
 
-## 1. Telegram Notifications (Alta Prioridad)
+## 1. Email Notifications (Baja Prioridad - Solo Config)
+
+### Contexto
+Email notifications **ya está implementado en código** con Resend. Solo falta configurar el API key.
+
+### Código Existente
+- ✅ `EmailChannel` completo con templates HTML
+- ✅ Integrado en `NotificationService`
+- ✅ Se usa en `rescheduleSession` y `processOverdueSessions`
+- ✅ UI para activar/desactivar en Settings
+
+### Lo Único que Falta
+- Crear cuenta en Resend (gratis: 100 emails/día)
+- Obtener API key
+- Agregar `RESEND_API_KEY` a `.env.local` y Vercel
+
+### Siguiente Paso
+1. Ir a resend.com y crear cuenta
+2. Copiar API key
+3. Agregar a Vercel env
+4. Test: reagendar sesión y verificar email
+
+📄 **Guía completa:** [EMAIL_NOTIFICATIONS_SETUP.md](EMAIL_NOTIFICATIONS_SETUP.md)
+
+---
+
+## 2. Telegram Notifications (Alta Prioridad)
 
 ### Contexto
 Canal de notificaciones implementado pero sin lógica real. Usuario quiere priorizar para v1.0.
@@ -44,7 +71,7 @@ Canal de notificaciones implementado pero sin lógica real. Usuario quiere prior
 
 ---
 
-## 2. Error Handling & Loading States (Alta Prioridad)
+## 3. Error Handling & Loading States (Alta Prioridad)
 
 ### Contexto
 No hay error boundaries ni loading states a nivel de rutas. Usuarios ven pantallas blancas o crashes no manejados.
@@ -71,7 +98,7 @@ Implementar en orden:
 
 ---
 
-## 3. CI/CD Automation (Media Prioridad)
+## 4. CI/CD Automation (Media Prioridad)
 
 ### Contexto
 Deploy manual en Vercel funciona, pero no hay validación automática en PRs. Riesgo de romper producción.
@@ -97,7 +124,7 @@ Deploy manual en Vercel funciona, pero no hay validación automática en PRs. Ri
 
 ---
 
-## 4. E2E Testing (UC-008 & UC-009) (Media Prioridad)
+## 5. E2E Testing (UC-008 & UC-009) (Media Prioridad)
 
 ### Contexto
 E2E actual cubre hasta UC-007 (Dashboard). Faltan tests para completar y reagendar sesiones.
@@ -126,7 +153,7 @@ E2E actual cubre hasta UC-007 (Dashboard). Faltan tests para completar y reagend
 
 ---
 
-## 5. Roadmap de Implementación Sugerido
+## 6. Roadmap de Implementación Sugerido
 
 ### Sprint Inmediato (1-2 semanas)
 
@@ -134,6 +161,8 @@ E2E actual cubre hasta UC-007 (Dashboard). Faltan tests para completar y reagend
 
 ```
 Semana 1:
+├── Email Notifications (30min)
+│   └── Configurar RESEND_API_KEY en Vercel
 ├── Error Boundaries (4-6h)
 │   ├── global-error.tsx
 │   ├── dashboard error.tsx
@@ -153,7 +182,7 @@ Semana 2:
     └── UI en Settings
 ```
 
-**Total Semana 1-2:** 13-18 horas
+**Total Semana 1-2:** 14-19 horas
 
 ### Sprint Siguiente (3-4 semanas)
 
@@ -175,7 +204,7 @@ Semana 4:
 
 ---
 
-## 6. Checklist General
+## 7. Checklist General
 
 ### Pre-Implementación
 - [x] Análisis de codebase completado
@@ -200,7 +229,12 @@ Semana 4:
 
 ---
 
-## 7. Notas de Implementación
+## 8. Notas de Implementación
+
+### Para Email (Solo Config)
+- Crear cuenta en resend.com (gratis)
+- API key: `RESEND_API_KEY` en Vercel
+- Testing: reagendar sesión para verificar
 
 ### Para Telegram
 - Crear bot antes de implementar: `@BotFather` en Telegram
@@ -224,7 +258,7 @@ Semana 4:
 
 ---
 
-## 8. Contacto y Feedback
+## 9. Contacto y Feedback
 
 Si tenés dudas sobre alguna spec o querés ajustar prioridades:
 1. Revisar la spec completa en el link correspondiente
@@ -232,6 +266,7 @@ Si tenés dudas sobre alguna spec o querés ajustar prioridades:
 3. Estimar si necesitás ayuda en algún setup específico
 
 **Specs creadas:**
+- [`EMAIL_NOTIFICATIONS_SETUP.md`](EMAIL_NOTIFICATIONS_SETUP.md) ⚡ Solo config
 - [`TELEGRAM_INTEGRATION.md`](TELEGRAM_INTEGRATION.md)
 - [`ERROR_HANDLING.md`](ERROR_HANDLING.md)
 - [`CICD_DEPLOYMENT.md`](CICD_DEPLOYMENT.md)

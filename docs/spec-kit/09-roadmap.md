@@ -107,7 +107,7 @@
 
 ### MVP Deliverables
 
-- [x] Auth completo (register, login, Supabase Auth)
+- [x] Auth completo (register, login, Supabase Auth) ✅
 - [x] CRUD de materias ✅
 - [x] CRUD de exámenes ✅
 - [x] CRUD de temas ✅
@@ -132,7 +132,7 @@
 | Frontend: Session actions | ✅ | 🟡 | 6h |
 | Frontend: Week view | ✅ | 🟡 | 8h |
 | Notifications module setup | ✅ | ⬜ | 3h |
-| Email notifications | 🟡 | 🟡 | 5h |
+| Email notifications | 🟡 | 🟡 | 5h (código ✅, falta RESEND_API_KEY) |
 
 **Sprint Goal**: ✅ Usuario puede marcar sesiones como completadas y reagendar (UC-008, UC-009). Vista semanal en UnifiedCalendar.
 
