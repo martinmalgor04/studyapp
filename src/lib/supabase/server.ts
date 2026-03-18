@@ -3,7 +3,8 @@ import { cookies } from 'next/headers';
 import type { Database } from '@/types/database.types';
 
 export async function createClient() {
-  const cookieStore = cookies();
+  // Next.js 16: cookies() now returns a Promise
+  const cookieStore = await cookies();
 
   // En Docker, usamos la URL interna para conectar al host.
   // En producción o local normal, usamos la URL pública.
