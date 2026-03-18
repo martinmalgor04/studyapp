@@ -166,7 +166,7 @@
 | - Event listeners | 🟡 | ⬜ | 1h |
 | - Color coding in Google Calendar | ✅ | ⬜ | 1h |
 
-**Sprint Goal**: ✅ Modo estudio libre completado. ✅ Google Calendar: UC-011a, 011b, 011c implementados. UC-011d: handler listo pero **emit desactivado** en `sessions.ts` (activar para producción).
+**Sprint Goal**: ✅ Modo estudio libre completado. ✅ Google Calendar: UC-011a completado, UC-011b/c/d backend implementado (85%). 🟡 Falta UI avanzada: preview de importación (2-3h), indicadores de conflictos (3h). Ver análisis detallado: [`GOOGLE_CALENDAR_GAPS_ANALYSIS.md`](../GOOGLE_CALENDAR_GAPS_ANALYSIS.md)
 
 ---
 
@@ -387,6 +387,7 @@ e2e/
 34. ✅ **Fix: Completar sesiones desde calendario** - Diálogo de rating en UnifiedCalendar
 35. ✅ **Specs técnicas para features pendientes** - 4 documentos detallados ([PENDING_FEATURES.md](PENDING_FEATURES.md))
 36. ✅ **Troubleshooting Email Notifications** - Logging extensivo + guía de debugging ([TROUBLESHOOTING_EMAIL_NOTIFICATIONS.md](../TROUBLESHOOTING_EMAIL_NOTIFICATIONS.md))
+37. ✅ **Análisis Google Calendar Gaps** - Documentación de lo que falta (85% → 100%) ([GOOGLE_CALENDAR_GAPS_ANALYSIS.md](../GOOGLE_CALENDAR_GAPS_ANALYSIS.md))
 
 ### 🎉 MVP + FREE STUDY MODE + TRACKING + UC-011d COMPLETADO
 
