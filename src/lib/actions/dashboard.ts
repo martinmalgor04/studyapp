@@ -8,7 +8,7 @@ type SupabaseAny = any;
 interface Subject { id: string; name: string; description: string | null; created_at: string }
 interface Exam { id: string; date: string; subject_id: string }
 interface Topic { id: string; name: string; difficulty: 'EASY' | 'MEDIUM' | 'HARD'; hours: number; source: string; source_date: string | null; subject_id: string; created_at: string; subjects?: { name: string } }
-interface Session { id: string; scheduled_at: string; number: number; duration: number; priority: string; status: string; topic?: { id: string; name: string } }
+interface Session { id: string; topic_id?: string; scheduled_at: string; number: number; duration: number; priority: string; status: string; topic?: { id: string; name: string } }
 
 export async function getDashboardData() {
   const supabase = await createClient() as SupabaseAny;
@@ -67,13 +67,13 @@ export async function getDashboardData() {
   thirtyDaysLater2.setDate(thirtyDaysLater2.getDate() + 30);
   const sessionsEnd = thirtyDaysLater2.toISOString();
 
+  // Obtener sesiones (incluir completadas para que no desaparezcan al completar)
   const { data: sessions } = await supabase
     .from('sessions')
-    .select('*, topic:topics(id, name, difficulty), subject:subjects(name)')
+    .select('id, topic_id, scheduled_at, number, duration, priority, status, topic:topics(id, name, difficulty), subject:subjects(name)')
     .eq('user_id', user.id)
     .gte('scheduled_at', todayStart)
     .lt('scheduled_at', sessionsEnd)
-    .eq('status', 'PENDING')
     .order('scheduled_at', { ascending: true }) as { data: Session[] | null };
 
   // Agregar conteos a las materias
@@ -89,7 +89,7 @@ export async function getDashboardData() {
       exams: exams?.length || 0,
       topics: topics?.length || 0,
       upcomingExams,
-      todaySessions: sessions?.filter((s) => s.status === 'PENDING').length || 0,
+      todaySessions: sessions?.filter((s) => s.status === 'PENDING' && new Date(s.scheduled_at).toDateString() === today.toDateString()).length || 0,
     },
     subjects: subjectsWithCounts,
     topics: topics || [],

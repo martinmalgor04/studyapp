@@ -164,7 +164,7 @@ function getEventsForDay(date: Date, sessions: Session[], exams: Exam[] = []) {
   
   const daySessions = sessions.filter(s => {
     const sessionDate = new Date(s.scheduled_at).toISOString().split('T')[0];
-    return sessionDate === dateStr;
+    return sessionDate === dateStr && s.status === 'PENDING';
   });
   
   const dayExams = exams.filter(e => {

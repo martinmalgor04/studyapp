@@ -24,7 +24,13 @@ export async function getUpcomingSessions(days = 7) {
   const { data, error } = await supabase
     .from('sessions')
     .select(`
-      *,
+      id,
+      topic_id,
+      scheduled_at,
+      number,
+      duration,
+      priority,
+      status,
       topic:topics(id, name),
       subject:subjects(id, name),
       exam:exams(id, type, date)
