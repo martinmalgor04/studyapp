@@ -10,7 +10,12 @@ export type TopicSource = (typeof topicSources)[number];
 export const createTopicSchema = z
   .object({
     subject_id: z.string().uuid('ID de materia inválido'),
-    exam_id: z.string().uuid('ID de examen inválido').optional(),
+    exam_id: z
+      .string()
+      .uuid('ID de examen inválido')
+      .optional()
+      .or(z.literal(''))
+      .transform((val) => (val === '' ? undefined : val)),
     name: z
       .string()
       .min(1, 'El nombre es requerido')

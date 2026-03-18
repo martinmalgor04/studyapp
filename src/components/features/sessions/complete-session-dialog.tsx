@@ -16,7 +16,7 @@ export function CompleteSessionDialog({ isOpen, session, onComplete, onClose }: 
 
   const handleRating = async (rating: 'EASY' | 'NORMAL' | 'HARD') => {
     await onComplete(session.id, rating);
-    onClose();
+    onClose(); // El padre ya cerró el diálogo tras refrescar; este cierre asegura estado consistente
   };
 
   return (

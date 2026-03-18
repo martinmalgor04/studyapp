@@ -21,6 +21,7 @@
 | 07  | [API Specification](./07-api-specification.md)        | REST API endpoints                  |
 | 08  | [Design Patterns](./08-design-patterns.md)            | GOF, GRASP, SOLID aplicados         |
 | 09  | [Implementation Roadmap](./09-roadmap.md)             | Sprints y milestones                |
+| —   | [Codebase Analysis](./CODEBASE_ANALYSIS.md)            | Gaps, mejoras y estado vs roadmap   |
 | 10  | [Fixes Documentation](./fixes/README.md)               | Registro de fixes y correcciones    |
 
 

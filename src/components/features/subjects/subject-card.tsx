@@ -3,18 +3,32 @@
 import { useRouter } from 'next/navigation';
 import { deleteSubject } from '@/lib/actions/subjects';
 
+type SubjectStatus = 'CURSANDO' | 'APROBADA' | 'REGULAR' | 'LIBRE';
+
 interface SubjectCardProps {
   subject: {
     id: string;
     name: string;
     description: string | null;
     created_at: string;
+    status?: SubjectStatus;
     progress_percentage?: number;
     total_sessions?: number;
     completed_sessions?: number;
   };
   onEdit: (id: string) => void;
   onDelete: () => void;
+}
+
+function getSubjectStatusBadge(status: SubjectStatus | undefined): { label: string; className: string } | null {
+  if (!status || status === 'CURSANDO') return null;
+  const badges: Record<SubjectStatus, { label: string; className: string }> = {
+    CURSANDO: { label: 'Cursando', className: 'bg-gray-100 text-gray-800' },
+    REGULAR: { label: 'Final pendiente', className: 'bg-amber-100 text-amber-800' },
+    APROBADA: { label: 'Aprobada', className: 'bg-green-100 text-green-800' },
+    LIBRE: { label: 'Libre', className: 'bg-red-100 text-red-800' },
+  };
+  return badges[status];
 }
 
 // Helper para determinar color del borde superior según progreso
@@ -36,7 +50,8 @@ export function SubjectCard({ subject, onEdit, onDelete }: SubjectCardProps) {
   const router = useRouter();
   const progress = subject.progress_percentage || 0;
   const borderColor = getProgressBorderColor(progress);
-  const statusBadge = getStatusBadge(progress);
+  const progressBadge = getStatusBadge(progress);
+  const subjectStatusBadge = getSubjectStatusBadge(subject.status);
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Evitar navegación
@@ -70,11 +85,16 @@ export function SubjectCard({ subject, onEdit, onDelete }: SubjectCardProps) {
       <div className="p-6">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
               <h3 className="text-lg font-semibold text-gray-900">{subject.name}</h3>
-              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge.className}`}>
-                {statusBadge.label}
+              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${progressBadge.className}`}>
+                {progressBadge.label}
               </span>
+              {subjectStatusBadge && (
+                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${subjectStatusBadge.className}`}>
+                  {subjectStatusBadge.label}
+                </span>
+              )}
             </div>
             {subject.description && (
               <p className="mt-1 text-sm text-gray-600">{subject.description}</p>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { getUpcomingSessions } from '@/lib/actions/sessions';
 import { getSubjects } from '@/lib/actions/subjects';
 import { UnifiedCalendar } from '@/components/shared/calendar/unified-calendar';
@@ -27,6 +28,7 @@ interface SessionWithRelations {
 
 export function SessionsClient({ userId }: SessionsClientProps) {
   void userId; // Reserved for future use (e.g. filtering by user)
+  const router = useRouter();
   const [sessions, setSessions] = useState<SessionWithRelations[]>([]);
   const [filteredSessions, setFilteredSessions] = useState<SessionWithRelations[]>([]);
   const [subjects, setSubjects] = useState<Array<{ id: string; name: string }>>([]);
@@ -40,11 +42,11 @@ export function SessionsClient({ userId }: SessionsClientProps) {
       getUpcomingSessions(30), // Mostrar próximos 30 días en vez de 7
       getSubjects(),
     ]);
-    
     setSessions(sessionsData);
     setFilteredSessions(sessionsData);
     setSubjects(subjectsData);
     setLoading(false);
+    router.refresh(); // Invalidar caché para que sesiones completadas se reflejen en toda la app
   };
 
   useEffect(() => {

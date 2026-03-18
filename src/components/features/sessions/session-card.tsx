@@ -66,7 +66,8 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
     setLoading(true);
     const result = await completeSessionWithRating(sessionId, rating);
     if (!result.error) {
-      onStatusChange();
+      setShowCompleteDialog(false);
+      await Promise.resolve(onStatusChange());
     }
     setLoading(false);
   };

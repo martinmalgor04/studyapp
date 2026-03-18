@@ -136,6 +136,16 @@ test('login con credenciales inválidas', async ({ page }) => {
 - Card visible en la grilla
 - Progreso calculado automáticamente
 
+### Progreso de la materia (caso de uso)
+
+El **progreso** que se muestra en cada materia se calcula como:
+
+- **Hoy:** `(sesiones completadas / total de sesiones de la materia) × 100`.
+- Las sesiones son las generadas por el sistema (por tema/repaso); “completadas” = `status === 'COMPLETED'`.
+- Se usa en la card (barra, %, etiquetas Inicio/Intermedio/Avanzado/Casi listo) y para ordenar por progreso.
+
+**Nota para evolución:** Este criterio se va a virar hacia **el programa de la materia**: el progreso pasará a reflejar la cobertura del programa (ej. temas del programa vs. temas con al menos una sesión completada o marcados como vistos), en lugar de basarse solo en el ratio de sesiones completadas. Mantener este caso de uso documentado para no perder la intención al refactorizar.
+
 ### Tests Automatizados
 
 **E2E:**

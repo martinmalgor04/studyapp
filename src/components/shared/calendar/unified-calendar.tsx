@@ -245,7 +245,7 @@ export function UnifiedCalendar({
     setLoadingSession(sessionId);
     const result = await updateSessionStatus(sessionId, 'COMPLETED');
     if (!result.error && onStatusChange) {
-      onStatusChange();
+      await Promise.resolve(onStatusChange());
     }
     setLoadingSession(null);
   };
