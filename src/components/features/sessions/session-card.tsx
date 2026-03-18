@@ -15,6 +15,8 @@ type SessionStatus = 'PENDING' | 'COMPLETED' | 'RESCHEDULED' | 'ABANDONED';
 
 interface Session {
   id: string;
+  adjusted_for_conflict?: boolean;
+  original_scheduled_at?: string | null;
   topic?: { id: string; name: string } | null;
   subject?: { id: string; name: string } | null;
   scheduled_at: string;

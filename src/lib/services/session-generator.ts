@@ -47,6 +47,8 @@ export interface SessionToCreate {
   priority: Priority;
   status: 'PENDING';
   attempts: number;
+  adjusted_for_conflict?: boolean;
+  original_scheduled_at?: string | null;
 }
 
 /**
@@ -79,7 +81,7 @@ async function findConflictFreeSlot(
   preferredDate: Date,
   duration: number,
   maxAttempts: number = 14
-): Promise<{ date: Date; adjusted: boolean }> {
+): Promise<{ date: Date; adjusted: boolean; originalDate: Date | null }> {
   const googleService = getGoogleCalendarService();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = await createClient() as any;
@@ -93,7 +95,7 @@ async function findConflictFreeSlot(
 
   if (!settings?.google_access_token) {
     // Si no hay tokens, devolver fecha preferida sin ajustes
-    return { date: preferredDate, adjusted: false };
+    return { date: preferredDate, adjusted: false, originalDate: null };
   }
 
   const tokens = {
@@ -116,7 +118,11 @@ async function findConflictFreeSlot(
 
     if (!hasConflict) {
       // No hay conflicto, usar este slot
-      return { date: currentDate, adjusted: attempts > 0 };
+      return { 
+        date: currentDate, 
+        adjusted: attempts > 0,
+        originalDate: attempts > 0 ? preferredDate : null
+      };
     }
 
     // Hay conflicto, buscar siguiente slot (al día siguiente a la misma hora)
@@ -127,7 +133,7 @@ async function findConflictFreeSlot(
 
   // Si no encuentra slot sin conflictos después de maxAttempts, usar el preferido
   console.warn(`[SessionGenerator] No conflict-free slot found after ${maxAttempts} attempts, using preferred date`);
-  return { date: preferredDate, adjusted: false };
+  return { date: preferredDate, adjusted: false, originalDate: null };
 }
 
 /**
@@ -181,11 +187,12 @@ async function generateParcialSessions(
     const duration = Math.max(15, Math.round(baseDuration * DURATION_FACTORS[i]));
 
     // NUEVO: Verificar conflictos con Google Calendar si está conectado
+    let conflictResult = null;
     if (hasGoogleCalendar) {
-      const result = await findConflictFreeSlot(userId, scheduledDate, duration);
-      scheduledDate = result.date;
+      conflictResult = await findConflictFreeSlot(userId, scheduledDate, duration);
+      scheduledDate = conflictResult.date;
       
-      if (result.adjusted) {
+      if (conflictResult.adjusted) {
         console.log(`[SessionGenerator] Session ${sessionNumber} adjusted to avoid conflict: ${scheduledDate.toISOString()}`);
       }
     }
@@ -213,6 +220,8 @@ async function generateParcialSessions(
       priority,
       status: 'PENDING',
       attempts: 0,
+      adjusted_for_conflict: conflictResult?.adjusted || false,
+      original_scheduled_at: conflictResult?.originalDate?.toISOString() || null,
     });
   }
 
@@ -266,12 +275,13 @@ async function generateFreeStudySessions(
     // Calcular duración con multiplicador de dificultad
     const duration = Math.max(15, Math.round(baseDuration * DURATION_FACTORS[i]));
 
-    // NUEVO: Verificar conflictos con Google Calendar si está conectado
+    let conflictResult = null;
+        // NUEVO: Verificar conflictos con Google Calendar si está conectado
     if (hasGoogleCalendar) {
-      const result = await findConflictFreeSlot(userId, scheduledDate, duration);
-      scheduledDate = result.date;
+      let conflictResult = await findConflictFreeSlot(userId, scheduledDate, duration);
+      scheduledDate = conflictResult.date;
       
-      if (result.adjusted) {
+      if (conflictResult.adjusted) {
         console.log(`[SessionGenerator] Session ${sessionNumber} adjusted to avoid conflict: ${scheduledDate.toISOString()}`);
       }
     }
@@ -299,6 +309,8 @@ async function generateFreeStudySessions(
       priority,
       status: 'PENDING',
       attempts: 0,
+      adjusted_for_conflict: conflictResult?.adjusted || false,
+      original_scheduled_at: conflictResult?.originalDate?.toISOString() || null,
     });
   }
 
