@@ -66,11 +66,11 @@
 | - Server Actions | ✅ | ⬜ | 1h | CRUD actions |
 | - UI Components | ✅ | ⬜ | 1.5h | Form, List, Card, Dialog |
 | - Page & Navigation | ✅ | ⬜ | 0.5h | `/dashboard/subjects` |
-| **CRUD Exams** | ⏳ | ⬜ | ~3h | Exámenes API + UI |
-| - Validations (Zod) | ⏳ | ⬜ | 0.5h | Schema validation |
-| - Server Actions | ⏳ | ⬜ | 1h | CRUD actions |
-| - UI Components | ⏳ | ⬜ | 1.5h | Form, List, Card |
-| - Page (dentro de Subject) | ⏳ | ⬜ | 0.5h | `/subjects/[id]` |
+| **CRUD Exams** | ✅ | ⬜ | 3h | Exámenes API + UI |
+| - Validations (Zod) | ✅ | ⬜ | 0.5h | Schema validation |
+| - Server Actions | ✅ | ⬜ | 1h | CRUD actions |
+| - UI Components | ✅ | ⬜ | 1.5h | Form, List, Card, Dialog |
+| - Page (dentro de Subject) | ✅ | ⬜ | 0.5h | `/subjects/[id]` |
 | **CRUD Topics** | ✅ | 🟡 | 6.5h | Temas API + UI |
 | - Validations (Zod) | ✅ | ⬜ | 1h | Schema más complejo |
 | - Server Actions | ✅ | ⬜ | 1.5h | CRUD actions |
