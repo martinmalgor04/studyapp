@@ -34,6 +34,36 @@ Acciones requeridas:
 ✅ BIEN: Al finalizar Topics CRUD → Actualizar roadmap marcando ✅ y calculando nuevo progreso
 ```
 
+### 1.6. VALIDAR BUILD - Antes de cada commit
+
+**Antes de hacer commit, SIEMPRE correr `pnpm build` para validar que el código compila correctamente**
+
+Acciones requeridas:
+- Ejecutar `pnpm build` antes de cada commit
+- Verificar que no haya errores de ESLint ni TypeScript
+- Si hay warnings, evaluarlos y corregir los relevantes
+- Si el build falla, arreglar antes de commitear
+
+```bash
+# Proceso correcto antes de commit
+pnpm build              # ✅ Build exitoso
+pnpm lint               # ✅ Sin errores de ESLint
+git add .
+git commit -m "..."
+git push
+```
+
+```
+❌ MAL: Commitear código sin verificar que compila → Build falla en Vercel
+✅ BIEN: Correr build local → Arreglar errores → Commitear código validado
+```
+
+**Razón:** Vercel usa Next.js 14.x en producción. Código que funciona en dev puede fallar en build de producción por:
+- Imports no usados (ESLint error)
+- Dependencias faltantes en `useEffect`
+- Type errors que solo aparecen en build
+- Warnings que se convierten en errores con `--strict`
+
 ### 2. Arquitectura > Velocidad
 
 **Prioridad: Arquitectura y Escalabilidad > Tiempo y Features rápidas**

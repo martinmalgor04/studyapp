@@ -278,7 +278,7 @@ async function generateFreeStudySessions(
     let conflictResult = null;
         // NUEVO: Verificar conflictos con Google Calendar si está conectado
     if (hasGoogleCalendar) {
-      let conflictResult = await findConflictFreeSlot(userId, scheduledDate, duration);
+      conflictResult = await findConflictFreeSlot(userId, scheduledDate, duration);
       scheduledDate = conflictResult.date;
       
       if (conflictResult.adjusted) {

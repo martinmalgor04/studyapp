@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getUpcomingSessions } from '@/lib/actions/sessions';
 import { getSubjects } from '@/lib/actions/subjects';
@@ -36,7 +36,7 @@ export function SessionsClient({ userId }: SessionsClientProps) {
   const [loading, setLoading] = useState(true);
   const [rescheduleSession, setRescheduleSession] = useState<SessionWithRelations | null>(null);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     const [sessionsData, subjectsData] = await Promise.all([
       getUpcomingSessions(30), // Mostrar próximos 30 días en vez de 7
@@ -47,7 +47,7 @@ export function SessionsClient({ userId }: SessionsClientProps) {
     setSubjects(subjectsData);
     setLoading(false);
     router.refresh(); // Invalidar caché para que sesiones completadas se reflejen en toda la app
-  };
+  }, [router]);
 
   useEffect(() => {
     loadData();

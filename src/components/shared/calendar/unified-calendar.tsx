@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { updateSessionStatus, completeSessionWithRating } from '@/lib/actions/sessions';
+import { completeSessionWithRating } from '@/lib/actions/sessions';
 import { CompleteSessionDialog } from '@/components/features/sessions/complete-session-dialog';
 
 interface Session {
