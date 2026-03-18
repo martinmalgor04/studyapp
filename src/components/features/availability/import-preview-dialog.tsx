@@ -5,6 +5,13 @@ import { TimeSlot } from '@/lib/services/availability-importer.service';
 
 interface ImportPreviewDialogProps {
   slots: TimeSlot[];
+  existingSlots?: TimeSlot[];
+  stats?: {
+    total: number;
+    valid: number;
+    discarded: number;
+    totalHours: number;
+  };
   onConfirm: (strategy: 'REPLACE' | 'MERGE') => Promise<void>;
   onCancel: () => void;
   showStrategyOption?: boolean;
@@ -20,6 +27,8 @@ function calculateDuration(start: string, end: string): number {
 
 export function ImportPreviewDialog({
   slots,
+  existingSlots,
+  stats,
   onConfirm,
   onCancel,
   showStrategyOption = false,
@@ -53,10 +62,42 @@ export function ImportPreviewDialog({
           <p className="mt-2 text-sm text-gray-600">
             Encontramos {slots.length} horarios libres. Revisá y confirmá para importarlos.
           </p>
+
+          {/* Stats Cards */}
+          {stats && (
+            <div className="grid grid-cols-3 gap-4 mt-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="text-2xl font-bold text-blue-900">{stats.total}</div>
+                <div className="text-xs text-blue-700">Slots detectados</div>
+              </div>
+              <div className="bg-green-50 p-4 rounded-lg">
+                <div className="text-2xl font-bold text-green-900">{stats.valid}</div>
+                <div className="text-xs text-green-700">Válidos (≥30min)</div>
+              </div>
+              <div className="bg-amber-50 p-4 rounded-lg">
+                <div className="text-2xl font-bold text-amber-900">{stats.discarded}</div>
+                <div className="text-xs text-amber-700">Descartados (&lt;30min)</div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Preview */}
         <div className="flex-1 overflow-y-auto p-6">
+          {/* Comparación: Actual vs Importado */}
+          {existingSlots && existingSlots.length > 0 && (
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="border rounded-lg p-3 bg-gray-50">
+                <h4 className="text-sm font-semibold text-gray-700 mb-2">Horarios Actuales</h4>
+                <p className="text-xs text-gray-600">{existingSlots.length} slots configurados</p>
+              </div>
+              <div className="border rounded-lg p-3 bg-blue-50">
+                <h4 className="text-sm font-semibold text-blue-700 mb-2">Horarios Nuevos</h4>
+                <p className="text-xs text-blue-600">{slots.length} slots detectados</p>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4">
             {Object.entries(slotsByDay)
               .sort(([dayA], [dayB]) => Number(dayA) - Number(dayB))
