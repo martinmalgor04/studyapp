@@ -1,11 +1,65 @@
 version: '3.8'
 
+# ================================
+# StudyApp - Docker Compose Stack
+# ================================
+# Incluye: Next.js + PostgreSQL (Supabase compatible)
+
 services:
+  # ----------------
+  # PostgreSQL Database
+  # ----------------
+  db:
+    container_name: studyapp-postgres
+    image: supabase/postgres:15.1.0.117
+    ports:
+      - "54322:5432"
+    environment:
+      POSTGRES_HOST: /var/run/postgresql
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./supabase/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - studyapp-network
+
+  # ----------------
+  # Adminer (DB UI simple)
+  # ----------------
+  adminer:
+    container_name: studyapp-adminer
+    image: adminer:latest
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+      ADMINER_DESIGN: pepa-linha
+    depends_on:
+      - db
+    networks:
+      - studyapp-network
+
+  # ----------------
+  # Next.js Application (Development)
+  # ----------------
   app:
     container_name: studyapp-web
     build:
       context: .
       dockerfile: Dockerfile
+      target: development
     ports:
       - "3000:3000"
     volumes:
@@ -13,8 +67,38 @@ services:
       - /app/node_modules
       - /app/.next
     environment:
-      # URL interna para que el servidor Next.js (en contenedor) vea a Supabase (en host)
-      - SUPABASE_INTERNAL_URL=http://host.docker.internal:54321
+      # Supabase Connection (usar keys de .env.local)
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      # Database (interno Docker)
+      DATABASE_URL_INTERNAL: postgresql://postgres:postgres@db:5432/postgres
+      NODE_ENV: development
+      # Google Calendar
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+      # Resend
+      RESEND_API_KEY: ${RESEND_API_KEY}
     env_file:
       - .env.local
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - studyapp-network
     command: pnpm dev
+
+# ----------------
+# Volumes
+# ----------------
+volumes:
+  postgres-data:
+    driver: local
+
+# ----------------
+# Networks
+# ----------------
+networks:
+  studyapp-network:
+    driver: bridge
