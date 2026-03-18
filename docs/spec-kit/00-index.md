@@ -30,6 +30,7 @@
 | Doc | Descripción | Prioridad | Estimación |
 |-----|-------------|-----------|------------|
 | [Email Notifications Setup](./EMAIL_NOTIFICATIONS_SETUP.md) | Configurar Resend API (código ya hecho) | 🟢 Baja | 30min |
+| [Troubleshooting Email Notifications](../TROUBLESHOOTING_EMAIL_NOTIFICATIONS.md) | Debugging y logs para emails | ✅ Implementado | — |
 | [Telegram Integration](./TELEGRAM_INTEGRATION.md) | Notificaciones por Telegram Bot | 🔴 Alta | 6-8h |
 | [Error Handling](./ERROR_HANDLING.md) | Error boundaries y loading states | 🔴 Alta | 4-6h |
 | [CI/CD Deployment](./CICD_DEPLOYMENT.md) | GitHub Actions y automatización | 🟡 Media | 3-4h |

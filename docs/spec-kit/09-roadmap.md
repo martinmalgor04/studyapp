@@ -132,7 +132,7 @@
 | Frontend: Session actions | ✅ | 🟡 | 6h |
 | Frontend: Week view | ✅ | 🟡 | 8h |
 | Notifications module setup | ✅ | ⬜ | 3h |
-| Email notifications | 🟡 | 🟡 | 5h (código ✅, falta RESEND_API_KEY) |
+| Email notifications | 🟡 | 🟡 | 5h (código ✅, RESEND_API_KEY ✅, [troubleshooting activo](../TROUBLESHOOTING_EMAIL_NOTIFICATIONS.md)) |
 
 **Sprint Goal**: ✅ Usuario puede marcar sesiones como completadas y reagendar (UC-008, UC-009). Vista semanal en UnifiedCalendar.
 
@@ -386,6 +386,7 @@ e2e/
 33. ✅ **Activación UC-011d** - Eventos de sesión para sync bidireccional con Google Calendar
 34. ✅ **Fix: Completar sesiones desde calendario** - Diálogo de rating en UnifiedCalendar
 35. ✅ **Specs técnicas para features pendientes** - 4 documentos detallados ([PENDING_FEATURES.md](PENDING_FEATURES.md))
+36. ✅ **Troubleshooting Email Notifications** - Logging extensivo + guía de debugging ([TROUBLESHOOTING_EMAIL_NOTIFICATIONS.md](../TROUBLESHOOTING_EMAIL_NOTIFICATIONS.md))
 
 ### 🎉 MVP + FREE STUDY MODE + TRACKING + UC-011d COMPLETADO
 
