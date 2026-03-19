@@ -83,13 +83,25 @@ function SessionCardItem({ session, loadingSession, onComplete }: SessionCardIte
   });
   
   const topicName = session.topic?.name || 'Tema';
+  const isCompleted = session.status === 'COMPLETED';
   
   return (
     <div
-      className={`rounded-md border p-2 mb-1 ${PRIORITY_COLORS[session.priority] || PRIORITY_COLORS.NORMAL}`}
+      className={`rounded-md border p-2 mb-1 ${
+        isCompleted 
+          ? 'bg-green-50 border-green-300 opacity-75' 
+          : PRIORITY_COLORS[session.priority] || PRIORITY_COLORS.NORMAL
+      }`}
     >
-      <div className="text-xs font-semibold truncate">
-        {topicName} - R{session.number}
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-semibold truncate">
+          {topicName} - R{session.number}
+        </div>
+        {isCompleted && (
+          <svg className="h-4 w-4 text-green-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        )}
       </div>
       <div className="flex items-center gap-1 text-xs text-gray-600 mt-0.5">
         <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -103,22 +115,29 @@ function SessionCardItem({ session, loadingSession, onComplete }: SessionCardIte
         </svg>
         <span>{session.duration}min</span>
       </div>
-      <button
-        onClick={() => onComplete(session)}
-        disabled={loadingSession === session.id}
-        className="mt-2 w-full rounded bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-1"
-      >
-        {loadingSession === session.id ? (
-          '...'
-        ) : (
-          <>
-            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>Completar</span>
-          </>
-        )}
-      </button>
+      {!isCompleted && (
+        <button
+          onClick={() => onComplete(session)}
+          disabled={loadingSession === session.id}
+          className="mt-2 w-full rounded bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-1"
+        >
+          {loadingSession === session.id ? (
+            '...'
+          ) : (
+            <>
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Completar</span>
+            </>
+          )}
+        </button>
+      )}
+      {isCompleted && (
+        <div className="mt-2 text-xs text-green-700 font-medium text-center">
+          ✓ Completada
+        </div>
+      )}
     </div>
   );
 }
@@ -161,10 +180,15 @@ function getCalendarDays(year: number, month: number) {
 // Obtener eventos de un día específico
 function getEventsForDay(date: Date, sessions: Session[], exams: Exam[] = []) {
   const dateStr = date.toISOString().split('T')[0];
+  const today = new Date().toISOString().split('T')[0];
   
   const daySessions = sessions.filter(s => {
     const sessionDate = new Date(s.scheduled_at).toISOString().split('T')[0];
-    return sessionDate === dateStr && s.status === 'PENDING';
+    // Mostrar PENDING siempre + COMPLETED solo del día actual
+    return sessionDate === dateStr && (
+      s.status === 'PENDING' || 
+      (s.status === 'COMPLETED' && sessionDate === today)
+    );
   });
   
   const dayExams = exams.filter(e => {
