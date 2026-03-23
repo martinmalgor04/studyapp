@@ -2,6 +2,17 @@
 const nextConfig = {
   reactStrictMode: true,
 
+  // Allow Server Actions from all Vercel deployment URLs (production + previews)
+  // Next.js 16 CSRF protection blocks cross-origin Server Action requests by default
+  serverActions: {
+    allowedOrigins: [
+      'studyapp-omega.vercel.app',
+      'studyapp.vercel.app',
+      '*.vercel.app',
+      'localhost:3000',
+    ],
+  },
+
   async headers() {
     return [
       {

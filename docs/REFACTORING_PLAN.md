@@ -853,68 +853,68 @@ pnpm lint           # ✅
 
 ## Checklist de Verificación por Fase
 
-### Fase 0
-- [ ] Branch `refactor/layered-architecture` creado
-- [ ] `pnpm build` pasa
-- [ ] `pnpm test:unit` pasa
-- [ ] Carpeta `src/lib/repositories/` creada
+### Fase 0 ✅ (commit 7f4091e)
+- [x] Branch `refactor/layered-architecture` creado
+- [x] `pnpm build` pasa
+- [x] `pnpm test:unit` pasa
+- [x] Carpeta `src/lib/repositories/` creada
 
-### Fase 1 (Repositorios)
-- [ ] `subjects.repository.ts` creado y actions lo usan
-- [ ] `exams.repository.ts` creado y actions lo usan
-- [ ] `topics.repository.ts` creado y actions lo usan
-- [ ] `sessions.repository.ts` creado y actions lo usan
-- [ ] `notifications.repository.ts` creado y actions lo usan
-- [ ] `user-settings.repository.ts` creado y actions/services lo usan
-- [ ] `availability.repository.ts` creado y actions lo usan
-- [ ] `index.ts` re-exports
-- [ ] `pnpm build` pasa
-- [ ] `pnpm test:unit` pasa
-- [ ] CRUD de Materias funciona (browser)
-- [ ] CRUD de Exámenes funciona (browser)
-- [ ] CRUD de Topics funciona (browser)
-- [ ] Sesiones se generan al crear Topic
-- [ ] Dashboard carga correctamente
-- [ ] Notificaciones funcionan
-- [ ] Google Calendar sync funciona
-- [ ] Disponibilidad se guarda
+### Fase 1 (Repositorios) ✅ (commit 7f4091e)
+- [x] `subjects.repository.ts` creado y actions lo usan
+- [x] `exams.repository.ts` creado y actions lo usan
+- [x] `topics.repository.ts` creado y actions lo usan
+- [x] `sessions.repository.ts` creado y actions lo usan
+- [x] `notifications.repository.ts` creado y actions lo usan
+- [x] `user-settings.repository.ts` creado y actions/services lo usan
+- [x] `availability.repository.ts` creado y actions lo usan
+- [x] `index.ts` re-exports
+- [x] `pnpm build` pasa
+- [x] `pnpm test:unit` pasa
+- [x] CRUD de Materias funciona (browser)
+- [x] CRUD de Exámenes funciona (browser)
+- [x] CRUD de Topics funciona (browser)
+- [x] Sesiones se generan al crear Topic
+- [x] Dashboard carga correctamente
+- [x] Notificaciones funcionan
+- [x] Google Calendar sync funciona
+- [x] Disponibilidad se guarda
 
-### Fase 2 (Services puros)
-- [ ] `session-generator.ts` no importa `createClient`
-- [ ] `notification.service.ts` usa repository
-- [ ] `google-calendar.service.ts` no hace queries DB
-- [ ] `google-tokens.helper.ts` usa `user-settings.repository`
-- [ ] `google-calendar-event-handler.ts` usa `sessions.repository`
-- [ ] `progress-calculator.ts` creado
-- [ ] `pnpm build` pasa
-- [ ] `pnpm test:unit` pasa (60+ tests, posible ajuste de mocks)
-- [ ] Sesiones se generan con detección de conflictos GCal
-- [ ] Completar sesión emite evento → GCal se actualiza
+### Fase 2 (Services puros) ✅ (commit af03797)
+- [x] `session-generator.ts` no importa `createClient`
+- [x] `notification.service.ts` usa repository
+- [x] `google-calendar.service.ts` no hace queries DB
+- [x] `google-tokens.helper.ts` usa `user-settings.repository`
+- [x] `google-calendar-event-handler.ts` usa `sessions.repository`
+- [x] `progress-calculator.ts` creado
+- [x] `pnpm build` pasa
+- [x] `pnpm test:unit` pasa (60 tests)
+- [x] Sesiones se generan con detección de conflictos GCal
+- [x] Completar sesión emite evento → GCal se actualiza
 
-### Fase 3 (Actions adelgazadas)
-- [ ] Todas las Actions siguen el patrón: auth → validate → repo/service → revalidate
-- [ ] No hay queries directas a Supabase en Actions (excepto auth.getUser)
-- [ ] `dashboard.ts` usa repos + función de cálculo
-- [ ] `sessions.ts` orquesta repos + services
-- [ ] `pnpm build` pasa
-- [ ] `pnpm test:unit` pasa
+### Fase 3 (Actions adelgazadas) ✅ (commit af03797)
+- [x] Todas las Actions siguen el patrón: auth → validate → repo/service → revalidate
+- [x] No hay queries directas a Supabase en Actions (excepto auth.getUser)
+- [x] `dashboard.ts` usa repos + función de cálculo
+- [x] `sessions.ts` orquesta repos + services
+- [x] `pnpm build` pasa
+- [x] `pnpm test:unit` pasa
 
-### Fase 4 (RSC)
-- [ ] `subjects/page.tsx` es RSC
-- [ ] `subjects/[id]/page.tsx` es RSC
-- [ ] `dashboard/page.tsx` pasa datos a DashboardClient
-- [ ] `sessions/page.tsx` pasa datos a SessionsClient
-- [ ] No hay flickeo de "Cargando..." en carga inicial
-- [ ] Filtros/búsqueda/dialogs siguen funcionando
-- [ ] `pnpm build` pasa
+### Fase 4 (RSC) ✅ (commit af03797)
+- [x] `subjects/page.tsx` es RSC
+- [x] `subjects/[id]/page.tsx` es RSC
+- [x] `dashboard/page.tsx` pasa datos a DashboardClient
+- [x] `sessions/page.tsx` pasa datos a SessionsClient
+- [x] No hay flickeo de "Cargando..." en carga inicial
+- [x] Filtros/búsqueda/dialogs siguen funcionando
+- [x] `pnpm build` pasa
 
-### Fase 5 (Limpieza)
-- [ ] No hay `createClient()` fuera de repos y actions (para auth)
-- [ ] No hay `supabase.from()` fuera de repos
-- [ ] Helper `getAuthenticatedUser()` creado y usado
-- [ ] `pnpm build` pasa
-- [ ] `pnpm test:unit` pasa
-- [ ] `pnpm lint` pasa
+### Fase 5 (Limpieza) ✅ (commit af03797)
+- [x] No hay `createClient()` fuera de repos y actions (para auth)
+- [x] No hay `supabase.from()` fuera de repos
+- [x] Helper `getAuthenticatedUser()` creado y usado
+- [x] `pnpm build` pasa
+- [x] `pnpm test:unit` pasa
+- [x] `pnpm lint` pasa
 - [ ] Merge a `main`
 
 ---
