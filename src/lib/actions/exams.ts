@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/utils/logger';
 import {
   createExamSchema,
   updateExamSchema,
@@ -77,8 +78,7 @@ export async function createExam(input: CreateExamInput) {
   }
 
   // Crear exam
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('exams')
     .insert({
       subject_id: validationResult.data.subject_id,
@@ -103,8 +103,7 @@ export async function createExam(input: CreateExamInput) {
     await convertTopicsToFinal(data.id, data.subject_id);
     
     // Cambiar estado de materia a REGULAR automáticamente
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    await supabase
       .from('subjects')
       .update({ status: 'REGULAR' })
       .eq('id', data.subject_id);
@@ -123,17 +122,16 @@ export async function createExam(input: CreateExamInput) {
  * - Regenera sesiones en modo countdown
  */
 async function convertTopicsToFinal(finalExamId: string, subjectId: string) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = await createClient() as any;
+  const supabase = await createClient();
 
   // 1. Obtener todos los topics de la materia
   const { data: topics, error: topicsError } = await supabase
     .from('topics')
     .select('id, exam_id')
-    .eq('subject_id', subjectId) as { data: Array<{ id: string; exam_id: string | null }> | null; error: unknown };
+    .eq('subject_id', subjectId);
 
   if (topicsError || !topics || topics.length === 0) {
-    console.warn('No topics found to convert or error:', topicsError);
+    logger.warn('No topics found to convert or error:', topicsError);
     return;
   }
 
@@ -158,7 +156,7 @@ async function convertTopicsToFinal(finalExamId: string, subjectId: string) {
         // Regenerar sesiones en modo countdown
         await generateSessions(topic.id);
       } catch (err) {
-        console.error(`Error converting topic ${topic.id} to final:`, err);
+        logger.error(`Error converting topic ${topic.id} to final:`, err);
         // Continuar con los demás topics aunque uno falle
       }
     }
@@ -166,8 +164,7 @@ async function convertTopicsToFinal(finalExamId: string, subjectId: string) {
 }
 
 export async function updateExam(id: string, input: UpdateExamInput) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = await createClient() as any;
+  const supabase = await createClient();
 
   // Validar input
   const validationResult = updateExamSchema.safeParse(input);
@@ -182,7 +179,7 @@ export async function updateExam(id: string, input: UpdateExamInput) {
     .from('exams')
     .select('subject_id, subjects!inner(user_id)')
     .eq('id', id)
-    .single() as { data: { subject_id: string; subjects: { user_id: string } } | null };
+    .single();
 
   if (!exam) {
     return {
@@ -210,7 +207,7 @@ export async function updateExam(id: string, input: UpdateExamInput) {
     .single();
 
   if (error) {
-    console.error('Error updating exam:', error);
+    logger.error('Error updating exam:', error);
     return {
       error: 'Error al actualizar el examen',
     };
@@ -222,15 +219,14 @@ export async function updateExam(id: string, input: UpdateExamInput) {
 }
 
 export async function deleteExam(id: string) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = await createClient() as any;
+  const supabase = await createClient();
 
   // Obtener el exam para verificar permisos y subject_id
   const { data: exam } = await supabase
     .from('exams')
     .select('subject_id, subjects!inner(user_id)')
     .eq('id', id)
-    .single() as { data: { subject_id: string; subjects: { user_id: string } } | null };
+    .single();
 
   if (!exam) {
     return {
@@ -253,7 +249,7 @@ export async function deleteExam(id: string) {
   const { error } = await supabase.from('exams').delete().eq('id', id);
 
   if (error) {
-    console.error('Error deleting exam:', error);
+    logger.error('Error deleting exam:', error);
     return {
       error: 'Error al eliminar el examen',
     };

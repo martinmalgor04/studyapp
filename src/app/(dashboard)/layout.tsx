@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { UserMenu } from '@/components/layout/user-menu';
 import { NotificationBell } from '@/components/features/notifications/notification-bell';
+import { logger } from '@/lib/utils/logger';
 
 export default async function DashboardLayout({
   children,
@@ -32,21 +33,21 @@ export default async function DashboardLayout({
   // Procesar sesiones vencidas (auto-abandono + notificaciones)
   // Ejecutar en background, no bloquear render
   import('@/lib/actions/sessions').then(({ processOverdueSessions }) => {
-    processOverdueSessions().catch(err => console.error('Error processing overdue sessions:', err));
+    processOverdueSessions().catch(err => logger.error('Error processing overdue sessions:', err));
   });
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="border-b bg-white">
+      <nav className="border-b bg-white" aria-label="Navegación principal">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 justify-between">
             <div className="flex">
               <div className="flex flex-shrink-0 items-center">
-                <Link href="/dashboard" className="text-xl font-bold text-gray-900">
+                <Link href="/dashboard" className="text-xl font-bold text-gray-900" aria-label="Ir al inicio - StudyApp">
                   StudyApp
                 </Link>
               </div>
-              <div className="ml-10 flex space-x-8">
+              <div className="ml-10 flex space-x-8" role="list" aria-label="Menú principal">
                 <Link
                   href="/dashboard"
                   className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
@@ -73,7 +74,7 @@ export default async function DashboardLayout({
                 </Link>
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4" aria-label="Acciones de usuario">
               <NotificationBell />
               <UserMenu 
                 userEmail={data.user.email!} 
@@ -83,7 +84,7 @@ export default async function DashboardLayout({
           </div>
         </div>
       </nav>
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">{children}</main>
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8" aria-label="Contenido principal">{children}</main>
     </div>
   );
 }

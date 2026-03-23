@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/utils/logger';
 
 type Shift = 'MORNING' | 'AFTERNOON' | 'NIGHT';
 
@@ -15,8 +16,7 @@ export async function saveOnboardingAvailability(
   shifts: Shift[],
   includeWeekends: boolean
 ) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = await createClient() as any;
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -39,7 +39,7 @@ export async function saveOnboardingAvailability(
     for (const shift of shifts) {
       const template = SHIFT_TEMPLATES[shift];
       if (!template) {
-        console.warn(`Unknown shift: ${shift}`);
+        logger.warn(`Unknown shift: ${shift}`);
         continue;
       }
       
@@ -59,7 +59,7 @@ export async function saveOnboardingAvailability(
     .insert(slots);
 
   if (slotsError) {
-    console.error('Error saving availability slots:', slotsError);
+    logger.error('Error saving availability slots:', slotsError);
     return { error: 'Error al guardar disponibilidad' };
   }
 
@@ -78,7 +78,7 @@ export async function saveOnboardingAvailability(
     });
 
   if (settingsError) {
-    console.error('Error upserting user_settings:', settingsError);
+    logger.error('Error upserting user_settings:', settingsError);
     return { error: 'Error al completar onboarding' };
   }
 
@@ -87,8 +87,7 @@ export async function saveOnboardingAvailability(
 }
 
 export async function checkOnboardingStatus() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = await createClient() as any;
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -99,7 +98,7 @@ export async function checkOnboardingStatus() {
     .from('user_settings')
     .select('onboarding_completed')
     .eq('user_id', user.id)
-    .single() as { data: { onboarding_completed?: boolean } | null };
+    .single();
 
   return { completed: settings?.onboarding_completed || false };
 }

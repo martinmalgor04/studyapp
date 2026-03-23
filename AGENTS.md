@@ -202,7 +202,7 @@ StudyApp/
 │
 ├── docs/
 │   ├── spec-kit/                     # Especificación técnica completa
-│   ├── SUPABASE_SETUP.md
+│   ├── DOCKER_SETUP.md
 │   └── ...
 │
 ├── n8n/                              # Workflows legacy (referencia)
@@ -320,7 +320,7 @@ const calculatePriority = (params) => {
 };
 ```
 
-**Ver documentación completa:** `docs/SESSION_GENERATION_LOGIC.md`
+**Ver documentación completa:** `AGENTS.md` (sección "Algoritmos de Negocio" más arriba)
 
 ### Energía Circadiana
 
@@ -688,7 +688,7 @@ src/
 | Database Schema | `docs/spec-kit/06-database-schema.md` | Schema completo |
 | Design Patterns | `docs/spec-kit/08-design-patterns.md` | SOLID, GRASP, GOF aplicados |
 | Roadmap | `docs/spec-kit/09-roadmap.md` | Plan de implementación |
-| Supabase Setup | `docs/SUPABASE_SETUP.md` | Guía de configuración |
+| Supabase Setup | `docs/DOCKER_SETUP.md` | Guía de configuración local con Docker |
 
 ---
 

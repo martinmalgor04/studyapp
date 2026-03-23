@@ -657,3 +657,277 @@ e2e:
 - ✅ Confianza en features críticas de sesiones
 - ✅ Prevenir regresiones en flujos complejos
 - ✅ Documentación viva del comportamiento esperado
+
+---
+
+## 11. Manual Testing Checklist
+
+Mientras se implementan los tests E2E automatizados, esta sección documenta las guías de testing manual para features críticas que requieren verificación inmediata.
+
+### 11.1 UC-011c: Conflict Detection & UI Indicators
+
+**Objetivo:** Verificar que las sesiones ajustadas por conflictos con Google Calendar se detecten correctamente y se muestren con indicadores visuales.
+
+#### Pre-requisitos
+
+- [ ] Google Calendar conectado en `/dashboard/settings`
+- [ ] Al menos 2 eventos futuros en Google Calendar (para crear conflictos)
+- [ ] Supabase local corriendo con la migration `20260318111719_add_conflict_tracking.sql` aplicada
+- [ ] Base de datos con al menos 1 subject y 1 exam
+
+#### Test 1: Generar sesiones CON conflictos
+
+**Pasos:**
+1. Ir a Google Calendar y crear un evento:
+   - Fecha: Mañana a las 10:00
+   - Duración: 2 horas
+   
+2. En StudyApp, crear un nuevo topic:
+   - Subject: Cualquier materia
+   - Exam: Cualquier parcial/final con fecha en 2 semanas
+   - Hours: 120 minutos
+   - Source Date: Hoy (para que R1 caiga mañana)
+
+3. Guardar el topic y esperar a que se generen las sesiones
+
+**Resultado esperado:**
+- ✅ Las sesiones se generan exitosamente
+- ✅ En la consola del servidor aparece: `[SessionGenerator] Session N adjusted to avoid conflict: <nueva_fecha>`
+- ✅ Al menos una sesión tiene `adjusted_for_conflict = true`
+- ✅ Esa sesión tiene `original_scheduled_at` con la fecha que iba a ser originalmente
+
+**Verificación en DB:**
+```sql
+SELECT 
+  id, 
+  number, 
+  scheduled_at, 
+  original_scheduled_at,
+  adjusted_for_conflict
+FROM sessions
+WHERE topic_id = '<topic_id>'
+ORDER BY number;
+```
+
+#### Test 2: Visualizar badge de conflicto
+
+**Pasos:**
+1. Ir a `/dashboard/sessions` (vista de lista)
+2. Buscar la sesión que fue ajustada en Test 1
+
+**Resultado esperado:**
+- ✅ La tarjeta de sesión muestra un badge adicional: `⚠️ Ajustada por conflicto`
+- ✅ El badge tiene estilo amber (bg-amber-100, text-amber-800)
+- ✅ Al hacer hover sobre el badge, aparece un tooltip con la fecha original
+
+**Apariencia esperada:**
+```
+┌─────────────────────────────────────────┐
+│ 🟠 URGENTE  ⏰ Pendiente                │
+│ ⚠️ Ajustada por conflicto               │ ← ESTE BADGE
+│                                          │
+│ R1 - Matemática: Límites                │
+│ 📅 Mañana, 18/03 - 12:00                │ ← Fecha ajustada
+│ ⏱️ 72 minutos                            │
+│                                          │
+│ [Comenzar] [Completar] [Reagendar]      │
+└─────────────────────────────────────────┘
+```
+
+#### Test 3: Generar sesiones SIN conflictos
+
+**Pasos:**
+1. Crear un nuevo topic con fecha de clase en una semana (sin eventos en Google Calendar)
+2. Guardar y verificar las sesiones generadas
+
+**Resultado esperado:**
+- ✅ Todas las sesiones tienen `adjusted_for_conflict = false`
+- ✅ Todas las sesiones tienen `original_scheduled_at = null`
+- ✅ No aparece ningún badge de conflicto en la UI
+
+#### Test 4: Tooltip con fecha original
+
+**Pasos:**
+1. Usar una sesión ajustada del Test 1
+2. Hacer hover sobre el badge "⚠️ Ajustada por conflicto"
+
+**Resultado esperado:**
+- ✅ Aparece un tooltip HTML nativo
+- ✅ El tooltip muestra: `"Reagendada desde <fecha_original>"`
+- ✅ La fecha está en formato español: `dd/mm/yyyy, HH:MM`
+
+**Ejemplo:** `Reagendada desde 18/03/2026, 10:00`
+
+#### Casos Edge
+
+**Edge 1: Múltiples conflictos consecutivos**
+- Crear 3 eventos consecutivos en días seguidos
+- Crear topic que genere sesiones en esas fechas
+- Verificar que el algoritmo salta día por día hasta encontrar slot libre (máximo 14 intentos)
+
+**Edge 2: Sin Google Calendar conectado**
+- Desconectar Google Calendar desde `/dashboard/settings`
+- Crear un nuevo topic
+- Verificar que las sesiones se generan normalmente sin badges de conflicto
+
+**Edge 3: Conflicto parcial (evento más corto)**
+- Crear evento de 30 minutos a las 10:00
+- Crear topic con sesiones de 90 minutos
+- Verificar que si la sesión se superpondría aunque sea parcialmente, se detecta conflicto
+
+#### Logs a Monitorear
+
+```bash
+# Conflicto detectado y ajustado
+[SessionGenerator] Session 1 adjusted to avoid conflict: 2026-03-19T10:00:00.000Z
+
+# No se pudo encontrar slot sin conflictos (edge case)
+[SessionGenerator] No conflict-free slot found after 14 attempts, using preferred date
+```
+
+---
+
+### 11.2 UC-011b: Import Availability Preview
+
+**Objetivo:** Verificar el flujo completo de preview antes de importar disponibilidad desde Google Calendar.
+
+#### Pre-requisitos
+
+- [ ] Tener Google Calendar conectado desde `/dashboard/settings`
+- [ ] Tener algunos eventos en Google Calendar para detectar gaps
+- [ ] Opcionalmente tener slots de disponibilidad ya configurados
+
+#### Test 1: Preview con slots detectados
+
+**Pasos:**
+1. Ir a `/dashboard/settings/availability`
+2. Click en "Importar desde Google Calendar"
+
+**Resultado esperado:**
+- ✅ Aparece el diálogo de preview
+- ✅ Muestra 3 stats cards:
+  - Slots detectados (azul)
+  - Válidos ≥30min (verde)
+  - Descartados <30min (ámbar)
+- ✅ Muestra lista de slots agrupados por día
+- ✅ Cada slot muestra horario y duración en minutos
+
+#### Test 2: Comparación con slots existentes
+
+**Si hay slots configurados previamente:**
+- ✅ Aparece sección "Horarios Actuales vs Horarios Nuevos"
+- ✅ Muestra cantidad de slots en cada lado
+- ✅ Aparecen opciones de estrategia:
+  - "Reemplazar mis horarios actuales"
+  - "Combinar con mis horarios actuales"
+
+**Si NO hay slots existentes:**
+- ✅ NO aparece sección de comparación
+- ✅ NO aparecen opciones de estrategia
+- ✅ Solo botón "Confirmar e Importar"
+
+#### Test 3: Confirmar importación (REPLACE)
+
+**Pasos:**
+1. Seleccionar "Reemplazar mis horarios actuales" (si hay slots existentes)
+2. Click en "Confirmar e Importar"
+
+**Resultado esperado:**
+- ✅ Botón muestra "Importando..."
+- ✅ Diálogo se cierra después de importar
+- ✅ Aparece mensaje de éxito
+- ✅ Página se refresca automáticamente
+- ✅ Calendario muestra los nuevos slots
+- ✅ Slots anteriores fueron eliminados (si había)
+
+#### Test 4: Confirmar importación (MERGE)
+
+**Pasos:**
+1. Volver a abrir "Importar desde Google Calendar"
+2. Seleccionar "Combinar con mis horarios actuales"
+3. Click en "Confirmar e Importar"
+
+**Resultado esperado:**
+- ✅ Se agregan slots nuevos sin eliminar existentes
+- ✅ NO se duplican slots idénticos
+
+#### Test 5: Cancelar importación
+
+**Pasos:**
+1. Abrir "Importar desde Google Calendar"
+2. Click en "Cancelar"
+
+**Resultado esperado:**
+- ✅ Diálogo se cierra
+- ✅ NO se guarda nada en BD
+- ✅ Calendario mantiene slots actuales
+
+#### Casos Edge
+
+**Edge 1: Google Calendar no conectado**
+- Desconectar Google Calendar desde Settings
+- Intentar "Importar desde Google Calendar"
+- Verificar mensaje de error: "Google Calendar no conectado. Conectá tu cuenta primero."
+- Verificar que NO se abre el diálogo de preview
+
+**Edge 2: Sin slots detectados**
+- Crear un día completamente ocupado en Google Calendar
+- Intentar importar
+- Verificar mensaje de error: "No se detectaron horarios libres..."
+- Verificar que NO se abre el diálogo
+
+**Edge 3: Slots descartados (<30min)**
+- El servicio `AvailabilityImporterService` filtra slots menores a 30min mediante `minSlotDuration: 30`
+- Por lo tanto, `stats.discarded` siempre será 0 con la implementación actual
+
+**Edge 4: Estrategia MERGE con solapamiento**
+- La estrategia MERGE compara `day_of_week`, `start_time` y `end_time` para evitar duplicados exactos
+- Slots que se solapan parcialmente NO se detectan como duplicados y se agregarán ambos
+
+---
+
+### 11.3 Métricas de Éxito del Testing Manual
+
+| Métrica | Objetivo | UC-011c | UC-011b |
+|---------|----------|---------|---------|
+| Detección de conflictos | 100% | ⏳ | N/A |
+| Ajuste automático | 100% | ⏳ | N/A |
+| Badge visible en UI | 100% | ⏳ | N/A |
+| Tooltip funcional | 100% | ⏳ | N/A |
+| Preview dialog funcional | 100% | N/A | ⏳ |
+| Stats cards correctas | 100% | N/A | ⏳ |
+| Comparación lado a lado | 100% | N/A | ⏳ |
+| Estrategias REPLACE/MERGE | 100% | N/A | ⏳ |
+| Sin errores en consola | 0 errores | ⏳ | ⏳ |
+
+---
+
+### 11.4 Checklist Consolidado
+
+**UC-011c: Conflict Detection**
+- [ ] Test 1: Sesiones con conflictos se ajustan correctamente
+- [ ] Test 2: Badge de conflicto aparece en UI
+- [ ] Test 3: Sesiones sin conflictos no tienen badge
+- [ ] Test 4: Tooltip muestra fecha original
+- [ ] Edge 1: Múltiples conflictos manejados
+- [ ] Edge 2: Sin Google Calendar no rompe nada
+- [ ] Edge 3: Conflictos parciales detectados
+- [ ] Logs de servidor muestran información correcta
+- [ ] Base de datos tiene datos consistentes
+
+**UC-011b: Import Preview**
+- [ ] Test 1: Preview con stats cards completas
+- [ ] Test 2: Comparación actual vs importado
+- [ ] Test 3: Importar con REPLACE funciona
+- [ ] Test 4: Importar con MERGE funciona
+- [ ] Test 5: Cancelar importación no guarda nada
+- [ ] Edge 1: Error si Google Calendar no conectado
+- [ ] Edge 2: Error si sin slots detectados
+- [ ] Edge 3: Slots <30min se filtran correctamente
+- [ ] Edge 4: MERGE no duplica slots idénticos
+
+---
+
+**Estimación de testing manual:** 30-40 minutos total  
+**Documentado:** 2026-03-18 (UC-011c), 2026-03-19 (UC-011b)  
+**Próximos pasos:** Automatizar estos tests con Playwright cuando se implemente la sección 4-9 de este documento

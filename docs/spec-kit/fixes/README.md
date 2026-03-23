@@ -10,8 +10,10 @@ Registro cronológico de todos los fixes (correcciones) del proyecto StudyApp, o
 | 2.0 - MVP Core | [2.0-mvp-core.md](2.0-mvp-core.md) | 8 fixes | ✅ Documentado |
 | 3.0 - Session Generation | [3.0-session-generation.md](3.0-session-generation.md) | 4 fixes | ✅ Documentado |
 | 4.0 - UI Refinements | [4.0-ui-refinements.md](4.0-ui-refinements.md) | 7 fixes | ✅ Documentado |
+| 5.0 - Email Notifications | [5.0-email-notifications.md](5.0-email-notifications.md) | 1 análisis | ✅ Documentado |
+| 6.0 - Google Calendar Gaps | [6.0-google-calendar-gaps.md](6.0-google-calendar-gaps.md) | 1 análisis | ✅ Documentado |
 
-**Total**: 24 fixes documentados
+**Total**: 24 fixes + 2 análisis documentados
 
 ---
 
@@ -41,13 +43,15 @@ Registro cronológico de todos los fixes (correcciones) del proyecto StudyApp, o
 | 4.3.1 | Countdown logic change | 4.0 | 28 Ene |
 | 4.3.2 | generateSessions export | 4.0 | 28 Ene |
 
-### Medium (🟡) - 6 fixes
+### Medium (🟡) - 8 fixes/análisis
 
 | ID | Título | Sprint | Fecha |
 |----|--------|--------|-------|
 | 2.2.2 | Exam number optional field | 2.0 | 27 Ene |
 | 3.2.1 | Session display missing | 3.0 | 27 Ene |
 | 4.1.3 | Sessions date range | 4.0 | 28 Ene |
+| 5.0 | Email Notifications Troubleshooting | 4.0 | 18 Mar |
+| 6.0 | Google Calendar Gaps Analysis | 4.0 | 20 Mar |
 | (otros) | ... | ... | ... |
 
 ### Low (🔵) - 4 fixes
@@ -68,17 +72,18 @@ Fixes por Sprint:
 ████████████████████ Sprint 2: 8 fixes
 ██████████ Sprint 3: 4 fixes
 █████████████████ Sprint 4: 7 fixes
+███████ Sprint 4 Análisis: 2 documentos
 
 Por Severidad:
-🔴 Critical: 6 (25%)
-🟠 High: 8 (33%)
-🟡 Medium: 6 (25%)
-🔵 Low: 4 (17%)
+🔴 Critical: 6 (23%)
+🟠 High: 8 (31%)
+🟡 Medium: 8 (31%) ← incluye 2 análisis
+🔵 Low: 4 (15%)
 
 Tiempo promedio de resolución:
 - Críticos: ~45 min
 - High: ~30 min  
-- Medium: ~15 min
+- Medium: ~15 min (fixes), ~120 min (análisis)
 - Low: ~10 min
 ```
 
@@ -114,8 +119,8 @@ X.Y.Z
 
 - [Spec Kit Principal](../00-index.md)
 - [Roadmap](../09-roadmap.md)
-- [Testing Guide](../../TESTING.md)
+- [E2E Testing Guide](../../e2e/README.md)
 
 ---
 
-_Última actualización: 28 Enero 2026_
+_Última actualización: 21 Marzo 2026_

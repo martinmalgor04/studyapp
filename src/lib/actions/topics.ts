@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/utils/logger';
 import {
   createTopicSchema,
   updateTopicSchema,
@@ -11,11 +12,8 @@ import {
 import { generateSessions } from './sessions';
 import { sendNotification } from './notifications';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const getSupabase = async () => await createClient() as any;
-
 export async function getTopicsBySubject(subjectId: string) {
-  const supabase = await getSupabase();
+  const supabase = await createClient();
 
   const { data: topics, error } = await supabase
     .from('topics')
@@ -24,7 +22,7 @@ export async function getTopicsBySubject(subjectId: string) {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching topics:', error);
+    logger.error('Error fetching topics:', error);
     return [];
   }
 
@@ -32,12 +30,12 @@ export async function getTopicsBySubject(subjectId: string) {
 }
 
 export async function getTopic(id: string) {
-  const supabase = await getSupabase();
+  const supabase = await createClient();
 
   const { data: topic, error } = await supabase.from('topics').select('*').eq('id', id).single();
 
   if (error) {
-    console.error('Error fetching topic:', error);
+    logger.error('Error fetching topic:', error);
     return null;
   }
 
@@ -45,7 +43,7 @@ export async function getTopic(id: string) {
 }
 
 export async function createTopic(input: CreateTopicInput) {
-  const supabase = await getSupabase();
+  const supabase = await createClient();
 
   // Validar input
   const validationResult = createTopicSchema.safeParse(input);
@@ -113,7 +111,7 @@ export async function createTopic(input: CreateTopicInput) {
     .single();
 
   if (error) {
-    console.error('Error creating topic:', error);
+    logger.error('Error creating topic:', error);
     return {
       error: 'Error al crear el tema',
     };
@@ -123,7 +121,7 @@ export async function createTopic(input: CreateTopicInput) {
   if (data.source_date) {
     const sessionsResult = await generateSessions(data.id);
     if (sessionsResult.error) {
-      console.warn('Warning: Could not generate sessions:', sessionsResult.error);
+      logger.warn('Warning: Could not generate sessions:', sessionsResult.error);
       // No retornamos error, el topic ya fue creado exitosamente
     } else if (sessionsResult.success && sessionsResult.count) {
       // Enviar notificación sobre las sesiones generadas
@@ -144,7 +142,7 @@ export async function createTopic(input: CreateTopicInput) {
         const { syncSessionsToGoogleCalendar } = await import('./google-calendar');
         await syncSessionsToGoogleCalendar();
       } catch (err) {
-        console.warn('Could not sync to Google Calendar:', err);
+        logger.warn('Could not sync to Google Calendar:', err);
         // No retornar error, las sesiones ya se crearon
       }
     }
@@ -156,7 +154,7 @@ export async function createTopic(input: CreateTopicInput) {
 }
 
 export async function updateTopic(id: string, input: UpdateTopicInput) {
-  const supabase = await getSupabase();
+  const supabase = await createClient();
 
   // Validar input
   const validationResult = updateTopicSchema.safeParse(input);
@@ -206,7 +204,7 @@ export async function updateTopic(id: string, input: UpdateTopicInput) {
     .single();
 
   if (error) {
-    console.error('Error updating topic:', error);
+    logger.error('Error updating topic:', error);
     return {
       error: 'Error al actualizar el tema',
     };
@@ -218,7 +216,7 @@ export async function updateTopic(id: string, input: UpdateTopicInput) {
 }
 
 export async function deleteTopic(id: string) {
-  const supabase = await getSupabase();
+  const supabase = await createClient();
 
   // Obtener el topic para verificar permisos y subject_id
   const { data: topic } = await supabase
@@ -248,7 +246,7 @@ export async function deleteTopic(id: string) {
   const { error } = await supabase.from('topics').delete().eq('id', id);
 
   if (error) {
-    console.error('Error deleting topic:', error);
+    logger.error('Error deleting topic:', error);
     return {
       error: 'Error al eliminar el tema',
     };

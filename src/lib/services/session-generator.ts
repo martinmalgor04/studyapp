@@ -3,6 +3,7 @@ import type { Difficulty } from '@/lib/validations/topics';
 import type { Priority } from './priority-calculator';
 import { getGoogleCalendarService } from './google-calendar.service';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/utils/logger';
 
 // Intervalos de repetición espaciada UNIVERSAL (Anki Standard)
 // Siempre 4 sesiones para TODOS los temas, independiente de dificultad
@@ -83,8 +84,7 @@ async function findConflictFreeSlot(
   maxAttempts: number = 14
 ): Promise<{ date: Date; adjusted: boolean; originalDate: Date | null }> {
   const googleService = getGoogleCalendarService();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = await createClient() as any;
+  const supabase = await createClient();
 
   // Obtener tokens de Google Calendar
   const { data: settings } = await supabase
@@ -132,7 +132,7 @@ async function findConflictFreeSlot(
   }
 
   // Si no encuentra slot sin conflictos después de maxAttempts, usar el preferido
-  console.warn(`[SessionGenerator] No conflict-free slot found after ${maxAttempts} attempts, using preferred date`);
+  logger.warn(`[SessionGenerator] No conflict-free slot found after ${maxAttempts} attempts, using preferred date`);
   return { date: preferredDate, adjusted: false, originalDate: null };
 }
 
@@ -193,7 +193,7 @@ async function generateParcialSessions(
       scheduledDate = conflictResult.date;
       
       if (conflictResult.adjusted) {
-        console.log(`[SessionGenerator] Session ${sessionNumber} adjusted to avoid conflict: ${scheduledDate.toISOString()}`);
+        logger.debug(`[SessionGenerator] Session ${sessionNumber} adjusted to avoid conflict: ${scheduledDate.toISOString()}`);
       }
     }
 
@@ -282,7 +282,7 @@ async function generateFreeStudySessions(
       scheduledDate = conflictResult.date;
       
       if (conflictResult.adjusted) {
-        console.log(`[SessionGenerator] Session ${sessionNumber} adjusted to avoid conflict: ${scheduledDate.toISOString()}`);
+        logger.debug(`[SessionGenerator] Session ${sessionNumber} adjusted to avoid conflict: ${scheduledDate.toISOString()}`);
       }
     }
 
@@ -361,7 +361,7 @@ export async function generateSessionsForTopic(
     sessionDate.setHours(0, 0, 0, 0);
     
     if (sessionDate <= today) {
-      console.warn(`Session ${index + 1} scheduled for ${session.scheduled_at} is not in the future, adjusting...`);
+      logger.warn(`Session ${index + 1} scheduled for ${session.scheduled_at} is not in the future, adjusting...`);
       // Ajustar al menos 1 día después de hoy
       const adjustedDate = new Date(today);
       adjustedDate.setDate(adjustedDate.getDate() + (index + 1));

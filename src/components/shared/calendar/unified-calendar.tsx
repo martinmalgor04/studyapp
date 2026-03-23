@@ -6,16 +6,19 @@ import { CompleteSessionDialog } from '@/components/features/sessions/complete-s
 
 interface Session {
   id: string;
-  topic_id?: string;
+  topic_id?: string | null;
   topic?: {
     id: string;
     name: string;
-  };
+    difficulty?: string | null;
+  } | null;
   number: number;
   scheduled_at: string;
   duration: number;
-  priority: string;
-  status: string;
+  priority: string | null;
+  status: string | null;
+  adjusted_for_conflict?: boolean | null;
+  original_scheduled_at?: string | null;
 }
 
 interface Exam {
@@ -90,12 +93,25 @@ function SessionCardItem({ session, loadingSession, onComplete }: SessionCardIte
       className={`rounded-md border p-2 mb-1 ${
         isCompleted 
           ? 'bg-green-50 border-green-300 opacity-75' 
-          : PRIORITY_COLORS[session.priority] || PRIORITY_COLORS.NORMAL
+          : PRIORITY_COLORS[session.priority ?? 'NORMAL'] || PRIORITY_COLORS.NORMAL
       }`}
     >
       <div className="flex items-center justify-between">
-        <div className="text-xs font-semibold truncate">
+        <div className="text-xs font-semibold truncate flex items-center gap-1">
           {topicName} - R{session.number}
+          {session.adjusted_for_conflict && (
+            <span
+              className="text-amber-600 flex-shrink-0"
+              title={
+                session.original_scheduled_at
+                  ? `Reubicada por conflicto. Original: ${new Date(session.original_scheduled_at).toLocaleString('es-AR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`
+                  : 'Reubicada por conflicto de calendario'
+              }
+              aria-label="Sesión reubicada por conflicto"
+            >
+              ⚠️
+            </span>
+          )}
         </div>
         {isCompleted && (
           <svg className="h-4 w-4 text-green-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">

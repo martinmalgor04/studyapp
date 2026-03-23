@@ -13,30 +13,10 @@ interface DashboardClientProps {
   userName: string;
 }
 
+type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
+
 export function DashboardClient({ userName }: DashboardClientProps) {
-  const [data, setData] = useState<{
-    stats: { subjects: number; exams: number; topics: number; upcomingExams: number; todaySessions: number };
-    subjects: Array<{ id: string; name: string; description: string | null; topics_count?: number; exams_count?: number }>;
-    topics: Array<{
-      id: string;
-      name: string;
-      difficulty: 'EASY' | 'MEDIUM' | 'HARD';
-      hours: number;
-      subject_id: string;
-      subjects?: { name: string };
-      created_at: string;
-    }>;
-    sessions: Array<{
-      id: string;
-      topic_id?: string;
-      topic?: { id: string; name: string };
-      number: number;
-      scheduled_at: string;
-      duration: number;
-      priority: string;
-      status: string;
-    }>;
-  } | null>(null);
+  const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {

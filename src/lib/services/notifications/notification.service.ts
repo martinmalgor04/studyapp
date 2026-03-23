@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/utils/logger';
 import type { INotificationChannel, NotificationPayload } from './channels/notification-channel.interface';
 import { InAppChannel } from './channels/in-app.channel';
 import { EmailChannel } from './channels/email.channel';
@@ -26,7 +27,7 @@ export class NotificationService {
    */
   async send(notification: NotificationPayload): Promise<void> {
     try {
-      console.log('[NotificationService] Processing notification:', {
+      logger.debug('[NotificationService] Processing notification:', {
         type: notification.type,
         userId: notification.userId,
         title: notification.title
@@ -35,7 +36,7 @@ export class NotificationService {
       // Obtener configuración del usuario
       const settings = await this.getUserSettings(notification.userId);
       
-      console.log('[NotificationService] User settings:', {
+      logger.debug('[NotificationService] User settings:', {
         userId: notification.userId,
         email_notifications: settings.email_notifications,
         telegram_notifications: settings.telegram_notifications,
@@ -50,18 +51,18 @@ export class NotificationService {
 
       // Si no hay canales activos, salir
       if (activeChannels.length === 0) {
-        console.warn('[NotificationService] No active channels for user:', notification.userId);
+        logger.warn('[NotificationService] No active channels for user:', notification.userId);
         return;
       }
 
-      console.log('[NotificationService] Active channels:', activeChannels);
+      logger.debug('[NotificationService] Active channels:', activeChannels);
 
       // Enviar a cada canal (en paralelo)
       const results = await Promise.allSettled(
         activeChannels.map(channelName => {
           const channel = this.channels.get(channelName);
           if (!channel) {
-            console.warn(`[NotificationService] Channel "${channelName}" not found`);
+            logger.warn(`[NotificationService] Channel "${channelName}" not found`);
             return Promise.resolve();
           }
           return channel.send(notification);
@@ -71,14 +72,14 @@ export class NotificationService {
       // Loguear resultados
       results.forEach((result, index) => {
         if (result.status === 'rejected') {
-          console.error(`[NotificationService] Channel "${activeChannels[index]}" failed:`, result.reason);
+          logger.error(`[NotificationService] Channel "${activeChannels[index]}" failed:`, result.reason);
         } else {
-          console.log(`[NotificationService] Channel "${activeChannels[index]}" succeeded`);
+          logger.debug(`[NotificationService] Channel "${activeChannels[index]}" succeeded`);
         }
       });
 
     } catch (error) {
-      console.error('[NotificationService] Error sending notification:', error);
+      logger.error('[NotificationService] Error sending notification:', error);
       throw error;
     }
   }
@@ -88,8 +89,7 @@ export class NotificationService {
    * Si no existen, crea configuración por defecto
    */
   private async getUserSettings(userId: string) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabase = await createClient() as any;
+    const supabase = await createClient();
 
     const { data: settings, error } = await supabase
       .from('user_settings')

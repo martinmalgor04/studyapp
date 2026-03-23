@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/utils/logger';
 import { getNotificationService } from '@/lib/services/notifications/notification.service';
 import type { NotificationPayload } from '@/lib/services/notifications/channels/notification-channel.interface';
 
@@ -18,8 +19,7 @@ interface Notification {
  * Obtiene todas las notificaciones del usuario (últimas 50)
  */
 export async function getNotifications() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = await createClient() as any;
+  const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -31,10 +31,10 @@ export async function getNotifications() {
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
-    .limit(50) as { data: Notification[] | null; error: unknown };
+    .limit(50);
 
   if (error) {
-    console.error('Error fetching notifications:', error);
+    logger.error('Error fetching notifications:', error);
     return { notifications: [] as Notification[], unreadCount: 0 };
   }
 
@@ -50,8 +50,7 @@ export async function getNotifications() {
  * Marca una notificación como leída
  */
 export async function markNotificationAsRead(notificationId: string) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = await createClient() as any;
+  const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -65,7 +64,7 @@ export async function markNotificationAsRead(notificationId: string) {
     .eq('user_id', user.id);
 
   if (error) {
-    console.error('Error marking notification as read:', error);
+    logger.error('Error marking notification as read:', error);
     return { error: 'Error al marcar como leída' };
   }
 
@@ -77,8 +76,7 @@ export async function markNotificationAsRead(notificationId: string) {
  * Marca todas las notificaciones como leídas
  */
 export async function markAllNotificationsAsRead() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = await createClient() as any;
+  const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -92,7 +90,7 @@ export async function markAllNotificationsAsRead() {
     .eq('read', false);
 
   if (error) {
-    console.error('Error marking all notifications as read:', error);
+    logger.error('Error marking all notifications as read:', error);
     return { error: 'Error al marcar todas como leídas' };
   }
 
@@ -104,8 +102,7 @@ export async function markAllNotificationsAsRead() {
  * Obtiene las preferencias de notificación del usuario
  */
 export async function getUserSettings() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = await createClient() as any;
+  const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -147,8 +144,7 @@ export async function updateUserSettings(settings: {
   in_app_notifications?: boolean;
   daily_summary_time?: string;
 }) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = await createClient() as any;
+  const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
@@ -161,7 +157,7 @@ export async function updateUserSettings(settings: {
     .eq('user_id', user.id);
 
   if (error) {
-    console.error('Error updating user settings:', error);
+    logger.error('Error updating user settings:', error);
     return { error: 'Error al actualizar configuración' };
   }
 
@@ -179,7 +175,7 @@ export async function sendNotification(payload: NotificationPayload) {
     await service.send(payload);
     return { success: true };
   } catch (error) {
-    console.error('Error sending notification:', error);
+    logger.error('Error sending notification:', error);
     return { error: 'Error al enviar notificación' };
   }
 }

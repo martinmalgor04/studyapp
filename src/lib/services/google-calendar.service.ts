@@ -1,21 +1,7 @@
 import { google } from 'googleapis';
 import { createClient } from '@/lib/supabase/server';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const getSupabase = async () => await createClient() as any;
-
-interface GoogleTokens {
-  access_token: string;
-  refresh_token?: string;
-  expiry_date?: number;
-}
-
-interface UserSettings {
-  google_access_token: string | null;
-  google_refresh_token: string | null;
-  google_token_expiry: string | null;
-  google_calendar_enabled: boolean | null;
-}
+import { logger } from '@/lib/utils/logger';
+import { getGoogleTokens, type GoogleTokens } from './google-tokens.helper';
 
 interface Session {
   id: string;
@@ -68,7 +54,7 @@ export class GoogleCalendarService {
 
       return response.data.id || null;
     } catch (error) {
-      console.error('[GoogleCalendar] Error creating event:', error);
+      logger.error('[GoogleCalendar] Error creating event:', error);
       return null;
     }
   }
@@ -88,7 +74,7 @@ export class GoogleCalendarService {
 
       return true;
     } catch (error) {
-      console.error('[GoogleCalendar] Error deleting event:', error);
+      logger.error('[GoogleCalendar] Error deleting event:', error);
       return false;
     }
   }
@@ -97,26 +83,13 @@ export class GoogleCalendarService {
    * Sincroniza todas las sesiones pendientes de un usuario a Google Calendar
    */
   async syncSessions(userId: string): Promise<{ synced: number; errors: number }> {
-    const supabase = await getSupabase();
+    const supabase = await createClient();
 
     // Obtener tokens
-    const { data: settings } = await supabase
-      .from('user_settings')
-      .select('google_access_token, google_refresh_token, google_token_expiry')
-      .eq('user_id', userId)
-      .single() as { data: UserSettings | null };
-
-    if (!settings?.google_access_token) {
+    const tokens = await getGoogleTokens(userId);
+    if (!tokens) {
       return { synced: 0, errors: 0 };
     }
-
-    const tokens: GoogleTokens = {
-      access_token: settings.google_access_token,
-      refresh_token: settings.google_refresh_token || undefined,
-      expiry_date: settings.google_token_expiry
-        ? new Date(settings.google_token_expiry).getTime()
-        : undefined,
-    };
 
     // Obtener sesiones pendientes
     const { data: sessions } = await supabase
@@ -202,7 +175,7 @@ export class GoogleCalendarService {
       const events = response.data.items || [];
       return events.length > 0;
     } catch (error) {
-      console.error('[GoogleCalendar] Error checking conflicts:', error);
+      logger.error('[GoogleCalendar] Error checking conflicts:', error);
       return false; // En caso de error, asumir que no hay conflictos
     }
   }
@@ -237,7 +210,7 @@ export class GoogleCalendarService {
           summary: item.summary || 'Sin título',
         }));
     } catch (error) {
-      console.error('[GoogleCalendar] Error getting events:', error);
+      logger.error('[GoogleCalendar] Error getting events:', error);
       return [];
     }
   }
@@ -288,7 +261,7 @@ export class GoogleCalendarService {
 
       return true;
     } catch (error) {
-      console.error('[GoogleCalendar] Error updating event:', error);
+      logger.error('[GoogleCalendar] Error updating event:', error);
       return false;
     }
   }
@@ -297,14 +270,12 @@ export class GoogleCalendarService {
    * Verifica si el usuario tiene Google Calendar conectado
    */
   async isConnected(userId: string): Promise<boolean> {
-    const supabase = await getSupabase();
-
+    const supabase = await createClient();
     const { data: settings } = await supabase
       .from('user_settings')
       .select('google_access_token, google_calendar_enabled')
       .eq('user_id', userId)
-      .single() as { data: UserSettings | null };
-
+      .single();
     return !!(settings?.google_access_token && settings?.google_calendar_enabled !== false);
   }
 }

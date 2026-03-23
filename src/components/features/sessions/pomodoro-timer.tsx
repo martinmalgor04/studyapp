@@ -90,8 +90,8 @@ export function PomodoroTimer({
   return (
     <div className="flex flex-col items-center">
       {/* Circular Progress */}
-      <div className="relative">
-        <svg className="h-64 w-64 -rotate-90 transform">
+      <div className="relative" role="timer" aria-label={`${isBreak ? 'Descanso' : 'Estudio'}: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`}>
+        <svg className="h-64 w-64 -rotate-90 transform" aria-hidden="true">
           <circle
             cx="128"
             cy="128"
@@ -128,12 +128,14 @@ export function PomodoroTimer({
       <div className="mt-8 flex gap-4">
         <button
           onClick={togglePlay}
+          aria-label={isRunning ? 'Pausar temporizador' : 'Iniciar temporizador'}
           className="rounded-full bg-blue-600 px-8 py-3 text-sm font-medium text-white hover:bg-blue-700 shadow-md"
         >
           {isRunning ? 'Pausar' : 'Iniciar'}
         </button>
         <button
           onClick={reset}
+          aria-label="Reiniciar temporizador"
           className="rounded-full border border-gray-300 bg-white px-8 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
         >
           Reiniciar
@@ -149,6 +151,7 @@ export function PomodoroTimer({
       {totalStudyTime > 0 && (
         <button
           onClick={handleEndSession}
+          aria-label={`Finalizar sesión anticipadamente (${totalStudyTime} minutos estudiados)`}
           className="mt-4 text-sm text-blue-600 hover:text-blue-700"
         >
           Terminé antes →

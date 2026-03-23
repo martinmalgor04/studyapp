@@ -15,7 +15,7 @@ type SessionStatus = 'PENDING' | 'COMPLETED' | 'RESCHEDULED' | 'ABANDONED';
 
 interface Session {
   id: string;
-  adjusted_for_conflict?: boolean;
+  adjusted_for_conflict?: boolean | null;
   original_scheduled_at?: string | null;
   topic?: { id: string; name: string } | null;
   subject?: { id: string; name: string } | null;
@@ -131,14 +131,27 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
 
   return (
     <div className={`rounded-lg border-2 ${priorityStyle.border} bg-white p-4 shadow-sm`}>
-      {/* Header: Badges de prioridad y estado */}
-      <div className="mb-3 flex items-center gap-2">
+      {/* Header: Badges de prioridad, estado y conflicto */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <span className={`rounded-full px-3 py-1 text-xs font-medium ${priorityStyle.bg} ${priorityStyle.text}`}>
           {priorityStyle.label}
         </span>
         <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}>
           {statusStyle.label}
         </span>
+        {session.adjusted_for_conflict && (
+          <span
+            className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 border border-amber-300"
+            title={
+              session.original_scheduled_at
+                ? `Reubicada por conflicto de calendario. Horario original: ${new Date(session.original_scheduled_at).toLocaleString('es-AR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`
+                : 'Reubicada por conflicto de calendario'
+            }
+            aria-label="Sesión reubicada por conflicto de calendario"
+          >
+            ⚠️ Reubicada
+          </span>
+        )}
       </div>
 
       {/* Content: Info de la sesión */}
@@ -182,6 +195,7 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
           <button
             onClick={handleStartStudy}
             disabled={loading}
+            aria-label={`Iniciar modo estudio para ${session.topic?.name ?? 'sesión'}`}
             className="flex-1 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
             Estudiar
@@ -189,6 +203,7 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
           <button
             onClick={handleComplete}
             disabled={loading}
+            aria-label={`Marcar como completada: ${session.topic?.name ?? 'sesión'}`}
             className="flex-1 rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
           >
             ✓ Completar
@@ -196,6 +211,7 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
           <button
             onClick={() => onReschedule(session)}
             disabled={loading}
+            aria-label={`Reagendar sesión: ${session.topic?.name ?? 'sesión'}`}
             className="flex-1 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
             🔄 Reagendar
@@ -203,6 +219,7 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
           <button
             onClick={handleDelete}
             disabled={loading}
+            aria-label={`Eliminar sesión: ${session.topic?.name ?? 'sesión'}`}
             className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
           >
             🗑️
@@ -215,6 +232,7 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
           <button
             onClick={handleIncomplete}
             disabled={loading}
+            aria-label={`Marcar como incompleta: ${session.topic?.name ?? 'sesión'}`}
             className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
           >
             ↩️ Marcar Incompleta

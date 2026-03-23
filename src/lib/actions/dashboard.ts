@@ -2,16 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SupabaseAny = any;
-
-interface Subject { id: string; name: string; description: string | null; created_at: string }
-interface Exam { id: string; date: string; subject_id: string }
-interface Topic { id: string; name: string; difficulty: 'EASY' | 'MEDIUM' | 'HARD'; hours: number; source: string; source_date: string | null; subject_id: string; created_at: string; subjects?: { name: string } }
-interface Session { id: string; topic_id?: string; scheduled_at: string; number: number; duration: number; priority: string; status: string; topic?: { id: string; name: string } }
-
 export async function getDashboardData() {
-  const supabase = await createClient() as SupabaseAny;
+  const supabase = await createClient();
 
   const {
     data: { user },
@@ -32,20 +24,20 @@ export async function getDashboardData() {
     .select('id, name, description, created_at')
     .eq('user_id', user.id)
     .eq('is_active', true)
-    .order('created_at', { ascending: false }) as { data: Subject[] | null };
+    .order('created_at', { ascending: false });
 
   // Obtener todos los exámenes
   const { data: exams } = await supabase
     .from('exams')
     .select('id, date, subject_id')
-    .in('subject_id', subjects?.map((s) => s.id) || []) as { data: Exam[] | null };
+    .in('subject_id', subjects?.map((s) => s.id) || []);
 
   // Obtener todos los topics con info de materia
   const { data: topics } = await supabase
     .from('topics')
     .select('id, name, difficulty, hours, source, source_date, subject_id, created_at, subjects(name)')
     .in('subject_id', subjects?.map((s) => s.id) || [])
-    .order('created_at', { ascending: false }) as { data: Topic[] | null };
+    .order('created_at', { ascending: false });
 
   // Calcular exámenes próximos (siguiente 30 días)
   const now = new Date();
@@ -70,11 +62,11 @@ export async function getDashboardData() {
   // Obtener sesiones (incluir completadas para que no desaparezcan al completar)
   const { data: sessions } = await supabase
     .from('sessions')
-    .select('id, topic_id, scheduled_at, number, duration, priority, status, topic:topics(id, name, difficulty), subject:subjects(name)')
+    .select('id, topic_id, scheduled_at, number, duration, priority, status, adjusted_for_conflict, original_scheduled_at, topic:topics(id, name, difficulty), subject:subjects(name)')
     .eq('user_id', user.id)
     .gte('scheduled_at', todayStart)
     .lt('scheduled_at', sessionsEnd)
-    .order('scheduled_at', { ascending: true }) as { data: Session[] | null };
+    .order('scheduled_at', { ascending: true });
 
   // Agregar conteos a las materias
   const subjectsWithCounts = subjects?.map((subject) => ({

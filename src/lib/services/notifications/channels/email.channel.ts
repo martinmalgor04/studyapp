@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/utils/logger';
 import type { INotificationChannel, NotificationPayload } from './notification-channel.interface';
 
 /**
@@ -12,14 +13,14 @@ export class EmailChannel implements INotificationChannel {
   constructor() {
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
-      console.warn('[EmailChannel] RESEND_API_KEY not configured');
+      logger.warn('[EmailChannel] RESEND_API_KEY not configured');
     }
     this.resend = new Resend(apiKey);
   }
 
   async send(notification: NotificationPayload): Promise<void> {
     try {
-      console.log('[EmailChannel] Attempting to send email:', {
+      logger.debug('[EmailChannel] Attempting to send email:', {
         type: notification.type,
         userId: notification.userId,
         title: notification.title
@@ -28,11 +29,11 @@ export class EmailChannel implements INotificationChannel {
       // Obtener email del usuario
       const email = await this.getUserEmail(notification.userId);
       if (!email) {
-        console.warn('[EmailChannel] No email found for user:', notification.userId);
+        logger.warn('[EmailChannel] No email found for user:', notification.userId);
         return;
       }
 
-      console.log('[EmailChannel] Sending to:', email);
+      logger.debug('[EmailChannel] Sending to:', email);
 
       // Enviar email
       const { data, error } = await this.resend.emails.send({
@@ -43,7 +44,7 @@ export class EmailChannel implements INotificationChannel {
       });
 
       if (error) {
-        console.error('[EmailChannel] Resend API error:', {
+        logger.error('[EmailChannel] Resend API error:', {
           error,
           type: notification.type,
           email
@@ -51,42 +52,41 @@ export class EmailChannel implements INotificationChannel {
         throw new Error(`Failed to send email: ${error.message}`);
       }
 
-      console.log('[EmailChannel] Email sent successfully:', {
+      logger.debug('[EmailChannel] Email sent successfully:', {
         to: email,
         messageId: data?.id,
         type: notification.type
       });
     } catch (error) {
-      console.error('[EmailChannel] Unexpected error:', error);
+      logger.error('[EmailChannel] Unexpected error:', error);
       throw error;
     }
   }
 
   private async getUserEmail(userId: string): Promise<string | null> {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const supabase = await createClient() as any;
+      const supabase = await createClient();
       
       // El email se sincroniza desde auth.users a public.users via trigger
       const { data, error } = await supabase
         .from('users')
         .select('email')
         .eq('id', userId)
-        .single() as { data: { email: string } | null; error: unknown };
+        .single();
 
       if (error) {
-        console.error('[EmailChannel] Error fetching user email:', error);
+        logger.error('[EmailChannel] Error fetching user email:', error);
         return null;
       }
 
       if (!data?.email) {
-        console.warn('[EmailChannel] No email found for user:', userId);
+        logger.warn('[EmailChannel] No email found for user:', userId);
         return null;
       }
 
       return data.email;
     } catch (error) {
-      console.error('[EmailChannel] Exception getting user email:', error);
+      logger.error('[EmailChannel] Exception getting user email:', error);
       return null;
     }
   }

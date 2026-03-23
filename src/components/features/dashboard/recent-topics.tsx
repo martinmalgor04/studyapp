@@ -22,10 +22,8 @@ interface RecentTopicsProps {
     difficulty: Difficulty;
     hours: number;
     subject_id: string;
-    subjects?: {
-      name: string;
-    };
-    created_at: string;
+    subjects?: { name: string } | null;
+    created_at: string | null;
   }>;
 }
 

@@ -277,7 +277,7 @@ e2e/
     └── test-helpers.ts                   # Helpers generales
 ```
 
-📖 **Ver**: [`docs/TESTING.md`](../TESTING.md) para guía completa
+📖 **Ver**: [`e2e/README.md`](../../e2e/README.md) para guía de E2E tests.
 
 ---
 
@@ -291,15 +291,15 @@ e2e/
 |------|-------|------------|--------|------|
 | Unit tests (Session Generator) | Core algorithm | 3h | ✅ Hecho | — |
 | Unit tests (Priority Calculator) | Core algorithm | 1h | ✅ Hecho | — |
-| **Error boundaries** | Better UX on errors | 4-6h | ⏳ | [ERROR_HANDLING.md](ERROR_HANDLING.md) |
-| **Loading states** | Better perceived performance | *incluido* | ⏳ | [ERROR_HANDLING.md](ERROR_HANDLING.md) |
+| **Error boundaries** | Better UX on errors | 4-6h | ✅ Hecho | [ERROR_HANDLING.md](ERROR_HANDLING.md) |
+| **Loading states** | Better perceived performance | *incluido* | ✅ Hecho | [ERROR_HANDLING.md](ERROR_HANDLING.md) |
 | **Telegram Notifications** | Notificaciones inmediatas | 6-8h | ⏳ | [TELEGRAM_INTEGRATION.md](TELEGRAM_INTEGRATION.md) |
 
 ### Medium Priority
 
 | Item | Razón | Horas Est. | Estado | Spec |
 |------|-------|------------|--------|------|
-| **CI/CD Automation** | GitHub Actions + branch protection | 3-4h | ⏳ | [CICD_DEPLOYMENT.md](CICD_DEPLOYMENT.md) |
+| **CI/CD Automation** | GitHub Actions + branch protection | 3-4h | ✅ Hecho | [CICD_DEPLOYMENT.md](CICD_DEPLOYMENT.md) |
 | **E2E tests (UC-008/009)** | Completar y reagendar sesiones | 8-10h | ⏳ | [E2E_TESTING.md](E2E_TESTING.md) |
 | Unit tests (CRUD Actions) | Quality assurance | 4h | ⏳ | — |
 | Optimistic updates | Mejor UX | 5h | ⏳ | — |
@@ -512,13 +512,129 @@ El MVP se considera exitoso si:
 
 ---
 
+## 9.13 Deuda Técnica y Próximos Pasos
+
+### Funcionalidad Desactivada
+
+#### UC-011d: Sync Session Updates to Google Calendar
+
+**Estado:** Handler implementado pero eventos no se emiten
+
+**Ubicación:** `src/lib/actions/sessions.ts` → `completeSessionWithRating`, `updateSessionStatus`
+
+**Problema:** 
+- `SessionEventRegistry.emitCompleted` está comentado
+- El handler `GoogleCalendarEventHandler` está registrado en `session-events.ts` pero nunca se invoca
+- En producción los eventos de Google Calendar no se actualizan (color/completado) al completar o abandonar sesiones
+
+**Acción requerida:**
+```typescript
+// Descomentar y activar en completeSessionWithRating
+SessionEventRegistry.emitCompleted({
+  sessionId: session.id,
+  topicId: session.topic_id,
+  userId: user.id,
+  completedAt: now,
+});
+```
+
+**Estimación:** 30 minutos (descomentar + verificar que `topic_id` esté en el select)
+
+---
+
+### Features Pendientes
+
+#### Alta Prioridad
+
+| Feature | Estimación | Prioridad | Notas |
+|---------|-----------|-----------|-------|
+| Telegram Notifications | 6-8h | 🔴 Alta | Canal implementado pero sin bot configurado. Ver [`TELEGRAM_INTEGRATION.md`](TELEGRAM_INTEGRATION.md) |
+| E2E Tests UC-008/009 | 8-10h | 🟠 Media | Solo hay E2E hasta UC-007. Ver [`E2E_TESTING.md`](E2E_TESTING.md) |
+| UC-011c UI Indicators | 3h | 🟠 Media | Backend funciona, falta badges de conflicto en UI. Ver [`fixes/6.0-google-calendar-gaps.md`](fixes/6.0-google-calendar-gaps.md) |
+
+#### Media Prioridad
+
+| Feature | Estimación | Prioridad | Notas |
+|---------|-----------|-----------|-------|
+| UC-011b Preview Dialog | 2-3h | 🟡 Media | Falta UI de preview antes de importar disponibilidad |
+| Sesión parcial (tiempo restante) | 2-3h | 🟡 Media | TODO en `session-card.tsx`: implementar `createPartialSession` |
+| Página de notificaciones | 3-4h | 🟡 Media | `/dashboard/notifications` con lista completa y "marcar todas leídas" |
+
+#### Baja Prioridad
+
+| Feature | Estimación | Prioridad | Notas |
+|---------|-----------|-----------|-------|
+| Optimistic updates | 4-6h | 🔵 Baja | UX: actualizar UI antes de respuesta del servidor |
+| Sentry error tracking | 2h | 🔵 Baja | Configurar Sentry para producción |
+| Vercel Analytics | 1h | 🔵 Baja | Habilitar analytics en Vercel |
+
+---
+
+### Mejoras de Código
+
+#### Tipado y Consistencia
+
+1. **Tipado en `notifications.ts`**
+   - Varios `createClient() as any` que podrían usar tipos generados de Supabase
+   - Mejorar con `createClient<Database>()` sin cast
+
+2. **Session events y topic_id**
+   - En `completeSessionWithRating` el select actual es `started_at, duration`
+   - Para emitir `SessionCompletedEvent` se necesita `topic_id` en el select
+   - Acción: Agregar `topic_id` al select cuando se active el emit
+
+3. **Documentar comportamiento de conflictos**
+   - UC-011c: `checkConflicts` considera "cualquier evento" en el rango como conflicto
+   - Si en el futuro se excluyen eventos de StudyApp, documentarlo en spec
+
+---
+
+### Checklist de Acciones Post-Pulido
+
+**Inmediato (antes de Sprint 5):**
+- [ ] Activar `SessionEventRegistry.emitCompleted` en `sessions.ts`
+- [ ] Verificar que `topic_id` esté en el select para eventos
+- [ ] Implementar UC-011c UI indicators (badges de conflicto)
+- [ ] Configurar Telegram Bot (si se prioriza notificaciones)
+
+**Próximo Sprint:**
+- [ ] Implementar E2E tests para UC-008 y UC-009
+- [ ] UC-011b Preview Dialog para importar disponibilidad
+- [ ] Resolver o documentar TODO `createPartialSession`
+
+**Backlog (producción formal):**
+- [ ] Configurar Sentry para error tracking
+- [ ] Habilitar Vercel Analytics
+- [ ] Performance monitoring (Lighthouse > 90)
+- [ ] Optimistic updates en listas críticas
+
+---
+
+### Estado por Sprint (Actualizado 2026-03-19)
+
+| Sprint | Estado | Completitud | Notas |
+|--------|--------|-------------|-------|
+| Sprint 1 | ✅ | 100% | Setup + Auth + Dashboard base |
+| Sprint 2 | ✅ | 100% | CRUD Subjects/Exams/Topics + Session Generator |
+| Sprint 3 | ✅ | 100% | Tracking, Reschedule, Week view |
+| Sprint 4 | ✅ | ~90% | Free Study + Google Calendar (falta UC-011d emit + UC-011c UI) |
+| Sprint 5 | ⏳ | 0% | Gamificación pendiente |
+| Sprint 6 | ⏳ | 0% | Analytics + Tasks pendiente |
+
+**Bloqueadores Sprint 5:**
+- Ninguno (gamificación puede arrancar)
+- Considerar resolver Telegram Notifications primero (alta demanda de usuario)
+
+---
+
 ## Summary
 
-**Estado actual:** Sprint 1 ✅, Sprint 2 ✅, Sprint 3 (Tracking & Reschedule) ✅, Sprint 4 (Free Study + Calendar) ✅
+**Estado actual:** Sprint 1 ✅, Sprint 2 ✅, Sprint 3 (Tracking & Reschedule) ✅, Sprint 4 (Free Study + Calendar) ✅  
+**Pulido (2026-03-19):** ✅ 0 `as any` (TypeScript strict), ✅ CI/CD GitHub Actions, ✅ Error boundaries, ✅ Security headers, ✅ Logger centralizado, ✅ Google token helper deduplicado, ✅ Aria-labels en nav/notificaciones/sesiones/pomodoro
 
-**Próximo paso:** Activar emit de SessionEventRegistry en completar/abandonar sesión (UC-011d en producción). Luego Sprint 5 - Gamificación.
+**Próximo paso:** Sprint 5 - Gamificación. Antes: considerar Telegram Notifications + activar UC-011d emit.
 
-**MVP + v1.0 (parcial):** ✅ COMPLETADO. Ver análisis detallado en [`CODEBASE_ANALYSIS.md`](CODEBASE_ANALYSIS.md).
+**MVP + v1.0 (parcial):** ✅ COMPLETADO al 90%. Deuda técnica documentada en sección 9.13.
 
 **Cambios principales vs plan original:**
 - ✅ Arquitectura simplificada (Next.js Full Stack)

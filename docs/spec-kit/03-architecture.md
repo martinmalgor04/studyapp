@@ -16,7 +16,7 @@
                             │ HTTPS
                             ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                         NEXT.JS 14 APP                                  │
+│                         NEXT.JS 16 APP                                  │
 │                    (Full Stack Application)                             │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
@@ -68,7 +68,7 @@
 ## 3.2 Technology Stack
 
 ### Frontend
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js 16 (App Router)
 - **UI Library**: React 18
 - **Styling**: TailwindCSS
 - **Type Safety**: TypeScript
@@ -79,7 +79,7 @@
 - **Date Handling**: date-fns
 
 ### Backend
-- **Framework**: Next.js 14 (Server Actions + API Routes)
+- **Framework**: Next.js 16 (Server Actions + API Routes)
 - **Database Client**: Supabase JS Client
 - **Validation**: Zod
 - **Authentication**: Supabase Auth (session-based with cookies)
@@ -503,9 +503,9 @@ DATABASE_URL=postgresql://...      # Direct DB access (migrations)
 
 ### Phase 1 (Current MVP)
 - ✅ Authentication
-- 🔄 CRUD for Subjects, Exams, Topics
-- 🔄 Session generation with Spaced Repetition
-- 🔄 Daily dashboard
+- ✅ CRUD for Subjects, Exams, Topics
+- ✅ Session generation with Spaced Repetition
+- ✅ Daily dashboard
 
 ### Phase 2 (v1.0)
 - Google Calendar integration
@@ -530,7 +530,7 @@ DATABASE_URL=postgresql://...      # Direct DB access (migrations)
 
 ## 3.10 Technology Rationale
 
-### Why Next.js 14?
+### Why Next.js 16?
 - ✅ Full-stack framework (frontend + backend)
 - ✅ Server Actions (no need for separate API)
 - ✅ App Router with React Server Components

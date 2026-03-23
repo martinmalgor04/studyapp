@@ -2,15 +2,13 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/utils/logger';
 import {
   createSubjectSchema,
   updateSubjectSchema,
   type CreateSubjectInput,
   type UpdateSubjectInput,
 } from '@/lib/validations/subjects';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const getSupabase = async () => await createClient() as any;
 
 interface SubjectRow {
   id: string;
@@ -28,7 +26,7 @@ interface SubjectRow {
 }
 
 export async function getSubjects(includeAprobadas: boolean = false) {
-  const supabase = await getSupabase();
+  const supabase = await createClient();
 
   let query = supabase
     .from('subjects')
@@ -46,7 +44,7 @@ export async function getSubjects(includeAprobadas: boolean = false) {
   const { data: subjects, error } = await query.order('created_at', { ascending: false }) as { data: SubjectRow[] | null; error: unknown };
 
   if (error) {
-    console.error('Error fetching subjects:', error);
+    logger.error('Error fetching subjects:', error);
     return [];
   }
 
@@ -76,7 +74,7 @@ export async function getSubjects(includeAprobadas: boolean = false) {
 }
 
 export async function getSubject(id: string) {
-  const supabase = await getSupabase();
+  const supabase = await createClient();
 
   const { data: subject, error } = await supabase
     .from('subjects')
@@ -85,7 +83,7 @@ export async function getSubject(id: string) {
     .single();
 
   if (error) {
-    console.error('Error fetching subject:', error);
+    logger.error('Error fetching subject:', error);
     return null;
   }
 
@@ -93,7 +91,7 @@ export async function getSubject(id: string) {
 }
 
 export async function createSubject(input: CreateSubjectInput): Promise<{ error?: string; data?: { id: string; name: string } }> {
-  const supabase = await getSupabase();
+  const supabase = await createClient();
 
   // Validar input
   const validationResult = createSubjectSchema.safeParse(input);
@@ -131,7 +129,7 @@ export async function createSubject(input: CreateSubjectInput): Promise<{ error?
     .single();
 
   if (error) {
-    console.error('Error creating subject:', error);
+    logger.error('Error creating subject:', error);
     return {
       error: 'Error al crear la materia',
     };
@@ -142,7 +140,7 @@ export async function createSubject(input: CreateSubjectInput): Promise<{ error?
 }
 
 export async function updateSubject(id: string, input: UpdateSubjectInput) {
-  const supabase = await getSupabase();
+  const supabase = await createClient();
 
   // Validar input
   const validationResult = updateSubjectSchema.safeParse(input);
@@ -166,7 +164,7 @@ export async function updateSubject(id: string, input: UpdateSubjectInput) {
     .single();
 
   if (error) {
-    console.error('Error updating subject:', error);
+    logger.error('Error updating subject:', error);
     return {
       error: 'Error al actualizar la materia',
     };
@@ -178,13 +176,13 @@ export async function updateSubject(id: string, input: UpdateSubjectInput) {
 }
 
 export async function deleteSubject(id: string) {
-  const supabase = await getSupabase();
+  const supabase = await createClient();
 
   // Soft delete (marcar como inactivo)
   const { error } = await supabase.from('subjects').update({ is_active: false }).eq('id', id);
 
   if (error) {
-    console.error('Error deleting subject:', error);
+    logger.error('Error deleting subject:', error);
     return {
       error: 'Error al eliminar la materia',
     };
@@ -199,7 +197,7 @@ export async function deleteSubject(id: string) {
  * Marca todas las sesiones PENDING como ABANDONED
  */
 export async function setSubjectLibre(subjectId: string) {
-  const supabase = await getSupabase();
+  const supabase = await createClient();
 
   // 1. Marcar sesiones PENDING como ABANDONED
   const { error: sessionsError } = await supabase
@@ -209,7 +207,7 @@ export async function setSubjectLibre(subjectId: string) {
     .eq('status', 'PENDING');
 
   if (sessionsError) {
-    console.error('Error updating sessions:', sessionsError);
+    logger.error('Error updating sessions:', sessionsError);
     return {
       error: 'Error al marcar sesiones como abandonadas',
     };
@@ -222,7 +220,7 @@ export async function setSubjectLibre(subjectId: string) {
     .eq('id', subjectId);
 
   if (subjectError) {
-    console.error('Error updating subject status:', subjectError);
+    logger.error('Error updating subject status:', subjectError);
     return {
       error: 'Error al cambiar estado de la materia',
     };

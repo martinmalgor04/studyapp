@@ -43,10 +43,10 @@ interface SessionRow {
   scheduled_at: string;
   number: number;
   duration: number;
-  priority: string;
-  status: string;
-  topic?: { id: string; name: string };
-  topic_id?: string;
+  priority: string | null;
+  status: string | null;
+  topic?: { id: string; name: string; difficulty?: string | null } | null;
+  topic_id?: string | null;
 }
 
 interface PageProps {

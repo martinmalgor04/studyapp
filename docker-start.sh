@@ -1,13 +1,14 @@
 #!/bin/bash
 
 # ================================
-# StudyApp - Docker Quick Start
+# StudyApp - Dev Start
 # ================================
+# Inicia Supabase local (Docker) y Next.js (pnpm dev)
 
 set -e
 
-echo "🐳 StudyApp Docker Setup"
-echo "========================="
+echo "🚀 StudyApp Dev Setup"
+echo "====================="
 echo ""
 
 # Verificar que Docker esté corriendo
@@ -19,81 +20,91 @@ fi
 
 echo "✅ Docker está corriendo"
 
+# Verificar que pnpm esté disponible
+if ! command -v pnpm &> /dev/null; then
+    echo "❌ Error: pnpm no está instalado"
+    exit 1
+fi
+
+echo "✅ pnpm disponible"
+
 # Verificar que .env.local existe
 if [ ! -f .env.local ]; then
-    echo "❌ Error: .env.local no existe"
-    echo "   Crea el archivo .env.local con tus variables de entorno"
-    exit 1
+    echo "⚠️  .env.local no existe — copiando desde .env.example..."
+    if [ -f .env.example ]; then
+        cp .env.example .env.local
+        echo "   Editá .env.local con tus keys reales"
+    else
+        echo "❌ Error: tampoco existe .env.example"
+        exit 1
+    fi
 fi
 
 echo "✅ .env.local encontrado"
 echo ""
 
 # Preguntar qué hacer
-echo "¿Qué quieres hacer?"
-echo "  1) Iniciar servicios (primera vez)"
-echo "  2) Iniciar servicios (ya construidos)"
-echo "  3) Detener servicios"
-echo "  4) Reset completo (¡CUIDADO! Borra la DB local)"
-echo "  5) Ver logs"
-echo "  6) Ver estado"
+echo "¿Qué querés hacer?"
+echo "  1) Iniciar todo (Supabase + Next.js)"
+echo "  2) Solo Supabase"
+echo "  3) Solo Next.js (Supabase ya corriendo)"
+echo "  4) Detener Supabase"
+echo "  5) Reset DB (supabase db reset)"
+echo "  6) Estado de Supabase"
 echo ""
 read -p "Opción (1-6): " option
 
 case $option in
     1)
         echo ""
-        echo "📦 Construyendo e iniciando servicios..."
-        docker-compose up -d --build
+        echo "📦 Iniciando Supabase..."
+        npx supabase start
         echo ""
-        echo "✅ Servicios iniciados"
+        echo "✅ Supabase corriendo"
+        echo "   API:    http://localhost:54321"
+        echo "   Studio: http://localhost:54323"
         echo ""
-        echo "🌐 Aplicación: http://localhost:3000"
-        echo "🗄️  Adminer:    http://localhost:8080"
-        echo "💾 PostgreSQL: localhost:54322 (postgres/postgres)"
+        echo "🚀 Iniciando Next.js..."
         echo ""
-        echo "Ver logs: docker-compose logs -f app"
+        pnpm dev
         ;;
     2)
         echo ""
-        echo "🚀 Iniciando servicios..."
-        docker-compose up -d
+        echo "📦 Iniciando Supabase..."
+        npx supabase start
         echo ""
-        echo "✅ Servicios iniciados"
-        echo ""
-        echo "🌐 Aplicación: http://localhost:3000"
-        echo "🗄️  Adminer:    http://localhost:8080"
-        echo ""
-        echo "Ver logs: docker-compose logs -f app"
+        echo "✅ Supabase corriendo"
+        echo "   API:    http://localhost:54321"
+        echo "   Studio: http://localhost:54323"
         ;;
     3)
         echo ""
-        echo "🛑 Deteniendo servicios..."
-        docker-compose stop
-        echo "✅ Servicios detenidos"
+        echo "🚀 Iniciando Next.js..."
+        echo ""
+        pnpm dev
         ;;
     4)
         echo ""
-        echo "⚠️  ADVERTENCIA: Esto eliminará todos los datos de la DB local"
+        echo "🛑 Deteniendo Supabase..."
+        npx supabase stop
+        echo "✅ Supabase detenido"
+        ;;
+    5)
+        echo ""
+        echo "⚠️  Esto resetea la DB local (aplica migrations + seed)"
         read -p "¿Estás seguro? (yes/no): " confirm
         if [ "$confirm" = "yes" ]; then
             echo ""
-            echo "🗑️  Eliminando todo..."
-            docker-compose down -v
-            echo "✅ Reset completo"
+            npx supabase db reset
+            echo "✅ DB reseteada"
         else
             echo "❌ Cancelado"
         fi
         ;;
-    5)
-        echo ""
-        echo "📄 Mostrando logs (Ctrl+C para salir)..."
-        docker-compose logs -f app
-        ;;
     6)
         echo ""
-        echo "📊 Estado de servicios:"
-        docker-compose ps
+        echo "📊 Estado de Supabase:"
+        npx supabase status
         ;;
     *)
         echo "❌ Opción inválida"

@@ -40,13 +40,16 @@ export function NotificationBell() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
-        title="Notificaciones"
+        aria-label={unreadCount > 0 ? `Notificaciones (${unreadCount} sin leer)` : 'Notificaciones'}
+        aria-expanded={isOpen}
+        aria-haspopup="true"
       >
         <svg
           className="w-6 h-6"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
+          aria-hidden="true"
         >
           <path
             strokeLinecap="round"
@@ -56,7 +59,10 @@ export function NotificationBell() {
           />
         </svg>
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+          <span
+            className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white"
+            aria-hidden="true"
+          >
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -71,7 +77,11 @@ export function NotificationBell() {
           />
 
           {/* Dropdown */}
-          <div className="absolute right-0 z-50 mt-2 w-96 rounded-lg border border-gray-200 bg-white shadow-xl">
+          <div
+            className="absolute right-0 z-50 mt-2 w-96 rounded-lg border border-gray-200 bg-white shadow-xl"
+            role="dialog"
+            aria-label="Panel de notificaciones"
+          >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-200 p-4">
               <h3 className="font-semibold text-gray-900">Notificaciones</h3>

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/utils/logger';
 import { getGoogleCalendarService } from '@/lib/services/google-calendar.service';
 
 /**
@@ -32,8 +33,7 @@ export async function disconnectGoogleCalendar() {
     return { error: 'No autenticado' };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('user_settings')
     .update({
       google_access_token: null,
@@ -62,12 +62,11 @@ export async function isGoogleCalendarConnected() {
     return false;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: settings } = await (supabase as any)
+  const { data: settings } = await supabase
     .from('user_settings')
     .select('google_calendar_enabled, google_access_token')
     .eq('user_id', user.id)
-    .single() as { data: { google_calendar_enabled?: boolean; google_access_token?: string } | null };
+    .single();
 
   return !!(settings?.google_calendar_enabled && settings?.google_access_token);
 }
@@ -90,7 +89,7 @@ export async function syncSessionsToGoogleCalendar() {
     revalidatePath('/dashboard/sessions');
     return { success: true, ...result };
   } catch (error) {
-    console.error('Error syncing to Google Calendar:', error);
+    logger.error('Error syncing to Google Calendar:', error);
     return { error: 'Error al sincronizar' };
   }
 }

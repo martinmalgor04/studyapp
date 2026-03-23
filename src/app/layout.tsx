@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+// Validar variables de entorno al inicio de la app (falla con error descriptivo si faltan)
+import '@/lib/env';
 
 const inter = Inter({ subsets: ['latin'] });
 

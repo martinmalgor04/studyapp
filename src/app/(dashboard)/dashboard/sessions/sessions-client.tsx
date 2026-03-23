@@ -18,12 +18,14 @@ interface SessionWithRelations {
   duration_minutes?: number | null;
   duration: number;
   number: number;
-  status: string;
-  priority: string;
-  topic?: { id: string; name: string; difficulty?: string };
+  status: string | null;
+  priority: string | null;
+  adjusted_for_conflict?: boolean | null;
+  original_scheduled_at?: string | null;
+  topic?: { id: string; name: string; difficulty?: string | null } | null;
   subject?: { name: string } | null;
-  subject_id?: string;
-  topic_id?: string;
+  subject_id?: string | null;
+  topic_id?: string | null;
 }
 
 export function SessionsClient({ userId }: SessionsClientProps) {

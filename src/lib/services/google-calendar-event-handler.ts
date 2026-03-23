@@ -12,52 +12,14 @@ import {
 } from './session-events';
 import { getGoogleCalendarService } from './google-calendar.service';
 import { createClient } from '@/lib/supabase/server';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const getSupabase = async () => await createClient() as any;
-
-interface GoogleTokens {
-  access_token: string;
-  refresh_token?: string;
-  expiry_date?: number;
-}
-
-interface UserSettings {
-  google_access_token: string | null;
-  google_refresh_token: string | null;
-  google_token_expiry: string | null;
-}
-
-/**
- * Obtiene tokens de Google Calendar del usuario
- */
-async function getGoogleTokens(userId: string): Promise<GoogleTokens | null> {
-  const supabase = await getSupabase();
-
-  const { data: settings } = await supabase
-    .from('user_settings')
-    .select('google_access_token, google_refresh_token, google_token_expiry')
-    .eq('user_id', userId)
-    .single() as { data: UserSettings | null };
-
-  if (!settings?.google_access_token) {
-    return null;
-  }
-
-  return {
-    access_token: settings.google_access_token,
-    refresh_token: settings.google_refresh_token || undefined,
-    expiry_date: settings.google_token_expiry
-      ? new Date(settings.google_token_expiry).getTime()
-      : undefined,
-  };
-}
+import { logger } from '@/lib/utils/logger';
+import { getGoogleTokens } from './google-tokens.helper';
 
 /**
  * Obtiene una sesión de la base de datos
  */
 async function getSessionById(sessionId: string) {
-  const supabase = await getSupabase();
+  const supabase = await createClient();
 
   const { data: session } = await supabase
     .from('sessions')
@@ -83,14 +45,14 @@ class GoogleCalendarEventHandler implements ISessionEventHandler {
       // Obtener sesión de DB para ver si tiene google_event_id
       const session = await getSessionById(event.sessionId);
       if (!session?.google_event_id) {
-        console.log('[GoogleCalendarHandler] Session has no google_event_id, skipping sync');
+        logger.debug('[GoogleCalendarHandler] Session has no google_event_id, skipping sync');
         return;
       }
       
       // Obtener tokens del usuario
       const tokens = await getGoogleTokens(event.userId);
       if (!tokens) {
-        console.log('[GoogleCalendarHandler] User has no Google Calendar tokens, skipping sync');
+        logger.debug('[GoogleCalendarHandler] User has no Google Calendar tokens, skipping sync');
         return;
       }
       
@@ -100,12 +62,12 @@ class GoogleCalendarEventHandler implements ISessionEventHandler {
       });
 
       if (success) {
-        console.log(`[GoogleCalendarHandler] Successfully updated event ${session.google_event_id} to completed`);
+        logger.debug(`[GoogleCalendarHandler] Successfully updated event ${session.google_event_id} to completed`);
       } else {
-        console.warn(`[GoogleCalendarHandler] Failed to update event ${session.google_event_id}`);
+        logger.warn(`[GoogleCalendarHandler] Failed to update event ${session.google_event_id}`);
       }
     } catch (error) {
-      console.error('[GoogleCalendarHandler] Error in onSessionCompleted:', error);
+      logger.error('[GoogleCalendarHandler] Error in onSessionCompleted:', error);
       // No lanzar error para no afectar el flujo principal
     }
   }
@@ -121,14 +83,14 @@ class GoogleCalendarEventHandler implements ISessionEventHandler {
       // Obtener sesión de DB para ver si tiene google_event_id
       const session = await getSessionById(event.sessionId);
       if (!session?.google_event_id) {
-        console.log('[GoogleCalendarHandler] Session has no google_event_id, skipping sync');
+        logger.debug('[GoogleCalendarHandler] Session has no google_event_id, skipping sync');
         return;
       }
       
       // Obtener tokens del usuario
       const tokens = await getGoogleTokens(event.userId);
       if (!tokens) {
-        console.log('[GoogleCalendarHandler] User has no Google Calendar tokens, skipping sync');
+        logger.debug('[GoogleCalendarHandler] User has no Google Calendar tokens, skipping sync');
         return;
       }
       
@@ -138,12 +100,12 @@ class GoogleCalendarEventHandler implements ISessionEventHandler {
       });
 
       if (success) {
-        console.log(`[GoogleCalendarHandler] Successfully updated event ${session.google_event_id} to abandoned`);
+        logger.debug(`[GoogleCalendarHandler] Successfully updated event ${session.google_event_id} to abandoned`);
       } else {
-        console.warn(`[GoogleCalendarHandler] Failed to update event ${session.google_event_id}`);
+        logger.warn(`[GoogleCalendarHandler] Failed to update event ${session.google_event_id}`);
       }
     } catch (error) {
-      console.error('[GoogleCalendarHandler] Error in onSessionAbandoned:', error);
+      logger.error('[GoogleCalendarHandler] Error in onSessionAbandoned:', error);
       // No lanzar error para no afectar el flujo principal
     }
   }

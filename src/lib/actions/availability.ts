@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/utils/logger';
 import { 
   updateAvailabilitySchema, 
   type UpdateAvailabilityInput
@@ -31,7 +32,7 @@ export async function getAvailability(): Promise<Array<{
     .order('start_time', { ascending: true });
 
   if (error) {
-    console.error('Error fetching availability:', error);
+    logger.error('Error fetching availability:', error);
     return [];
   }
 
@@ -69,7 +70,7 @@ export async function updateAvailability(input: UpdateAvailabilityInput) {
     .eq('user_id', user.id);
 
   if (deleteError) {
-    console.error('Error clearing availability:', deleteError);
+    logger.error('Error clearing availability:', deleteError);
     return { error: 'Error al actualizar disponibilidad' };
   }
 
@@ -83,13 +84,12 @@ export async function updateAvailability(input: UpdateAvailabilityInput) {
       is_enabled: slot.is_enabled,
     }));
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: insertError } = await (supabase as any)
+    const { error: insertError } = await supabase
       .from('availability_slots')
       .insert(slotsToInsert);
 
     if (insertError) {
-      console.error('Error inserting availability:', insertError);
+      logger.error('Error inserting availability:', insertError);
       return { error: 'Error al guardar disponibilidad' };
     }
   }
@@ -109,12 +109,11 @@ export async function importAvailabilityFromGoogleCalendar(
   }
 
   // Obtener tokens de Google Calendar
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: settings } = await (supabase as any)
+  const { data: settings } = await supabase
     .from('user_settings')
     .select('google_access_token, google_refresh_token, google_token_expiry')
     .eq('user_id', user.id)
-    .single() as { data: { google_access_token?: string; google_refresh_token?: string; google_token_expiry?: string } | null };
+    .single();
 
   if (!settings?.google_access_token) {
     return { error: 'Google Calendar no conectado. Conectá tu cuenta primero.' };
@@ -151,18 +150,17 @@ export async function importAvailabilityFromGoogleCalendar(
         .eq('user_id', user.id);
 
       if (deleteError) {
-        console.error('Error clearing availability:', deleteError);
+        logger.error('Error clearing availability:', deleteError);
         return { error: 'Error al actualizar disponibilidad' };
       }
     }
 
     // Si estrategia es MERGE, solo eliminar slots que se solapan
     if (strategy === 'MERGE') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: existingSlots } = await (supabase as any)
+      const { data: existingSlots } = await supabase
         .from('availability_slots')
         .select('*')
-        .eq('user_id', user.id) as { data: Array<{ day_of_week: number; start_time: string; end_time: string }> | null };
+        .eq('user_id', user.id);
 
       if (existingSlots) {
         // Filtrar detectedSlots para excluir los que ya existen
@@ -189,13 +187,12 @@ export async function importAvailabilityFromGoogleCalendar(
       is_enabled: slot.is_enabled,
     }));
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: insertError } = await (supabase as any)
+    const { error: insertError } = await supabase
       .from('availability_slots')
       .insert(slotsToInsert);
 
     if (insertError) {
-      console.error('Error inserting availability:', insertError);
+      logger.error('Error inserting availability:', insertError);
       return { error: 'Error al guardar disponibilidad' };
     }
 
@@ -208,7 +205,7 @@ export async function importAvailabilityFromGoogleCalendar(
       message: `${detectedSlots.length} horarios detectados e importados exitosamente`
     };
   } catch (error) {
-    console.error('Error importing from Google Calendar:', error);
+    logger.error('Error importing from Google Calendar:', error);
     return { error: 'Error al importar desde Google Calendar' };
   }
 }
@@ -226,12 +223,11 @@ export async function previewAvailabilityFromGoogleCalendar() {
   }
 
   // Obtener tokens de Google Calendar
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: settings } = await (supabase as any)
+  const { data: settings } = await supabase
     .from('user_settings')
     .select('google_access_token, google_refresh_token, google_token_expiry')
     .eq('user_id', user.id)
-    .single() as { data: { google_access_token?: string; google_refresh_token?: string; google_token_expiry?: string } | null };
+    .single();
 
   if (!settings?.google_access_token) {
     return { error: 'Google Calendar no conectado. Conectá tu cuenta primero.' };
@@ -290,7 +286,7 @@ export async function previewAvailabilityFromGoogleCalendar() {
       },
     };
   } catch (error) {
-    console.error('Error previewing from Google Calendar:', error);
+    logger.error('Error previewing from Google Calendar:', error);
     return { error: 'Error al obtener preview desde Google Calendar' };
   }
 }

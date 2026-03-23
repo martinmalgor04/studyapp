@@ -38,25 +38,22 @@ Los estudiantes universitarios enfrentan un problema crítico: **la procrastinac
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         FRONTEND                                │
-│                         NextJS 14                               │
-│        App Router │ Server Components │ TailwindCSS             │
+│                    NEXT.JS 16 (Full Stack)                      │
+│                                                                 │
+│   Presentation: React 19 │ App Router │ Server Components       │
+│   Application:  Server Actions │ API Routes                     │
+│   Domain:       Services │ Priority Calculator │ Session Gen    │
+│   Styling:      TailwindCSS                                     │
 └─────────────────────────────┬───────────────────────────────────┘
                               │
-                              │ REST API / tRPC
+                              │ Supabase Client (SSR)
                               │
 ┌─────────────────────────────▼───────────────────────────────────┐
-│                         BACKEND                                 │
-│                         NestJS                                  │
-│    Modules │ Services │ Repositories │ Guards │ Pipes          │
-└─────────────────────────────┬───────────────────────────────────┘
-                              │
-                              │ Prisma ORM
-                              │
-┌─────────────────────────────▼───────────────────────────────────┐
-│                        DATABASE                                 │
-│                       PostgreSQL                                │
-│              Users │ Subjects │ Topics │ Sessions               │
+│                      SUPABASE                                   │
+│                                                                 │
+│   Database:     PostgreSQL + Row Level Security (RLS)           │
+│   Auth:         Supabase Auth (JWT + Sessions)                  │
+│   Realtime:     Supabase Realtime (futuro)                      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 

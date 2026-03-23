@@ -21,11 +21,11 @@
 | UC-008 | Track Session Completion | Study | ⬜ Low | ✅ Completado | 🟢 Implementado |
 | UC-009 | Reschedule Session | Study | 🟡 Medium | ✅ Completado | 🟢 Implementado |
 | UC-010 | Free Study Mode | Study | 🟡 Medium | ✅ Completado | 🟢 Incluido en UC-006 |
-| UC-011 | Google Calendar Integration | Calendar | 🟠 High | 🟡 Parcial | 🟡 En Progreso |
+| UC-011 | Google Calendar Integration | Calendar | 🟠 High | 🟡 ~90% | 🟡 Casi completo |
 | UC-011a | Export Sessions to Google Calendar | Calendar | 🟡 Medium | ✅ Completado | 🟢 Implementado |
-| UC-011b | Import Availability from Google Calendar | Calendar | 🟠 High | ⏳ Pendiente | ⏳ Pendiente |
-| UC-011c | Detect Schedule Conflicts | Calendar | 🟠 High | ⏳ Pendiente | ⏳ Pendiente |
-| UC-011d | Sync Session Updates | Calendar | 🟡 Medium | ⏳ Pendiente | ⏳ Pendiente |
+| UC-011b | Import Availability from Google Calendar | Calendar | 🟠 High | 🟡 Backend ✅ | 🟡 Falta UI preview |
+| UC-011c | Detect Schedule Conflicts | Calendar | 🟠 High | 🟡 Backend ✅ | 🟡 Falta UI badges |
+| UC-011d | Sync Session Updates | Calendar | 🟡 Medium | 🟡 Handler ✅ | 🟡 Falta activar emit |
 | UC-012 | Send Notifications | Notification | 🟡 Medium | ✅ Completado | 🟢 Implementado |
 
 ### v1.5 Release
@@ -960,7 +960,7 @@ async createFreeStudy(
 | **Priority** | P1 |
 | **Module** | Calendar |
 | **Complexity** | 🟠 High |
-| **Status** | 🟡 Parcial (UC-011a + 011b completados, UC-011c/d en progreso) |
+| **Status** | 🟡 ~90% (UC-011a ✅, 011b/c backend ✅, falta UI polish y activar 011d) |
 | **Actor** | Authenticated User |
 
 ### User Story
@@ -1003,9 +1003,9 @@ La integración con Google Calendar funciona de forma **bidireccional y continua
 | Sub-UC | Name | Status | Description |
 |--------|------|--------|-------------|
 | **UC-011a** | Export Sessions to Google Calendar | ✅ Completado | Exporta sesiones pendientes de StudyApp → Google Calendar |
-| **UC-011b** | Import Events for Availability | ✅ Completado | Lee eventos ocupados → detecta horarios libres automáticamente |
-| **UC-011c** | Detect Schedule Conflicts | 🔄 En Progreso | Verifica conflictos en tiempo real antes de programar sesiones |
-| **UC-011d** | Continuous Sync | ⏳ Pendiente | Mantiene sincronizados cambios bidireccionales continuamente |
+| **UC-011b** | Import Events for Availability | 🟡 Backend ✅ | Lee eventos ocupados → detecta horarios libres automáticamente (falta preview UI) |
+| **UC-011c** | Detect Schedule Conflicts | 🟡 Backend ✅ | Verifica conflictos en tiempo real antes de programar sesiones (falta UI badges) |
+| **UC-011d** | Continuous Sync | 🟡 Handler ✅ | Mantiene sincronizados cambios bidireccionales (falta activar emit) |
 
 ### Architecture
 
@@ -2364,123 +2364,6 @@ Filtros:
 
 [SessionCard...]
 ```
-
-### Status
-✅ Completado
-
----
-
-## 5.16 UC-020: View/Manage Sessions (Expanded)
-
-### Description
-Vista dedicada para gestionar sesiones de estudio de los próximos 7 días con filtros múltiples y acciones completas.
-
-### Actors
-- **Estudiante**: Usuario autenticado
-
-### Preconditions
-- Usuario está logueado
-- Existen sesiones generadas
-
-### Main Flow
-1. Usuario hace click en "Sesiones" en navbar
-2. Sistema navega a `/dashboard/sessions`
-3. Sistema carga sesiones próximos 7 días
-4. Sistema muestra resumen: X pendientes / Y total
-5. Usuario puede aplicar filtros:
-   - Por estado (Pendiente, Completada, etc)
-   - Por prioridad (Crítico, Urgente, etc)
-   - Por materia
-6. Usuario visualiza sesiones agrupadas por día
-7. Usuario puede realizar acciones:
-   - Marcar completada
-   - Reagendar (con modal datetime picker)
-   - Eliminar
-
-### Alternative Flows
-
-**4a. Reagendar Sesión:**
-1. Usuario click en "Reagendar"
-2. Sistema abre modal con info de la sesión
-3. Sistema muestra warning si attempts >= 2
-4. Usuario selecciona nueva fecha/hora
-5. Usuario confirma
-6. Sistema actualiza scheduled_at e incrementa attempts
-7. Sistema marca status = RESCHEDULED
-
-**4b. Marcar Completada:**
-1. Usuario click en "Completar"
-2. Sistema actualiza status = COMPLETED
-3. Sistema refresca vista
-
-**4c. Eliminar Sesión:**
-1. Usuario click en eliminar
-2. Sistema pide confirmación
-3. Usuario confirma
-4. Sistema elimina de DB
-5. Sistema refresca vista
-
-### Postconditions
-- Sesiones visualizadas correctamente
-- Estados actualizados
-- Dashboard refleja cambios
-
-### Business Rules
-- Solo sesiones de próximos 7 días
-- Agrupación por día (Hoy, Mañana, Fecha)
-- Ordenamiento: fecha + prioridad
-- attempts se incrementa en cada reagendado
-- Warning si attempts >= 2
-
-### UI Layout
-
-```
-╔═══════════════════════════════════════╗
-║ Sesiones de Estudio                   ║
-║ Próximos 7 días: 5/10 sesiones        ║
-║ ✅ 3 completadas  🔄 2 reagendadas     ║
-╠═══════════════════════════════════════╣
-║ Filtros:                              ║
-║ [Estado▼] [Prioridad▼] [Materia▼]    ║
-╠═══════════════════════════════════════╣
-║ ── Hoy (27 Ene) ──                    ║
-║                                       ║
-║ ┌─────────────────────────────────┐   ║
-║ │ 🔴 CRÍTICO    ⏰ PENDIENTE      │   ║
-║ │ 📚 Análisis                     │   ║
-║ │ 📝 Integrales - R2              │   ║
-║ │ 📅 15:00hs  ⏱️ 45min            │   ║
-║ │ [✓ Completar][🔄][🗑️]          │   ║
-║ └─────────────────────────────────┘   ║
-║                                       ║
-║ ── Mañana (28 Ene) ──                 ║
-║ [SessionCard...]                      ║
-╚═══════════════════════════════════════╝
-```
-
-### Technical Implementation
-
-**Server Actions** (`src/lib/actions/sessions.ts`):
-```typescript
-export async function getUpcomingSessions(days = 7)
-export async function updateSessionStatus(id, status)
-export async function rescheduleSession(id, newDate)
-export async function deleteSession(id)
-```
-
-**Components**:
-- `SessionCard`: Card con badges y acciones
-- `SessionFilters`: 3 selects para filtrar
-- `SessionList`: Lista agrupada por día
-- `RescheduleDialog`: Modal para cambiar fecha
-
-**Page**: `/dashboard/sessions`
-
-### Integration Points
-
-1. **Navbar**: Link directo "Sesiones"
-2. **Dashboard**: Link "Ver todas las sesiones →"
-3. **SessionList**: Reusable en dashboard (hoy) y sessions page (7 días)
 
 ### Status
 ✅ Completado
