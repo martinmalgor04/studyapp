@@ -158,3 +158,18 @@ export async function deleteTopicById(
 
   return { error: null };
 }
+
+export async function findTopicsBySubjectIds(subjectIds: string[]): Promise<TopicRow[]> {
+  if (subjectIds.length === 0) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('topics')
+    .select('id, name, difficulty, hours, source, source_date, subject_id, created_at')
+    .in('subject_id', subjectIds)
+    .order('created_at', { ascending: false });
+  if (error) {
+    logger.error('Error fetching topics by subject IDs:', error);
+    return [];
+  }
+  return (data ?? []) as TopicRow[];
+}

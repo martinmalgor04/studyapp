@@ -219,3 +219,17 @@ export async function updateSubjectStatusById(
 
   return { error: null };
 }
+
+export async function findExamsBySubjectIds(subjectIds: string[]): Promise<ExamRow[]> {
+  if (subjectIds.length === 0) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('exams')
+    .select('id, date, subject_id, type')
+    .in('subject_id', subjectIds);
+  if (error) {
+    logger.error('Error fetching exams by subject IDs:', error);
+    return [];
+  }
+  return (data ?? []) as ExamRow[];
+}

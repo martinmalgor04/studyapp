@@ -1,13 +1,13 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { getAuthenticatedUser } from '@/lib/utils/auth';
+import { findAllSubjects } from '@/lib/repositories/subjects.repository';
+import { findExamsBySubjectIds } from '@/lib/repositories/exams.repository';
+import { findTopicsBySubjectIds } from '@/lib/repositories/topics.repository';
+import { findUpcomingSessions } from '@/lib/repositories/sessions.repository';
 
 export async function getDashboardData() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthenticatedUser();
 
   if (!user) {
     return {
@@ -18,73 +18,47 @@ export async function getDashboardData() {
     };
   }
 
-  // Obtener materias con conteos
-  const { data: subjects } = await supabase
-    .from('subjects')
-    .select('id, name, description, created_at')
-    .eq('user_id', user.id)
-    .eq('is_active', true)
-    .order('created_at', { ascending: false });
+  const subjects = await findAllSubjects();
+  const subjectIds = subjects.map((s) => s.id);
 
-  // Obtener todos los exámenes
-  const { data: exams } = await supabase
-    .from('exams')
-    .select('id, date, subject_id')
-    .in('subject_id', subjects?.map((s) => s.id) || []);
+  const [exams, topics, sessions] = await Promise.all([
+    findExamsBySubjectIds(subjectIds),
+    findTopicsBySubjectIds(subjectIds),
+    findUpcomingSessions(user.id, 30),
+  ]);
 
-  // Obtener todos los topics con info de materia
-  const { data: topics } = await supabase
-    .from('topics')
-    .select('id, name, difficulty, hours, source, source_date, subject_id, created_at, subjects(name)')
-    .in('subject_id', subjects?.map((s) => s.id) || [])
-    .order('created_at', { ascending: false });
-
-  // Calcular exámenes próximos (siguiente 30 días)
   const now = new Date();
-  const thirtyDaysLater = new Date();
+  const thirtyDaysLater = new Date(now);
   thirtyDaysLater.setDate(now.getDate() + 30);
 
-  const upcomingExams =
-    exams?.filter((exam) => {
-      const examDate = new Date(exam.date);
-      return examDate >= now && examDate <= thirtyDaysLater;
-    }).length || 0;
+  const upcomingExams = exams.filter((exam) => {
+    const examDate = new Date(exam.date);
+    return examDate >= now && examDate <= thirtyDaysLater;
+  }).length;
 
-  // Obtener sesiones próximas (próximos 30 días para vista semanal)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const todayStart = today.toISOString();
 
-  const thirtyDaysLater2 = new Date(today);
-  thirtyDaysLater2.setDate(thirtyDaysLater2.getDate() + 30);
-  const sessionsEnd = thirtyDaysLater2.toISOString();
-
-  // Obtener sesiones (incluir completadas para que no desaparezcan al completar)
-  const { data: sessions } = await supabase
-    .from('sessions')
-    .select('id, topic_id, scheduled_at, number, duration, priority, status, adjusted_for_conflict, original_scheduled_at, topic:topics(id, name, difficulty), subject:subjects(name)')
-    .eq('user_id', user.id)
-    .gte('scheduled_at', todayStart)
-    .lt('scheduled_at', sessionsEnd)
-    .order('scheduled_at', { ascending: true });
-
-  // Agregar conteos a las materias
-  const subjectsWithCounts = subjects?.map((subject) => ({
+  const subjectsWithCounts = subjects.map((subject) => ({
     ...subject,
-    topics_count: topics?.filter((t) => t.subject_id === subject.id).length || 0,
-    exams_count: exams?.filter((e) => e.subject_id === subject.id).length || 0,
-  })) || [];
+    topics_count: topics.filter((t) => t.subject_id === subject.id).length,
+    exams_count: exams.filter((e) => e.subject_id === subject.id).length,
+  }));
 
   return {
     stats: {
-      subjects: subjects?.length || 0,
-      exams: exams?.length || 0,
-      topics: topics?.length || 0,
+      subjects: subjects.length,
+      exams: exams.length,
+      topics: topics.length,
       upcomingExams,
-      todaySessions: sessions?.filter((s) => s.status === 'PENDING' && new Date(s.scheduled_at).toDateString() === today.toDateString()).length || 0,
+      todaySessions: sessions.filter(
+        (s) =>
+          s.status === 'PENDING' &&
+          new Date(s.scheduled_at).toDateString() === today.toDateString(),
+      ).length,
     },
     subjects: subjectsWithCounts,
-    topics: topics || [],
-    sessions: sessions || [],
+    topics,
+    sessions,
   };
 }

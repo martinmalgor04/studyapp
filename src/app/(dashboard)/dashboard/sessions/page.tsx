@@ -1,15 +1,21 @@
 import { createClient } from '@/lib/supabase/server';
+import { getUpcomingSessions } from '@/lib/actions/sessions';
+import { getSubjects } from '@/lib/actions/subjects';
 import { SessionsClient } from './sessions-client';
 
 export default async function SessionsPage() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
-  
+
   if (!data?.user) {
-    // Redirect if no user
     return null;
   }
-  
+
+  const [sessions, subjects] = await Promise.all([
+    getUpcomingSessions(30),
+    getSubjects(),
+  ]);
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
@@ -27,8 +33,11 @@ export default async function SessionsPage() {
           + Nueva Sesión
         </button>
       </div>
-      
-      <SessionsClient userId={data.user.id} />
+
+      <SessionsClient
+        initialSessions={sessions}
+        initialSubjects={subjects.map((s) => ({ id: s.id, name: s.name }))}
+      />
     </div>
   );
 }

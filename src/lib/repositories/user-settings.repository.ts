@@ -158,3 +158,17 @@ export async function clearGoogleTokens(
     google_token_expiry: null,
   });
 }
+
+export async function findUserEmail(userId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('users')
+    .select('email')
+    .eq('id', userId)
+    .single();
+  if (error || !data?.email) {
+    logger.error('Error fetching user email:', error);
+    return null;
+  }
+  return data.email;
+}

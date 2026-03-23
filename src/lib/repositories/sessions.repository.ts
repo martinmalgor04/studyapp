@@ -22,7 +22,7 @@ export interface UpcomingSession {
   status: SessionStatus | null;
   adjusted_for_conflict: boolean | null;
   original_scheduled_at: string | null;
-  topic: { id: string; name: string } | null;
+  topic: { id: string; name: string; difficulty: string | null } | null;
   subject: { id: string; name: string } | null;
   exam: { id: string; type: string; date: string } | null;
 }
@@ -103,7 +103,7 @@ export async function findUpcomingSessions(
       status,
       adjusted_for_conflict,
       original_scheduled_at,
-      topic:topics(id, name),
+      topic:topics(id, name, difficulty),
       subject:subjects(id, name),
       exam:exams(id, type, date)
     `)

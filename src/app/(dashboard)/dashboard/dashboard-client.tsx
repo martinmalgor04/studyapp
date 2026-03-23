@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getDashboardData } from '@/lib/actions/dashboard';
 import { StatsCards } from '@/components/features/dashboard/stats-cards';
@@ -9,41 +10,21 @@ import { RecentTopics } from '@/components/features/dashboard/recent-topics';
 import { QuickAddTopic } from '@/components/features/dashboard/quick-add-topic';
 import { UnifiedCalendar } from '@/components/shared/calendar/unified-calendar';
 
-interface DashboardClientProps {
-  userName: string;
-}
-
 type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
 
-export function DashboardClient({ userName }: DashboardClientProps) {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+interface DashboardClientProps {
+  userName: string;
+  initialData: DashboardData;
+}
 
-  const loadData = async () => {
-    const dashboardData = await getDashboardData();
-    setData(dashboardData);
-    setLoading(false);
-  };
+export function DashboardClient({ userName, initialData }: DashboardClientProps) {
+  const router = useRouter();
+  const [data, setData] = useState<DashboardData>(initialData);
 
+  // Sincronizar estado cuando el RSC re-renderiza con datos frescos (post router.refresh())
   useEffect(() => {
-    loadData();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="text-center text-gray-500">Cargando dashboard...</div>
-      </div>
-    );
-  }
-
-  if (!data) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="text-center text-gray-500">Error al cargar datos</div>
-      </div>
-    );
-  }
+    setData(initialData);
+  }, [initialData]);
 
   return (
     <div className="space-y-6">
@@ -61,7 +42,7 @@ export function DashboardClient({ userName }: DashboardClientProps) {
       {/* Quick Add Topic */}
       <QuickAddTopic
         subjects={data.subjects.map((s) => ({ id: s.id, name: s.name }))}
-        onSuccess={loadData}
+        onSuccess={() => router.refresh()}
       />
 
       {/* Sesiones Próximas - Vista Semanal */}
@@ -80,10 +61,10 @@ export function DashboardClient({ userName }: DashboardClientProps) {
             Ver todas las sesiones →
           </Link>
         </div>
-        <UnifiedCalendar 
+        <UnifiedCalendar
           defaultView="week"
-          sessions={data.sessions} 
-          onStatusChange={loadData}
+          sessions={data.sessions}
+          onStatusChange={() => router.refresh()}
         />
       </div>
 

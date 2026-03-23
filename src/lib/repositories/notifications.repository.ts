@@ -1,5 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/utils/logger';
+import type { Json, Database } from '@/types/database.types';
+
+type NotificationType = Database['public']['Enums']['notification_type'];
 
 export interface NotificationRow {
   id: string;
@@ -78,5 +81,32 @@ export async function markAllNotificationsRead(
     return { error: 'Error al marcar todas como leídas' };
   }
 
+  return { error: null };
+}
+
+export interface InsertNotificationData {
+  user_id: string;
+  type: string;
+  title: string;
+  message: string;
+  metadata?: unknown;
+}
+
+export async function insertNotification(
+  data: InsertNotificationData,
+): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const { error } = await supabase.from('notifications').insert({
+    user_id: data.user_id,
+    type: data.type as NotificationType,
+    title: data.title,
+    message: data.message,
+    metadata: (data.metadata ?? null) as Json | null,
+    read: false,
+  });
+  if (error) {
+    logger.error('Error inserting notification:', error);
+    return { error: error.message };
+  }
   return { error: null };
 }

@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
-import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/utils/logger';
+import { findUserEmail } from '@/lib/repositories/user-settings.repository';
 import type { INotificationChannel, NotificationPayload } from './notification-channel.interface';
 
 /**
@@ -64,31 +64,7 @@ export class EmailChannel implements INotificationChannel {
   }
 
   private async getUserEmail(userId: string): Promise<string | null> {
-    try {
-      const supabase = await createClient();
-      
-      // El email se sincroniza desde auth.users a public.users via trigger
-      const { data, error } = await supabase
-        .from('users')
-        .select('email')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        logger.error('[EmailChannel] Error fetching user email:', error);
-        return null;
-      }
-
-      if (!data?.email) {
-        logger.warn('[EmailChannel] No email found for user:', userId);
-        return null;
-      }
-
-      return data.email;
-    } catch (error) {
-      logger.error('[EmailChannel] Exception getting user email:', error);
-      return null;
-    }
+    return findUserEmail(userId);
   }
 
   private buildEmailTemplate(notification: NotificationPayload): string {
