@@ -1,7 +1,11 @@
 import { google } from 'googleapis';
-import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/utils/logger';
 import { getGoogleTokens, type GoogleTokens } from './google-tokens.helper';
+import {
+  findPendingSessionsWithoutGoogleEvent,
+  updateSessionGoogleEventId,
+} from '@/lib/repositories/sessions.repository';
+import { isGoogleCalendarEnabled } from '@/lib/repositories/user-settings.repository';
 
 interface Session {
   id: string;
@@ -83,30 +87,14 @@ export class GoogleCalendarService {
    * Sincroniza todas las sesiones pendientes de un usuario a Google Calendar
    */
   async syncSessions(userId: string): Promise<{ synced: number; errors: number }> {
-    const supabase = await createClient();
-
-    // Obtener tokens
     const tokens = await getGoogleTokens(userId);
     if (!tokens) {
       return { synced: 0, errors: 0 };
     }
 
-    // Obtener sesiones pendientes
-    const { data: sessions } = await supabase
-      .from('sessions')
-      .select(`
-        id,
-        scheduled_at,
-        duration,
-        number,
-        topic:topics(name),
-        subject:subjects(name)
-      `)
-      .eq('user_id', userId)
-      .eq('status', 'PENDING')
-      .gte('scheduled_at', new Date().toISOString());
+    const sessions = await findPendingSessionsWithoutGoogleEvent(userId);
 
-    if (!sessions || sessions.length === 0) {
+    if (sessions.length === 0) {
       return { synced: 0, errors: 0 };
     }
 
@@ -125,15 +113,7 @@ export class GoogleCalendarService {
       const eventId = await this.createEventForSession(tokens, mappedSession);
       if (eventId) {
         synced++;
-        
-        // Guardar google_event_id en la sesión
-        await supabase
-          .from('sessions')
-          .update({ 
-            google_event_id: eventId,
-            google_calendar_synced_at: new Date().toISOString()
-          })
-          .eq('id', session.id);
+        await updateSessionGoogleEventId(session.id, eventId);
       } else {
         errors++;
       }
@@ -270,13 +250,7 @@ export class GoogleCalendarService {
    * Verifica si el usuario tiene Google Calendar conectado
    */
   async isConnected(userId: string): Promise<boolean> {
-    const supabase = await createClient();
-    const { data: settings } = await supabase
-      .from('user_settings')
-      .select('google_access_token, google_calendar_enabled')
-      .eq('user_id', userId)
-      .single();
-    return !!(settings?.google_access_token && settings?.google_calendar_enabled !== false);
+    return isGoogleCalendarEnabled(userId);
   }
 }
 

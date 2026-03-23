@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getSubject } from '@/lib/actions/subjects';
 import { getExamsBySubject } from '@/lib/actions/exams';
@@ -50,12 +50,13 @@ interface SessionRow {
 }
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function SubjectDetailPage({ params }: PageProps) {
+  const { id } = use(params);
   const [subject, setSubject] = useState<SubjectRow | null>(null);
   const [exams, setExams] = useState<ExamRow[]>([]);
   const [topics, setTopics] = useState<TopicRow[]>([]);
@@ -69,10 +70,10 @@ export default function SubjectDetailPage({ params }: PageProps) {
   const loadData = async () => {
     setLoading(true);
     const [subjectData, examsData, topicsData, sessionsData] = await Promise.all([
-      getSubject(params.id),
-      getExamsBySubject(params.id),
-      getTopicsBySubject(params.id),
-      getSessionsBySubject(params.id),
+      getSubject(id),
+      getExamsBySubject(id),
+      getTopicsBySubject(id),
+      getSessionsBySubject(id),
     ]);
     setSubject(subjectData);
     setExams(examsData);
@@ -84,7 +85,7 @@ export default function SubjectDetailPage({ params }: PageProps) {
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- loadData depends on params.id only
-  }, [params.id]);
+  }, [id]);
 
   const handleEditExam = async (id: string) => {
     const exam = exams.find((e) => e.id === id);
@@ -209,14 +210,14 @@ export default function SubjectDetailPage({ params }: PageProps) {
       <ExamDialog
         isOpen={isExamDialogOpen}
         onClose={handleCloseExamDialog}
-        subjectId={params.id}
+        subjectId={id}
         exam={editingExam ?? undefined}
       />
 
       <TopicDialog
         isOpen={isTopicDialogOpen}
         onClose={handleCloseTopicDialog}
-        subjectId={params.id}
+        subjectId={id}
         exams={exams}
         topic={editingTopic ?? undefined}
       />

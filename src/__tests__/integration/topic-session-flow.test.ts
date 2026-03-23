@@ -160,7 +160,7 @@ describe('Integration: Topic → Session Generation Flow', () => {
 
       const result = await generateSessions('non-existent-id');
 
-      expect(result.error).toBe('Topic not found');
+      expect(result.error).toBe('Topic no encontrado o no pertenece al usuario');
       expect(generateSessionsForTopic).not.toHaveBeenCalled();
     });
 

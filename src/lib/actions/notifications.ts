@@ -5,15 +5,15 @@ import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/utils/logger';
 import { getNotificationService } from '@/lib/services/notifications/notification.service';
 import type { NotificationPayload } from '@/lib/services/notifications/channels/notification-channel.interface';
-
-interface Notification {
-  id: string;
-  type: string;
-  title: string;
-  message: string;
-  read: boolean;
-  created_at: string;
-}
+import {
+  findNotificationsByUserId,
+  markNotificationRead,
+  markAllNotificationsRead,
+} from '@/lib/repositories/notifications.repository';
+import {
+  findUserSettingsOrCreate,
+  updateUserSettingsById,
+} from '@/lib/repositories/user-settings.repository';
 
 /**
  * Obtiene todas las notificaciones del usuario (últimas 50)
@@ -23,27 +23,10 @@ export async function getNotifications() {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return { notifications: [] as Notification[], unreadCount: 0 };
+    return { notifications: [], unreadCount: 0 };
   }
 
-  const { data: notifications, error } = await supabase
-    .from('notifications')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(50);
-
-  if (error) {
-    logger.error('Error fetching notifications:', error);
-    return { notifications: [] as Notification[], unreadCount: 0 };
-  }
-
-  const unreadCount = notifications?.filter(n => !n.read).length || 0;
-
-  return {
-    notifications: (notifications || []) as Notification[],
-    unreadCount,
-  };
+  return findNotificationsByUserId(user.id);
 }
 
 /**
@@ -57,15 +40,9 @@ export async function markNotificationAsRead(notificationId: string) {
     return { error: 'No autenticado' };
   }
 
-  const { error } = await supabase
-    .from('notifications')
-    .update({ read: true })
-    .eq('id', notificationId)
-    .eq('user_id', user.id);
-
-  if (error) {
-    logger.error('Error marking notification as read:', error);
-    return { error: 'Error al marcar como leída' };
+  const result = await markNotificationRead(notificationId, user.id);
+  if (result.error) {
+    return { error: result.error };
   }
 
   revalidatePath('/dashboard');
@@ -83,15 +60,9 @@ export async function markAllNotificationsAsRead() {
     return { error: 'No autenticado' };
   }
 
-  const { error } = await supabase
-    .from('notifications')
-    .update({ read: true })
-    .eq('user_id', user.id)
-    .eq('read', false);
-
-  if (error) {
-    logger.error('Error marking all notifications as read:', error);
-    return { error: 'Error al marcar todas como leídas' };
+  const result = await markAllNotificationsRead(user.id);
+  if (result.error) {
+    return { error: result.error };
   }
 
   revalidatePath('/dashboard');
@@ -109,30 +80,7 @@ export async function getUserSettings() {
     return null;
   }
 
-  const { data: settings, error } = await supabase
-    .from('user_settings')
-    .select('*')
-    .eq('user_id', user.id)
-    .single();
-
-  if (error || !settings) {
-    // Crear configuración por defecto si no existe
-    const { data: newSettings } = await supabase
-      .from('user_settings')
-      .insert({
-        user_id: user.id,
-        email_notifications: true,
-        telegram_notifications: false,
-        in_app_notifications: true,
-        daily_summary_time: '08:00:00',
-      })
-      .select()
-      .single();
-
-    return newSettings;
-  }
-
-  return settings;
+  return findUserSettingsOrCreate(user.id);
 }
 
 /**
@@ -151,14 +99,9 @@ export async function updateUserSettings(settings: {
     return { error: 'No autenticado' };
   }
 
-  const { error } = await supabase
-    .from('user_settings')
-    .update(settings)
-    .eq('user_id', user.id);
-
-  if (error) {
-    logger.error('Error updating user settings:', error);
-    return { error: 'Error al actualizar configuración' };
+  const result = await updateUserSettingsById(user.id, settings);
+  if (result.error) {
+    return { error: result.error };
   }
 
   revalidatePath('/dashboard/settings');
