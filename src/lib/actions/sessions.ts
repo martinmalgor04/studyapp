@@ -4,6 +4,27 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { generateSessionsForTopic } from '@/lib/services/session-generator';
 import { logger } from '@/lib/utils/logger';
+import {
+  findUpcomingSessions,
+  findTodaySessions,
+  findSessionsBySubjectId,
+  findSessionsByDateRange,
+  findSessionForStatusUpdate,
+  updateSessionStatus as repoUpdateSessionStatus,
+  updateSessionStarted,
+  findSessionForCompletion,
+  updateSessionCompleted,
+  updateSessionIncomplete,
+  findSessionForReschedule,
+  updateSessionRescheduled,
+  abandonSession,
+  findSessionGoogleEventId,
+  deleteSessionById,
+  findTopicWithFullInfo,
+  findExamByIdForGeneration,
+  insertSessions,
+  findOverduePendingSessions,
+} from '@/lib/repositories/sessions.repository';
 
 export async function getUpcomingSessions(days = 7) {
   const supabase = await createClient();
@@ -13,39 +34,7 @@ export async function getUpcomingSessions(days = 7) {
     return [];
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  const endDate = new Date(today);
-  endDate.setDate(endDate.getDate() + days);
-
-  const { data, error } = await supabase
-    .from('sessions')
-    .select(`
-      id,
-      topic_id,
-      scheduled_at,
-      number,
-      duration,
-      priority,
-      status,
-      adjusted_for_conflict,
-      original_scheduled_at,
-      topic:topics(id, name),
-      subject:subjects(id, name),
-      exam:exams(id, type, date)
-    `)
-    .eq('user_id', user.id)
-    .gte('scheduled_at', today.toISOString())
-    .lt('scheduled_at', endDate.toISOString())
-    .order('scheduled_at', { ascending: true });
-
-  if (error) {
-    logger.error('Error fetching upcoming sessions:', error);
-    return [];
-  }
-
-  return data || [];
+  return findUpcomingSessions(user.id, days);
 }
 
 export async function getTodaySessions() {
@@ -56,33 +45,7 @@ export async function getTodaySessions() {
     return [];
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayStart = today.toISOString();
-
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const todayEnd = tomorrow.toISOString();
-
-  const { data, error } = await supabase
-    .from('sessions')
-    .select(`
-      *,
-      topic:topics(id, name),
-      subject:subjects(id, name)
-    `)
-    .eq('user_id', user.id)
-    .gte('scheduled_at', todayStart)
-    .lt('scheduled_at', todayEnd)
-    .order('priority', { ascending: false })
-    .order('scheduled_at', { ascending: true });
-
-  if (error) {
-    logger.error('Error fetching today sessions:', error);
-    return [];
-  }
-
-  return data || [];
+  return findTodaySessions(user.id);
 }
 
 export async function getSessionsBySubject(subjectId: string) {
@@ -93,23 +56,7 @@ export async function getSessionsBySubject(subjectId: string) {
     return [];
   }
 
-  const { data, error } = await supabase
-    .from('sessions')
-    .select(`
-      *,
-      topic:topics(id, name),
-      subject:subjects(id, name)
-    `)
-    .eq('user_id', user.id)
-    .eq('subject_id', subjectId)
-    .order('scheduled_at', { ascending: true });
-
-  if (error) {
-    logger.error('Error fetching sessions by subject:', error);
-    return [];
-  }
-
-  return data || [];
+  return findSessionsBySubjectId(user.id, subjectId);
 }
 
 export async function updateSessionStatus(
@@ -123,29 +70,17 @@ export async function updateSessionStatus(
     return { error: 'No autenticado' };
   }
 
-  // Si se va a abandonar manualmente, obtener datos para emitir evento
-  let sessionData = null;
+  let sessionData: { topic_id: string; scheduled_at: string } | null = null;
   if (status === 'ABANDONED') {
-    const { data } = await supabase
-      .from('sessions')
-      .select('topic_id, scheduled_at')
-      .eq('id', id)
-      .eq('user_id', user.id)
-      .single();
-    sessionData = data;
+    sessionData = await findSessionForStatusUpdate(id, user.id);
   }
 
-  const { error } = await supabase
-    .from('sessions')
-    .update({ status, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .eq('user_id', user.id);
+  const { error } = await repoUpdateSessionStatus(id, user.id, status);
 
   if (error) {
-    return { error: error.message };
+    return { error };
   }
 
-  // Emitir evento de abandono manual si corresponde
   if (status === 'ABANDONED' && sessionData?.topic_id) {
     const { SessionEventRegistry } = await import('@/lib/services/session-events');
     await SessionEventRegistry.emitAbandoned({
@@ -170,17 +105,10 @@ export async function startSession(id: string) {
     return { error: 'No autenticado' };
   }
 
-  const { error } = await supabase
-    .from('sessions')
-    .update({ 
-      started_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', id)
-    .eq('user_id', user.id);
+  const { error } = await updateSessionStarted(id, user.id);
 
   if (error) {
-    return { error: error.message };
+    return { error };
   }
 
   revalidatePath('/dashboard');
@@ -199,38 +127,24 @@ export async function completeSessionWithRating(
     return { error: 'No autenticado' };
   }
 
-  // Obtener sesión para calcular duración si tiene started_at
-  const { data: session } = await supabase
-    .from('sessions')
-    .select('started_at, duration, topic_id')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single();
+  const session = await findSessionForCompletion(id, user.id);
 
-  let actualDuration = null;
+  let actualDuration: number | null = null;
   if (session?.started_at) {
     const startTime = new Date(session.started_at).getTime();
     const endTime = Date.now();
-    actualDuration = Math.round((endTime - startTime) / 60000); // Minutos
+    actualDuration = Math.round((endTime - startTime) / 60000);
   }
 
-  const { error } = await supabase
-    .from('sessions')
-    .update({ 
-      status: 'COMPLETED',
-      completed_at: new Date().toISOString(),
-      completion_rating: rating,
-      actual_duration: actualDuration,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', id)
-    .eq('user_id', user.id);
+  const { error } = await updateSessionCompleted(id, user.id, {
+    rating,
+    actualDuration,
+  });
 
   if (error) {
-    return { error: error.message };
+    return { error };
   }
 
-  // Emitir evento para Google Calendar sync, gamificación, analytics
   if (session?.topic_id) {
     const { SessionEventRegistry } = await import('@/lib/services/session-events');
     await SessionEventRegistry.emitCompleted({
@@ -260,18 +174,10 @@ export async function markSessionIncomplete(
     return { error: 'No autenticado' };
   }
 
-  const { error } = await supabase
-    .from('sessions')
-    .update({
-      status: 'INCOMPLETE',
-      actual_duration: actualDuration,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', id)
-    .eq('user_id', user.id);
+  const { error } = await updateSessionIncomplete(id, user.id, actualDuration);
 
   if (error) {
-    return { error: error.message };
+    return { error };
   }
 
   revalidatePath('/dashboard');
@@ -287,39 +193,26 @@ export async function rescheduleSession(id: string, newDate: string) {
     return { error: 'No autenticado' };
   }
 
-  // Validar que la fecha sea futura
   const scheduledDate = new Date(newDate);
   if (scheduledDate <= new Date()) {
     return { error: 'La fecha debe ser en el futuro' };
   }
 
-  // Obtener sesión actual para incrementar attempts
-  const { data: session, error: fetchError } = await supabase
-    .from('sessions')
-    .select('attempts, topic_id, scheduled_at, topic:topics(name), subject:subjects(name)')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single();
+  const session = await findSessionForReschedule(id, user.id);
 
-  if (fetchError) {
-    return { error: fetchError.message };
+  if (!session) {
+    return { error: 'Sesión no encontrada' };
   }
 
   const newAttempts = (session.attempts || 0) + 1;
 
-  // Si ya tiene 3+ intentos, auto-abandonar en vez de reagendar
   if (newAttempts > 3) {
-    const { error: abandonError } = await supabase
-      .from('sessions')
-      .update({ status: 'ABANDONED', updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .eq('user_id', user.id);
+    const { error: abandonError } = await abandonSession(id, user.id);
 
     if (abandonError) {
-      return { error: abandonError.message };
+      return { error: abandonError };
     }
 
-    // Emitir evento de abandono automático por intentos
     if (session.topic_id) {
       const { SessionEventRegistry } = await import('@/lib/services/session-events');
       await SessionEventRegistry.emitAbandoned({
@@ -336,25 +229,15 @@ export async function rescheduleSession(id: string, newDate: string) {
     return { success: true, abandoned: true };
   }
 
-  const { error } = await supabase
-    .from('sessions')
-    .update({
-      scheduled_at: newDate,
-      status: 'RESCHEDULED',
-      attempts: newAttempts,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-    .eq('user_id', user.id);
+  const { error } = await updateSessionRescheduled(id, user.id, newDate, newAttempts);
 
   if (error) {
-    return { error: error.message };
+    return { error };
   }
 
-  // Enviar notificación de reagendado
-  const topicName = (session as { topic?: { name?: string } }).topic?.name || 'Tema';
+  const topicName = session.topic?.name || 'Tema';
   const formattedDate = scheduledDate.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
-  
+
   try {
     logger.debug('[rescheduleSession] Sending notification for user:', user.id);
     const { sendNotification } = await import('./notifications');
@@ -368,7 +251,6 @@ export async function rescheduleSession(id: string, newDate: string) {
     logger.debug('[rescheduleSession] Notification sent successfully');
   } catch (notifError) {
     logger.error('[rescheduleSession] Failed to send notification:', notifError);
-    // No fallar la operación si falla la notificación
   }
 
   revalidatePath('/dashboard');
@@ -384,14 +266,27 @@ export async function deleteSession(id: string) {
     return { error: 'No autenticado' };
   }
 
-  const { error } = await supabase
-    .from('sessions')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
+  const sessionData = await findSessionGoogleEventId(id, user.id);
+
+  const { error } = await deleteSessionById(id, user.id);
 
   if (error) {
-    return { error: error.message };
+    return { error };
+  }
+
+  if (sessionData?.google_event_id) {
+    try {
+      const { getGoogleCalendarService } = await import('@/lib/services/google-calendar.service');
+      const { getGoogleTokens } = await import('@/lib/services/google-tokens.helper');
+      const tokens = await getGoogleTokens(user.id);
+      if (tokens) {
+        const service = getGoogleCalendarService();
+        await service.deleteEvent(tokens, sessionData.google_event_id);
+        logger.debug(`[deleteSession] Google Calendar event ${sessionData.google_event_id} deleted`);
+      }
+    } catch (gcalError) {
+      logger.warn('[deleteSession] Could not delete Google Calendar event:', gcalError);
+    }
   }
 
   revalidatePath('/dashboard');
@@ -407,25 +302,7 @@ export async function getSessionsByDateRange(startDate: string, endDate: string)
     return [];
   }
 
-  const { data, error } = await supabase
-    .from('sessions')
-    .select(`
-      *,
-      topic:topics(id, name),
-      subject:subjects(id, name),
-      exam:exams(id, type, date)
-    `)
-    .eq('user_id', user.id)
-    .gte('scheduled_at', startDate)
-    .lte('scheduled_at', endDate)
-    .order('scheduled_at', { ascending: true });
-
-  if (error) {
-    logger.error('Error fetching sessions by date range:', error);
-    return [];
-  }
-
-  return data || [];
+  return findSessionsByDateRange(user.id, startDate, endDate);
 }
 
 /**
@@ -440,61 +317,46 @@ export async function generateSessions(topicId: string) {
     return { error: 'No autenticado' };
   }
 
-  // Obtener el topic con su información completa
-  // Validar que pertenece al usuario a través de subject
-  const { data: topic, error: topicError } = await supabase
-    .from('topics')
-    .select(`
-      id,
-      subject_id,
-      exam_id,
-      name,
-      difficulty,
-      hours,
-      source,
-      source_date,
-      subject:subjects!inner(user_id)
-    `)
-    .eq('id', topicId)
-    .eq('subject.user_id', user.id)
-    .single();
+  const topic = await findTopicWithFullInfo(topicId, user.id);
 
-  if (topicError) {
-    return { error: topicError.message };
+  if (!topic) {
+    return { error: 'Topic no encontrado o no pertenece al usuario' };
   }
 
   if (!topic.source_date) {
     return { error: 'El topic debe tener una fecha de origen (source_date)' };
   }
 
-  // Obtener el examen si existe
   let exam = null;
   if (topic.exam_id) {
-    const { data: examData } = await supabase
-      .from('exams')
-      .select('id, type, date')
-      .eq('id', topic.exam_id)
-      .single();
-    
-    exam = examData;
+    exam = await findExamByIdForGeneration(topic.exam_id);
   }
 
   try {
-    // Generar las sesiones usando el service
     const sessionsToCreate = await generateSessionsForTopic(topic, exam, user.id);
 
-    // Insertar todas las sesiones en batch
-    const { error: insertError } = await supabase
-      .from('sessions')
-      .insert(sessionsToCreate);
+    const { error: insertError } = await insertSessions(sessionsToCreate);
 
     if (insertError) {
-      return { error: insertError.message };
+      return { error: insertError };
+    }
+
+    try {
+      const { getGoogleCalendarService } = await import('@/lib/services/google-calendar.service');
+      const { getGoogleTokens } = await import('@/lib/services/google-tokens.helper');
+      const tokens = await getGoogleTokens(user.id);
+      if (tokens) {
+        const service = getGoogleCalendarService();
+        await service.syncSessions(user.id);
+        logger.debug(`[generateSessions] Google Calendar synced for topic ${topicId}`);
+      }
+    } catch (gcalError) {
+      logger.warn('[generateSessions] Could not sync to Google Calendar:', gcalError);
     }
 
     revalidatePath('/dashboard');
     revalidatePath('/dashboard/sessions');
-    
+
     return { success: true, count: sessionsToCreate.length };
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Error generando sesiones' };
@@ -513,15 +375,9 @@ export async function processOverdueSessions() {
 
   const now = new Date();
 
-  // Obtener sesiones vencidas y PENDING
-  const { data: overdueSessions } = await supabase
-    .from('sessions')
-    .select('id, scheduled_at, topic_id, topic:topics(name), user_id')
-    .eq('user_id', user.id)
-    .eq('status', 'PENDING')
-    .lt('scheduled_at', now.toISOString());
+  const overdueSessions = await findOverduePendingSessions(user.id);
 
-  if (!overdueSessions || overdueSessions.length === 0) {
+  if (overdueSessions.length === 0) {
     return { processed: 0 };
   }
 
@@ -533,13 +389,8 @@ export async function processOverdueSessions() {
     const hoursOverdue = (now.getTime() - scheduledDate.getTime()) / (1000 * 60 * 60);
 
     if (hoursOverdue > 48) {
-      // Más de 2 días: auto-abandonar
-      await supabase
-        .from('sessions')
-        .update({ status: 'ABANDONED', updated_at: now.toISOString() })
-        .eq('id', session.id);
-      
-      // Emitir evento de abandono automático por vencimiento
+      await repoUpdateSessionStatus(session.id, user.id, 'ABANDONED');
+
       if (session.topic_id) {
         const { SessionEventRegistry } = await import('@/lib/services/session-events');
         await SessionEventRegistry.emitAbandoned({
@@ -550,10 +401,9 @@ export async function processOverdueSessions() {
           scheduledAt: scheduledDate
         });
       }
-      
+
       abandoned++;
     } else if (hoursOverdue > 24) {
-      // 1-2 días: notificar
       try {
         logger.debug('[processOverdueSessions] Sending notification for session:', session.id);
         const { sendNotification } = await import('./notifications');
@@ -561,7 +411,7 @@ export async function processOverdueSessions() {
           userId: user.id,
           type: 'SESSION_REMINDER',
           title: 'Sesión pendiente',
-          message: `La sesión "${(session as { topic: { name: string } }).topic.name}" está vencida. ¿La completaste?`,
+          message: `La sesión "${session.topic?.name || 'Sin tema'}" está vencida. ¿La completaste?`,
           metadata: { session_id: session.id }
         });
         logger.debug('[processOverdueSessions] Notification sent successfully');

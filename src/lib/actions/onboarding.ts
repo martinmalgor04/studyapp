@@ -3,6 +3,11 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/utils/logger';
+import {
+  upsertUserSettings,
+  findOnboardingStatus,
+} from '@/lib/repositories/user-settings.repository';
+import { insertAvailabilitySlots } from '@/lib/repositories/availability.repository';
 
 type Shift = 'MORNING' | 'AFTERNOON' | 'NIGHT';
 
@@ -23,17 +28,14 @@ export async function saveOnboardingAvailability(
     return { error: 'No autenticado' };
   }
 
-  // Validar que se seleccionó al menos un turno
   if (shifts.length === 0) {
     return { error: 'Debes seleccionar al menos un turno' };
   }
 
-  // Días de la semana: Lun-Vie o Lun-Dom
   const days = includeWeekends
-    ? [1, 2, 3, 4, 5, 6, 0] // Lunes a Domingo
-    : [1, 2, 3, 4, 5];       // Lunes a Viernes
+    ? [1, 2, 3, 4, 5, 6, 0]
+    : [1, 2, 3, 4, 5];
 
-  // Generar slots
   const slots: Array<{ user_id: string; day_of_week: number; start_time: string; end_time: string; is_enabled: boolean }> = [];
   for (const day of days) {
     for (const shift of shifts) {
@@ -53,32 +55,20 @@ export async function saveOnboardingAvailability(
     }
   }
 
-  // Guardar slots en availability_slots
-  const { error: slotsError } = await supabase
-    .from('availability_slots')
-    .insert(slots);
-
-  if (slotsError) {
-    logger.error('Error saving availability slots:', slotsError);
-    return { error: 'Error al guardar disponibilidad' };
+  const slotsResult = await insertAvailabilitySlots(slots);
+  if (slotsResult.error) {
+    return { error: slotsResult.error };
   }
 
-  // Marcar onboarding como completado en user_settings (UPSERT)
-  const { error: settingsError } = await supabase
-    .from('user_settings')
-    .upsert({
-      user_id: user.id,
-      onboarding_completed: true,
-      email_notifications: true,
-      telegram_notifications: false,
-      in_app_notifications: true,
-      daily_summary_time: '08:00:00',
-    }, {
-      onConflict: 'user_id'
-    });
+  const settingsResult = await upsertUserSettings(user.id, {
+    onboarding_completed: true,
+    email_notifications: true,
+    telegram_notifications: false,
+    in_app_notifications: true,
+    daily_summary_time: '08:00:00',
+  });
 
-  if (settingsError) {
-    logger.error('Error upserting user_settings:', settingsError);
+  if (settingsResult.error) {
     return { error: 'Error al completar onboarding' };
   }
 
@@ -94,11 +84,6 @@ export async function checkOnboardingStatus() {
     return { completed: false };
   }
 
-  const { data: settings } = await supabase
-    .from('user_settings')
-    .select('onboarding_completed')
-    .eq('user_id', user.id)
-    .single();
-
-  return { completed: settings?.onboarding_completed || false };
+  const completed = await findOnboardingStatus(user.id);
+  return { completed };
 }

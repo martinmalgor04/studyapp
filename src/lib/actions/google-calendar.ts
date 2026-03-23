@@ -5,6 +5,10 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/utils/logger';
 import { getGoogleCalendarService } from '@/lib/services/google-calendar.service';
+import {
+  clearGoogleTokens,
+  isGoogleCalendarEnabled,
+} from '@/lib/repositories/user-settings.repository';
 
 /**
  * Inicia el flujo de OAuth para conectar Google Calendar.
@@ -33,17 +37,8 @@ export async function disconnectGoogleCalendar() {
     return { error: 'No autenticado' };
   }
 
-  const { error } = await supabase
-    .from('user_settings')
-    .update({
-      google_access_token: null,
-      google_refresh_token: null,
-      google_calendar_enabled: false,
-      google_token_expiry: null,
-    })
-    .eq('user_id', user.id);
-
-  if (error) {
+  const result = await clearGoogleTokens(user.id);
+  if (result.error) {
     return { error: 'Error al desconectar' };
   }
 
@@ -62,13 +57,7 @@ export async function isGoogleCalendarConnected() {
     return false;
   }
 
-  const { data: settings } = await supabase
-    .from('user_settings')
-    .select('google_calendar_enabled, google_access_token')
-    .eq('user_id', user.id)
-    .single();
-
-  return !!(settings?.google_calendar_enabled && settings?.google_access_token);
+  return isGoogleCalendarEnabled(user.id);
 }
 
 /**

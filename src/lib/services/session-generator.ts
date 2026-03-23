@@ -1,8 +1,6 @@
 import { calculatePriority, daysBetween } from './priority-calculator';
 import type { Difficulty } from '@/lib/validations/topics';
 import type { Priority } from './priority-calculator';
-import { getGoogleCalendarService } from './google-calendar.service';
-import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/utils/logger';
 
 // Intervalos de repetición espaciada UNIVERSAL (Anki Standard)
@@ -52,6 +50,11 @@ export interface SessionToCreate {
   original_scheduled_at?: string | null;
 }
 
+type ConflictChecker = (
+  date: Date,
+  duration: number,
+) => Promise<{ date: Date; adjusted: boolean; originalDate: Date | null }>;
+
 /**
  * Determina el modo de generación
  * - PARCIAL: Para clases de parciales (desde source_date)
@@ -67,75 +70,6 @@ function determineMode(exam: Exam | null, source: string): 'PARCIAL' | 'FREE_STU
   return 'PARCIAL';
 }
 
-interface GoogleSettings {
-  google_access_token: string | null;
-  google_refresh_token: string | null;
-  google_token_expiry: string | null;
-}
-
-/**
- * Busca un slot sin conflictos en Google Calendar
- * Si hay conflicto, busca el siguiente slot disponible (hasta 14 intentos)
- */
-async function findConflictFreeSlot(
-  userId: string,
-  preferredDate: Date,
-  duration: number,
-  maxAttempts: number = 14
-): Promise<{ date: Date; adjusted: boolean; originalDate: Date | null }> {
-  const googleService = getGoogleCalendarService();
-  const supabase = await createClient();
-
-  // Obtener tokens de Google Calendar
-  const { data: settings } = await supabase
-    .from('user_settings')
-    .select('google_access_token, google_refresh_token, google_token_expiry')
-    .eq('user_id', userId)
-    .single() as { data: GoogleSettings | null };
-
-  if (!settings?.google_access_token) {
-    // Si no hay tokens, devolver fecha preferida sin ajustes
-    return { date: preferredDate, adjusted: false, originalDate: null };
-  }
-
-  const tokens = {
-    access_token: settings.google_access_token,
-    refresh_token: settings.google_refresh_token || undefined,
-    expiry_date: settings.google_token_expiry
-      ? new Date(settings.google_token_expiry).getTime()
-      : undefined,
-  };
-
-  let currentDate = new Date(preferredDate);
-  let attempts = 0;
-
-  while (attempts < maxAttempts) {
-    // Calcular hora de fin
-    const endDate = new Date(currentDate.getTime() + duration * 60 * 1000);
-
-    // Verificar conflictos en Google Calendar
-    const hasConflict = await googleService.checkConflicts(tokens, currentDate, endDate);
-
-    if (!hasConflict) {
-      // No hay conflicto, usar este slot
-      return { 
-        date: currentDate, 
-        adjusted: attempts > 0,
-        originalDate: attempts > 0 ? preferredDate : null
-      };
-    }
-
-    // Hay conflicto, buscar siguiente slot (al día siguiente a la misma hora)
-    currentDate = new Date(currentDate);
-    currentDate.setDate(currentDate.getDate() + 1);
-    attempts++;
-  }
-
-  // Si no encuentra slot sin conflictos después de maxAttempts, usar el preferido
-  logger.warn(`[SessionGenerator] No conflict-free slot found after ${maxAttempts} attempts, using preferred date`);
-  return { date: preferredDate, adjusted: false, originalDate: null };
-}
-
 /**
  * Genera sesiones en modo PARCIAL (hacia adelante desde la clase)
  * Para parciales, recuperatorios, y temas con clase previa
@@ -143,7 +77,8 @@ async function findConflictFreeSlot(
 async function generateParcialSessions(
   topic: Topic,
   exam: Exam | null,
-  userId: string
+  userId: string,
+  conflictChecker?: ConflictChecker,
 ): Promise<SessionToCreate[]> {
   const sessions: SessionToCreate[] = [];
   const sourceDate = new Date(topic.source_date!);
@@ -161,10 +96,6 @@ async function generateParcialSessions(
 
   // Calcular duración base con multiplicador de dificultad
   const baseDuration = topic.hours * DIFFICULTY_MULTIPLIERS[topic.difficulty];
-
-  // Verificar si Google Calendar está conectado
-  const googleService = getGoogleCalendarService();
-  const hasGoogleCalendar = await googleService.isConnected(userId);
 
   // Generar 4 sesiones con intervalos fijos
   for (let i = 0; i < SPACED_REPETITION_INTERVALS.length; i++) {
@@ -186,12 +117,12 @@ async function generateParcialSessions(
     // Calcular duración (base × factor de reducción, mínimo 15 minutos)
     const duration = Math.max(15, Math.round(baseDuration * DURATION_FACTORS[i]));
 
-    // NUEVO: Verificar conflictos con Google Calendar si está conectado
+    // Verificar conflictos con Google Calendar si se provee conflictChecker
     let conflictResult = null;
-    if (hasGoogleCalendar) {
-      conflictResult = await findConflictFreeSlot(userId, scheduledDate, duration);
+    if (conflictChecker) {
+      conflictResult = await conflictChecker(scheduledDate, duration);
       scheduledDate = conflictResult.date;
-      
+
       if (conflictResult.adjusted) {
         logger.debug(`[SessionGenerator] Session ${sessionNumber} adjusted to avoid conflict: ${scheduledDate.toISOString()}`);
       }
@@ -235,7 +166,8 @@ async function generateParcialSessions(
 async function generateFreeStudySessions(
   topic: Topic,
   exam: Exam | null,
-  userId: string
+  userId: string,
+  conflictChecker?: ConflictChecker,
 ): Promise<SessionToCreate[]> {
   const sessions: SessionToCreate[] = [];
   const today = new Date();
@@ -252,10 +184,6 @@ async function generateFreeStudySessions(
   // Generar 4 sesiones con intervalos Anki DESDE HOY
   // Intervalos: [1, 3, 7, 14] días desde hoy
   const baseDuration = topic.hours * DIFFICULTY_MULTIPLIERS[topic.difficulty];
-
-  // Verificar si Google Calendar está conectado
-  const googleService = getGoogleCalendarService();
-  const hasGoogleCalendar = await googleService.isConnected(userId);
 
   for (let i = 0; i < SPACED_REPETITION_INTERVALS.length; i++) {
     const intervalDays = SPACED_REPETITION_INTERVALS[i];
@@ -275,12 +203,12 @@ async function generateFreeStudySessions(
     // Calcular duración con multiplicador de dificultad
     const duration = Math.max(15, Math.round(baseDuration * DURATION_FACTORS[i]));
 
+    // Verificar conflictos con Google Calendar si se provee conflictChecker
     let conflictResult = null;
-        // NUEVO: Verificar conflictos con Google Calendar si está conectado
-    if (hasGoogleCalendar) {
-      conflictResult = await findConflictFreeSlot(userId, scheduledDate, duration);
+    if (conflictChecker) {
+      conflictResult = await conflictChecker(scheduledDate, duration);
       scheduledDate = conflictResult.date;
-      
+
       if (conflictResult.adjusted) {
         logger.debug(`[SessionGenerator] Session ${sessionNumber} adjusted to avoid conflict: ${scheduledDate.toISOString()}`);
       }
@@ -323,12 +251,14 @@ async function generateFreeStudySessions(
  * @param topic - El tema a partir del cual generar sesiones
  * @param exam - El examen asociado (opcional)
  * @param userId - ID del usuario
+ * @param conflictChecker - Función opcional para verificar conflictos de calendario
  * @returns Array de sesiones a crear
  */
 export async function generateSessionsForTopic(
   topic: Topic,
   exam: Exam | null,
-  userId: string
+  userId: string,
+  conflictChecker?: ConflictChecker,
 ): Promise<SessionToCreate[]> {
   // Validar que tengamos una fecha de referencia
   if (!topic.source_date) {
@@ -346,10 +276,10 @@ export async function generateSessionsForTopic(
   let sessions: SessionToCreate[];
   if (mode === 'FREE_STUDY') {
     // Para finales y estudio libre: desde HOY hacia adelante
-    sessions = await generateFreeStudySessions(topic, exam, userId);
+    sessions = await generateFreeStudySessions(topic, exam, userId, conflictChecker);
   } else {
     // Para clases de parciales: desde source_date hacia adelante
-    sessions = await generateParcialSessions(topic, exam, userId);
+    sessions = await generateParcialSessions(topic, exam, userId, conflictChecker);
   }
 
   // VALIDACIÓN FINAL: Verificar que todas las sesiones sean futuras
@@ -381,7 +311,7 @@ export async function generateSessionsForTopic(
  */
 export function hasExistingSessions(
   existingSessions: Array<{ topic_id: string }>,
-  topicId: string
+  topicId: string,
 ): boolean {
   return existingSessions.some((session) => session.topic_id === topicId);
 }

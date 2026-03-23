@@ -8,15 +8,16 @@ import {
   type UpdateAvailabilityInput
 } from '@/lib/validations/availability';
 import { getAvailabilityImporterService } from '@/lib/services/availability-importer.service';
+import { findGoogleTokens } from '@/lib/repositories/user-settings.repository';
+import {
+  findAvailabilityByUserId,
+  deleteAvailabilityByUserId,
+  insertAvailabilitySlots,
+  replaceAvailability,
+  type AvailabilitySlotRow,
+} from '@/lib/repositories/availability.repository';
 
-export async function getAvailability(): Promise<Array<{
-  id: string;
-  user_id: string;
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
-  is_enabled: boolean;
-}>> {
+export async function getAvailability(): Promise<AvailabilitySlotRow[]> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -24,26 +25,7 @@ export async function getAvailability(): Promise<Array<{
     return [];
   }
 
-  const { data, error } = await supabase
-    .from('availability_slots')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('day_of_week', { ascending: true })
-    .order('start_time', { ascending: true });
-
-  if (error) {
-    logger.error('Error fetching availability:', error);
-    return [];
-  }
-
-  return (data || []) as Array<{
-    id: string;
-    user_id: string;
-    day_of_week: number;
-    start_time: string;
-    end_time: string;
-    is_enabled: boolean;
-  }>;
+  return findAvailabilityByUserId(user.id);
 }
 
 export async function updateAvailability(input: UpdateAvailabilityInput) {
@@ -54,44 +36,14 @@ export async function updateAvailability(input: UpdateAvailabilityInput) {
     return { error: 'No autenticado' };
   }
 
-  // Validar input
   const validation = updateAvailabilitySchema.safeParse(input);
   if (!validation.success) {
     return { error: validation.error.errors[0].message };
   }
 
-  // Estrategia: Eliminar todos los slots del usuario y crear los nuevos
-  // Esto simplifica la lógica de actualización vs inserción vs eliminación
-  
-  // 1. Eliminar existentes
-  const { error: deleteError } = await supabase
-    .from('availability_slots')
-    .delete()
-    .eq('user_id', user.id);
-
-  if (deleteError) {
-    logger.error('Error clearing availability:', deleteError);
-    return { error: 'Error al actualizar disponibilidad' };
-  }
-
-  // 2. Insertar nuevos (si hay)
-  if (input.slots.length > 0) {
-    const slotsToInsert = input.slots.map(slot => ({
-      user_id: user.id,
-      day_of_week: slot.day_of_week,
-      start_time: slot.start_time,
-      end_time: slot.end_time,
-      is_enabled: slot.is_enabled,
-    }));
-
-    const { error: insertError } = await supabase
-      .from('availability_slots')
-      .insert(slotsToInsert);
-
-    if (insertError) {
-      logger.error('Error inserting availability:', insertError);
-      return { error: 'Error al guardar disponibilidad' };
-    }
+  const result = await replaceAvailability(user.id, input.slots);
+  if (result.error) {
+    return { error: result.error };
   }
 
   revalidatePath('/dashboard/settings/availability');
@@ -108,31 +60,16 @@ export async function importAvailabilityFromGoogleCalendar(
     return { error: 'No autenticado' };
   }
 
-  // Obtener tokens de Google Calendar
-  const { data: settings } = await supabase
-    .from('user_settings')
-    .select('google_access_token, google_refresh_token, google_token_expiry')
-    .eq('user_id', user.id)
-    .single();
-
-  if (!settings?.google_access_token) {
+  const tokens = await findGoogleTokens(user.id);
+  if (!tokens) {
     return { error: 'Google Calendar no conectado. Conectá tu cuenta primero.' };
   }
 
-  const tokens = {
-    access_token: settings.google_access_token,
-    refresh_token: settings.google_refresh_token || undefined,
-    expiry_date: settings.google_token_expiry
-      ? new Date(settings.google_token_expiry).getTime()
-      : undefined,
-  };
-
   try {
-    // Importar disponibilidad desde Google Calendar
     const importer = getAvailabilityImporterService();
     const detectedSlots = await importer.importFromGoogleCalendar(tokens, {
       startDate: new Date(),
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // próximos 30 días
+      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       minSlotDuration: 30,
     });
 
@@ -142,28 +79,17 @@ export async function importAvailabilityFromGoogleCalendar(
       };
     }
 
-    // Si estrategia es REPLACE, eliminar slots existentes
     if (strategy === 'REPLACE') {
-      const { error: deleteError } = await supabase
-        .from('availability_slots')
-        .delete()
-        .eq('user_id', user.id);
-
-      if (deleteError) {
-        logger.error('Error clearing availability:', deleteError);
+      const deleteResult = await deleteAvailabilityByUserId(user.id);
+      if (deleteResult.error) {
         return { error: 'Error al actualizar disponibilidad' };
       }
     }
 
-    // Si estrategia es MERGE, solo eliminar slots que se solapan
     if (strategy === 'MERGE') {
-      const { data: existingSlots } = await supabase
-        .from('availability_slots')
-        .select('*')
-        .eq('user_id', user.id);
+      const existingSlots = await findAvailabilityByUserId(user.id);
 
-      if (existingSlots) {
-        // Filtrar detectedSlots para excluir los que ya existen
+      if (existingSlots.length > 0) {
         const newSlots = detectedSlots.filter(detected => {
           return !existingSlots.some(existing =>
             existing.day_of_week === detected.day_of_week &&
@@ -172,13 +98,11 @@ export async function importAvailabilityFromGoogleCalendar(
           );
         });
 
-        // Usar solo los slots nuevos
         detectedSlots.length = 0;
         detectedSlots.push(...newSlots);
       }
     }
 
-    // Insertar nuevos slots
     const slotsToInsert = detectedSlots.map(slot => ({
       user_id: user.id,
       day_of_week: slot.day_of_week,
@@ -187,13 +111,9 @@ export async function importAvailabilityFromGoogleCalendar(
       is_enabled: slot.is_enabled,
     }));
 
-    const { error: insertError } = await supabase
-      .from('availability_slots')
-      .insert(slotsToInsert);
-
-    if (insertError) {
-      logger.error('Error inserting availability:', insertError);
-      return { error: 'Error al guardar disponibilidad' };
+    const insertResult = await insertAvailabilitySlots(slotsToInsert);
+    if (insertResult.error) {
+      return { error: insertResult.error };
     }
 
     revalidatePath('/dashboard/settings/availability');
@@ -211,8 +131,8 @@ export async function importAvailabilityFromGoogleCalendar(
 }
 
 /**
- * Preview de disponibilidad desde Google Calendar sin guardar
- * Retorna slots detectados, estadísticas y slots existentes para comparación
+ * Preview de disponibilidad desde Google Calendar sin guardar.
+ * Retorna slots detectados, estadísticas y slots existentes para comparación.
  */
 export async function previewAvailabilityFromGoogleCalendar() {
   const supabase = await createClient();
@@ -222,43 +142,23 @@ export async function previewAvailabilityFromGoogleCalendar() {
     return { error: 'No autenticado' };
   }
 
-  // Obtener tokens de Google Calendar
-  const { data: settings } = await supabase
-    .from('user_settings')
-    .select('google_access_token, google_refresh_token, google_token_expiry')
-    .eq('user_id', user.id)
-    .single();
-
-  if (!settings?.google_access_token) {
+  const tokens = await findGoogleTokens(user.id);
+  if (!tokens) {
     return { error: 'Google Calendar no conectado. Conectá tu cuenta primero.' };
   }
 
-  const tokens = {
-    access_token: settings.google_access_token,
-    refresh_token: settings.google_refresh_token || undefined,
-    expiry_date: settings.google_token_expiry
-      ? new Date(settings.google_token_expiry).getTime()
-      : undefined,
-  };
-
   try {
-    // Importar disponibilidad desde Google Calendar (sin guardar)
     const importer = getAvailabilityImporterService();
     const allDetectedSlots = await importer.importFromGoogleCalendar(tokens, {
       startDate: new Date(),
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // próximos 30 días
+      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       minSlotDuration: 30,
     });
 
-    // Calcular estadísticas
     const validSlots = allDetectedSlots;
     const totalSlots = allDetectedSlots.length;
-    
-    // Calcular slots descartados (menores a 30min)
-    // Nota: El servicio ya filtra por minSlotDuration, así que detectedSlots ya son válidos
-    const discardedSlots = 0; // Ya filtrados por el servicio
+    const discardedSlots = 0;
 
-    // Calcular total de horas disponibles
     const totalHours = validSlots.reduce((acc, slot) => {
       const [startHour, startMin] = slot.start_time.split(':').map(Number);
       const [endHour, endMin] = slot.end_time.split(':').map(Number);
@@ -266,8 +166,7 @@ export async function previewAvailabilityFromGoogleCalendar() {
       return acc + (durationMinutes / 60);
     }, 0);
 
-    // Obtener slots existentes para comparación
-    const existingSlotsData = await getAvailability();
+    const existingSlotsData = await findAvailabilityByUserId(user.id);
     const existingSlots = existingSlotsData.map(slot => ({
       day_of_week: slot.day_of_week,
       start_time: slot.start_time.substring(0, 5),
@@ -282,7 +181,7 @@ export async function previewAvailabilityFromGoogleCalendar() {
         total: totalSlots,
         valid: validSlots.length,
         discarded: discardedSlots,
-        totalHours: Math.round(totalHours * 10) / 10, // Redondear a 1 decimal
+        totalHours: Math.round(totalHours * 10) / 10,
       },
     };
   } catch (error) {

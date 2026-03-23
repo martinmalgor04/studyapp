@@ -11,24 +11,9 @@ import {
   SessionAbandonedEvent
 } from './session-events';
 import { getGoogleCalendarService } from './google-calendar.service';
-import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/utils/logger';
 import { getGoogleTokens } from './google-tokens.helper';
-
-/**
- * Obtiene una sesión de la base de datos
- */
-async function getSessionById(sessionId: string) {
-  const supabase = await createClient();
-
-  const { data: session } = await supabase
-    .from('sessions')
-    .select('id, google_event_id, scheduled_at, duration')
-    .eq('id', sessionId)
-    .single();
-
-  return session;
-}
+import { findSessionGoogleEventId } from '@/lib/repositories/sessions.repository';
 
 /**
  * Handler de eventos de sesiones para Google Calendar
@@ -43,7 +28,7 @@ class GoogleCalendarEventHandler implements ISessionEventHandler {
       const service = getGoogleCalendarService();
       
       // Obtener sesión de DB para ver si tiene google_event_id
-      const session = await getSessionById(event.sessionId);
+      const session = await findSessionGoogleEventId(event.sessionId, event.userId);
       if (!session?.google_event_id) {
         logger.debug('[GoogleCalendarHandler] Session has no google_event_id, skipping sync');
         return;
@@ -81,7 +66,7 @@ class GoogleCalendarEventHandler implements ISessionEventHandler {
       const service = getGoogleCalendarService();
       
       // Obtener sesión de DB para ver si tiene google_event_id
-      const session = await getSessionById(event.sessionId);
+      const session = await findSessionGoogleEventId(event.sessionId, event.userId);
       if (!session?.google_event_id) {
         logger.debug('[GoogleCalendarHandler] Session has no google_event_id, skipping sync');
         return;

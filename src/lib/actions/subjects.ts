@@ -9,183 +9,102 @@ import {
   type CreateSubjectInput,
   type UpdateSubjectInput,
 } from '@/lib/validations/subjects';
-
-interface SubjectRow {
-  id: string;
-  name: string;
-  description: string | null;
-  year: number | null;
-  semester: number | null;
-  status: string;
-  professors: string[] | null;
-  schedule: unknown;
-  user_id: string;
-  is_active: boolean;
-  created_at: string;
-  sessions?: Array<{ id: string; status: string }>;
-}
+import {
+  findAllSubjects,
+  findSubjectById,
+  insertSubject,
+  updateSubjectById,
+  softDeleteSubject,
+  abandonSessionsBySubjectId,
+  updateSubjectStatus,
+} from '@/lib/repositories/subjects.repository';
 
 export async function getSubjects(includeAprobadas: boolean = false) {
-  const supabase = await createClient();
-
-  let query = supabase
-    .from('subjects')
-    .select(`
-      *,
-      sessions(id, status)
-    `)
-    .eq('is_active', true);
-
-  // Por defecto, ocultar materias aprobadas
-  if (!includeAprobadas) {
-    query = query.neq('status', 'APROBADA');
-  }
-
-  const { data: subjects, error } = await query.order('created_at', { ascending: false }) as { data: SubjectRow[] | null; error: unknown };
-
-  if (error) {
-    logger.error('Error fetching subjects:', error);
-    return [];
-  }
-
-  // Progreso de la materia (caso de uso actual).
-  // Hoy: % = (sesiones COMPLETED / total sesiones de la materia). Las sesiones vienen de topics
-  // vinculados a la materia. Sirve para ver avance en repasos generados.
-  // Futuro: se va a virar esto hacia el programa de la materia (temas del programa vs. completados),
-  // para que el progreso refleje cobertura del programa en lugar de solo sesiones completadas.
-  const subjectsWithProgress = subjects?.map((subject: SubjectRow) => {
-    const sessions = subject.sessions || [];
-    const totalSessions = sessions.length;
-    const completedSessions = sessions.filter((s) => s.status === 'COMPLETED').length;
-    const progressPercentage = totalSessions > 0
-      ? Math.round((completedSessions / totalSessions) * 100)
-      : 0;
-
-    return {
-      ...subject,
-      total_sessions: totalSessions,
-      completed_sessions: completedSessions,
-      progress_percentage: progressPercentage,
-      sessions: undefined, // Remover para no incluir en el resultado final
-    };
-  }) || [];
-
-  return subjectsWithProgress;
+  return findAllSubjects({ includeAprobadas });
 }
 
 export async function getSubject(id: string) {
   const supabase = await createClient();
 
-  const { data: subject, error } = await supabase
-    .from('subjects')
-    .select('*')
-    .eq('id', id)
-    .single();
-
-  if (error) {
-    logger.error('Error fetching subject:', error);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    logger.warn('getSubject: unauthenticated request');
     return null;
   }
 
-  return subject;
+  return findSubjectById(id);
 }
 
 export async function createSubject(input: CreateSubjectInput): Promise<{ error?: string; data?: { id: string; name: string } }> {
-  const supabase = await createClient();
-
-  // Validar input
   const validationResult = createSubjectSchema.safeParse(input);
   if (!validationResult.success) {
-    return {
-      error: validationResult.error.errors[0].message,
-    };
+    return { error: validationResult.error.errors[0].message };
   }
 
-  // Obtener usuario actual
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return {
-      error: 'No autenticado',
-    };
+    return { error: 'No autenticado' };
   }
 
-  // Crear subject
-  const { data, error } = await supabase
-    .from('subjects')
-    .insert({
-      name: validationResult.data.name,
-      description: validationResult.data.description,
-      year: validationResult.data.year,
-      semester: validationResult.data.semester,
-      status: validationResult.data.status || 'CURSANDO',
-      professors: validationResult.data.professors,
-      schedule: validationResult.data.schedule,
-      user_id: user.id,
-    })
-    .select()
-    .single();
+  const { name, description, year, semester, status, professors, schedule } = validationResult.data;
 
-  if (error) {
-    logger.error('Error creating subject:', error);
-    return {
-      error: 'Error al crear la materia',
-    };
+  const result = await insertSubject({
+    name,
+    description: description ?? null,
+    year: year ?? null,
+    semester: semester ?? null,
+    status: status ?? 'CURSANDO',
+    professors: professors ?? null,
+    schedule: schedule as Parameters<typeof insertSubject>[0]['schedule'],
+    user_id: user.id,
+  });
+
+  if (result.error) {
+    return { error: result.error };
   }
 
   revalidatePath('/dashboard/subjects');
-  return { data: data as { id: string; name: string } };
+  return { data: result.data as { id: string; name: string } };
 }
 
 export async function updateSubject(id: string, input: UpdateSubjectInput) {
-  const supabase = await createClient();
-
-  // Validar input
   const validationResult = updateSubjectSchema.safeParse(input);
   if (!validationResult.success) {
-    return {
-      error: validationResult.error.errors[0].message,
-    };
+    return { error: validationResult.error.errors[0].message };
   }
 
-  // Si se está cambiando a LIBRE, usar la función especial
   if (validationResult.data.status === 'LIBRE') {
     return setSubjectLibre(id);
   }
 
-  // Actualizar subject
-  const { data, error } = await supabase
-    .from('subjects')
-    .update(validationResult.data)
-    .eq('id', id)
-    .select()
-    .single();
+  const { name, description, year, semester, status, professors, schedule } = validationResult.data;
 
-  if (error) {
-    logger.error('Error updating subject:', error);
-    return {
-      error: 'Error al actualizar la materia',
-    };
+  const result = await updateSubjectById(id, {
+    ...(name !== undefined && { name }),
+    ...(description !== undefined && { description }),
+    ...(year !== undefined && { year }),
+    ...(semester !== undefined && { semester }),
+    ...(status !== undefined && { status }),
+    ...(professors !== undefined && { professors }),
+    ...(schedule !== undefined && { schedule: schedule as Parameters<typeof updateSubjectById>[1]['schedule'] }),
+  });
+
+  if (result.error) {
+    return { error: result.error };
   }
 
   revalidatePath('/dashboard/subjects');
   revalidatePath(`/dashboard/subjects/${id}`);
-  return { data };
+  return { data: result.data };
 }
 
 export async function deleteSubject(id: string) {
-  const supabase = await createClient();
+  const result = await softDeleteSubject(id);
 
-  // Soft delete (marcar como inactivo)
-  const { error } = await supabase.from('subjects').update({ is_active: false }).eq('id', id);
-
-  if (error) {
-    logger.error('Error deleting subject:', error);
-    return {
-      error: 'Error al eliminar la materia',
-    };
+  if (result.error) {
+    return { error: result.error };
   }
 
   revalidatePath('/dashboard/subjects');
@@ -197,33 +116,14 @@ export async function deleteSubject(id: string) {
  * Marca todas las sesiones PENDING como ABANDONED
  */
 export async function setSubjectLibre(subjectId: string) {
-  const supabase = await createClient();
-
-  // 1. Marcar sesiones PENDING como ABANDONED
-  const { error: sessionsError } = await supabase
-    .from('sessions')
-    .update({ status: 'ABANDONED' })
-    .eq('subject_id', subjectId)
-    .eq('status', 'PENDING');
-
-  if (sessionsError) {
-    logger.error('Error updating sessions:', sessionsError);
-    return {
-      error: 'Error al marcar sesiones como abandonadas',
-    };
+  const sessionsResult = await abandonSessionsBySubjectId(subjectId);
+  if (sessionsResult.error) {
+    return { error: sessionsResult.error };
   }
 
-  // 2. Actualizar status de la materia
-  const { error: subjectError } = await supabase
-    .from('subjects')
-    .update({ status: 'LIBRE' })
-    .eq('id', subjectId);
-
-  if (subjectError) {
-    logger.error('Error updating subject status:', subjectError);
-    return {
-      error: 'Error al cambiar estado de la materia',
-    };
+  const statusResult = await updateSubjectStatus(subjectId, 'LIBRE');
+  if (statusResult.error) {
+    return { error: statusResult.error };
   }
 
   revalidatePath('/dashboard/subjects');

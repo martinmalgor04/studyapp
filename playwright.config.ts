@@ -1,7 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
+import * as dotenv from 'dotenv';
+
+// Cargar .env.local para que globalSetup tenga acceso a SUPABASE_SERVICE_ROLE_KEY
+dotenv.config({ path: '.env.local' });
 
 export default defineConfig({
   testDir: './e2e',
+  // Crea/verifica el usuario de test antes de cualquier test
+  globalSetup: './e2e/global-setup.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -16,11 +22,10 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'on-first-retry',
-    actionTimeout: 10000, // 10s para acciones (click, fill, etc)
-    navigationTimeout: 30000, // 30s para navegación
+    actionTimeout: 10000,
+    navigationTimeout: 30000,
   },
 
-  // Solo Chrome y Safari como solicitado
   projects: [
     {
       name: 'chromium',
@@ -32,11 +37,11 @@ export default defineConfig({
     },
   ],
 
-  // Web server para E2E
   webServer: {
     command: 'pnpm dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: true, // Always reuse if already running
+    // Siempre reutiliza el servidor existente (evita el conflicto de lock de Next.js)
+    reuseExistingServer: true,
     timeout: 120000,
   },
 });

@@ -1,9 +1,9 @@
-import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/utils/logger';
 import type { INotificationChannel, NotificationPayload } from './channels/notification-channel.interface';
 import { InAppChannel } from './channels/in-app.channel';
 import { EmailChannel } from './channels/email.channel';
 import { TelegramChannel } from './channels/telegram.channel';
+import { findUserSettingsOrCreate } from '@/lib/repositories/user-settings.repository';
 
 /**
  * Notification Service (Facade Pattern)
@@ -33,9 +33,13 @@ export class NotificationService {
         title: notification.title
       });
 
-      // Obtener configuración del usuario
-      const settings = await this.getUserSettings(notification.userId);
-      
+      const raw = await this.getUserSettings(notification.userId);
+      const settings = raw ?? {
+        email_notifications: true,
+        telegram_notifications: false,
+        in_app_notifications: true,
+      };
+
       logger.debug('[NotificationService] User settings:', {
         userId: notification.userId,
         email_notifications: settings.email_notifications,
@@ -43,7 +47,6 @@ export class NotificationService {
         in_app_notifications: settings.in_app_notifications
       });
 
-      // Determinar canales activos
       const activeChannels: string[] = [];
       if (settings.in_app_notifications) activeChannels.push('in-app');
       if (settings.email_notifications) activeChannels.push('email');
@@ -89,37 +92,7 @@ export class NotificationService {
    * Si no existen, crea configuración por defecto
    */
   private async getUserSettings(userId: string) {
-    const supabase = await createClient();
-
-    const { data: settings, error } = await supabase
-      .from('user_settings')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-
-    if (error || !settings) {
-      // Si no existe configuración, crear con defaults
-      const { data: newSettings } = await supabase
-        .from('user_settings')
-        .insert({
-          user_id: userId,
-          email_notifications: true,
-          telegram_notifications: false,
-          in_app_notifications: true,
-          daily_summary_time: '08:00:00',
-        })
-        .select()
-        .single();
-
-      return newSettings || {
-        email_notifications: true,
-        telegram_notifications: false,
-        in_app_notifications: true,
-        daily_summary_time: '08:00:00',
-      };
-    }
-
-    return settings;
+    return findUserSettingsOrCreate(userId);
   }
 
   /**

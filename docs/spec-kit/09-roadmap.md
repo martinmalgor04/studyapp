@@ -291,6 +291,7 @@ e2e/
 |------|-------|------------|--------|------|
 | Unit tests (Session Generator) | Core algorithm | 3h | ✅ Hecho | — |
 | Unit tests (Priority Calculator) | Core algorithm | 1h | ✅ Hecho | — |
+| **Arquitectura de Capas Modular** | Escalabilidad y mantenimiento | 10-15h | 🔄 EN PROGRESO | [ARCHITECTURAL_ANALYSIS.md](ARCHITECTURAL_ANALYSIS.md) |
 | **Error boundaries** | Better UX on errors | 4-6h | ✅ Hecho | [ERROR_HANDLING.md](ERROR_HANDLING.md) |
 | **Loading states** | Better perceived performance | *incluido* | ✅ Hecho | [ERROR_HANDLING.md](ERROR_HANDLING.md) |
 | **Telegram Notifications** | Notificaciones inmediatas | 6-8h | ⏳ | [TELEGRAM_INTEGRATION.md](TELEGRAM_INTEGRATION.md) |
@@ -516,29 +517,20 @@ El MVP se considera exitoso si:
 
 ### Funcionalidad Desactivada
 
-#### UC-011d: Sync Session Updates to Google Calendar
+#### UC-011a: Auto-sync Sessions to Google Calendar on Create/Delete
 
-**Estado:** Handler implementado pero eventos no se emiten
+**Estado:** ✅ RESUELTO (2026-03-23)
 
-**Ubicación:** `src/lib/actions/sessions.ts` → `completeSessionWithRating`, `updateSessionStatus`
+**Bugs corregidos:**
+1. `syncSessions` en `google-calendar.service.ts` no filtraba por `google_event_id IS NULL` → creaba duplicados en GCal
+2. `generateSessions` en `sessions.ts` insertaba en DB pero no llamaba al sync de GCal
+3. `deleteSession` en `sessions.ts` eliminaba de DB pero no eliminaba el evento de GCal
 
-**Problema:** 
-- `SessionEventRegistry.emitCompleted` está comentado
-- El handler `GoogleCalendarEventHandler` está registrado en `session-events.ts` pero nunca se invoca
-- En producción los eventos de Google Calendar no se actualizan (color/completado) al completar o abandonar sesiones
-
-**Acción requerida:**
-```typescript
-// Descomentar y activar en completeSessionWithRating
-SessionEventRegistry.emitCompleted({
-  sessionId: session.id,
-  topicId: session.topic_id,
-  userId: user.id,
-  completedAt: now,
-});
-```
-
-**Estimación:** 30 minutos (descomentar + verificar que `topic_id` esté en el select)
+**Solución aplicada:**
+- `google-calendar.service.ts`: Agregado `.is('google_event_id', null)` en `syncSessions`
+- `sessions.ts` → `generateSessions`: Agregado sync automático de GCal post-insert (con tokens válidos)
+- `sessions.ts` → `deleteSession`: Fetch de `google_event_id` pre-delete y `service.deleteEvent()` post-delete
+- `topics.ts` → `createTopic`: Eliminado sync redundante (ya lo hace `generateSessions` internamente)
 
 ---
 

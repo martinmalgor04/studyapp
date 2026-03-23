@@ -1,16 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getUpcomingSessions } from '@/lib/actions/sessions';
-import { getSubjects } from '@/lib/actions/subjects';
 import { UnifiedCalendar } from '@/components/shared/calendar/unified-calendar';
 import { SessionFilters } from '@/components/features/sessions/session-filters';
 import { RescheduleDialog } from '@/components/features/sessions/reschedule-dialog';
-
-interface SessionsClientProps {
-  userId: string;
-}
 
 interface SessionWithRelations {
   id: string;
@@ -28,32 +22,28 @@ interface SessionWithRelations {
   topic_id?: string | null;
 }
 
-export function SessionsClient({ userId }: SessionsClientProps) {
-  void userId; // Reserved for future use (e.g. filtering by user)
+interface SessionsClientProps {
+  initialSessions: SessionWithRelations[];
+  initialSubjects: Array<{ id: string; name: string }>;
+}
+
+export function SessionsClient({ initialSessions, initialSubjects }: SessionsClientProps) {
   const router = useRouter();
-  const [sessions, setSessions] = useState<SessionWithRelations[]>([]);
-  const [filteredSessions, setFilteredSessions] = useState<SessionWithRelations[]>([]);
-  const [subjects, setSubjects] = useState<Array<{ id: string; name: string }>>([]);
+  const [sessions, setSessions] = useState<SessionWithRelations[]>(initialSessions);
+  const [filteredSessions, setFilteredSessions] = useState<SessionWithRelations[]>(initialSessions);
+  const [subjects, setSubjects] = useState<Array<{ id: string; name: string }>>(initialSubjects);
   const [filters, setFilters] = useState<{ status?: string; priority?: string; subjectId?: string }>({});
-  const [loading, setLoading] = useState(true);
   const [rescheduleSession, setRescheduleSession] = useState<SessionWithRelations | null>(null);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    const [sessionsData, subjectsData] = await Promise.all([
-      getUpcomingSessions(30), // Mostrar próximos 30 días en vez de 7
-      getSubjects(),
-    ]);
-    setSessions(sessionsData);
-    setFilteredSessions(sessionsData);
-    setSubjects(subjectsData);
-    setLoading(false);
-    router.refresh(); // Invalidar caché para que sesiones completadas se reflejen en toda la app
-  }, [router]);
+  // Sincronizar estado cuando el RSC re-renderiza con datos frescos (post router.refresh())
+  useEffect(() => {
+    setSessions(initialSessions);
+    setFilteredSessions(initialSessions);
+  }, [initialSessions]);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    setSubjects(initialSubjects);
+  }, [initialSubjects]);
 
   // Aplicar filtros
   useEffect(() => {
@@ -73,14 +63,6 @@ export function SessionsClient({ userId }: SessionsClientProps) {
 
     setFilteredSessions(filtered);
   }, [filters, sessions]);
-
-  if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="text-center text-gray-500">Cargando sesiones...</div>
-      </div>
-    );
-  }
 
   const pendingCount = sessions.filter((s) => s.status === 'PENDING').length;
   const completedCount = sessions.filter((s) => s.status === 'COMPLETED').length;
@@ -160,7 +142,7 @@ export function SessionsClient({ userId }: SessionsClientProps) {
           subjects={subjects}
           onChange={setFilters}
         />
-        
+
         {(filters.status || filters.priority || filters.subjectId) && (
           <button
             onClick={() => setFilters({})}
@@ -175,7 +157,7 @@ export function SessionsClient({ userId }: SessionsClientProps) {
       <UnifiedCalendar
         defaultView="month"
         sessions={filteredSessions}
-        onStatusChange={loadData}
+        onStatusChange={() => router.refresh()}
         onReschedule={setRescheduleSession}
       />
 
@@ -184,7 +166,7 @@ export function SessionsClient({ userId }: SessionsClientProps) {
         isOpen={!!rescheduleSession}
         session={rescheduleSession}
         onClose={() => setRescheduleSession(null)}
-        onSuccess={loadData}
+        onSuccess={() => router.refresh()}
       />
     </div>
   );

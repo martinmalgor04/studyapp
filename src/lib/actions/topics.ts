@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
 import { logger } from '@/lib/utils/logger';
 import {
   createTopicSchema,
@@ -11,41 +10,27 @@ import {
 } from '@/lib/validations/topics';
 import { generateSessions } from './sessions';
 import { sendNotification } from './notifications';
+import { getAuthenticatedUser } from '@/lib/utils/auth';
+import {
+  findTopicsBySubjectId,
+  findTopicById,
+  insertTopic,
+  findTopicWithOwner,
+  updateTopicById,
+  deleteTopicById,
+  findExamByIdAndSubjectId,
+} from '@/lib/repositories/topics.repository';
+import { findSubjectByIdAndUserId } from '@/lib/repositories/subjects.repository';
 
 export async function getTopicsBySubject(subjectId: string) {
-  const supabase = await createClient();
-
-  const { data: topics, error } = await supabase
-    .from('topics')
-    .select('*')
-    .eq('subject_id', subjectId)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    logger.error('Error fetching topics:', error);
-    return [];
-  }
-
-  return topics;
+  return findTopicsBySubjectId(subjectId);
 }
 
 export async function getTopic(id: string) {
-  const supabase = await createClient();
-
-  const { data: topic, error } = await supabase.from('topics').select('*').eq('id', id).single();
-
-  if (error) {
-    logger.error('Error fetching topic:', error);
-    return null;
-  }
-
-  return topic;
+  return findTopicById(id);
 }
 
 export async function createTopic(input: CreateTopicInput) {
-  const supabase = await createClient();
-
-  // Validar input
   const validationResult = createTopicSchema.safeParse(input);
   if (!validationResult.success) {
     return {
@@ -53,40 +38,28 @@ export async function createTopic(input: CreateTopicInput) {
     };
   }
 
-  // Obtener usuario actual
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await getAuthenticatedUser();
   if (!user) {
     return {
       error: 'No autenticado',
     };
   }
 
-  // Verificar que el subject pertenece al usuario
-  const { data: subject } = await supabase
-    .from('subjects')
-    .select('id')
-    .eq('id', validationResult.data.subject_id)
-    .eq('user_id', user.id)
-    .single();
-
+  const subject = await findSubjectByIdAndUserId(
+    validationResult.data.subject_id,
+    user.id,
+  );
   if (!subject) {
     return {
       error: 'Materia no encontrada o no autorizado',
     };
   }
 
-  // Si se proporciona exam_id, verificar que pertenece al subject
   if (validationResult.data.exam_id) {
-    const { data: exam } = await supabase
-      .from('exams')
-      .select('id')
-      .eq('id', validationResult.data.exam_id)
-      .eq('subject_id', validationResult.data.subject_id)
-      .single();
-
+    const exam = await findExamByIdAndSubjectId(
+      validationResult.data.exam_id,
+      validationResult.data.subject_id,
+    );
     if (!exam) {
       return {
         error: 'Examen no encontrado o no pertenece a esta materia',
@@ -94,37 +67,26 @@ export async function createTopic(input: CreateTopicInput) {
     }
   }
 
-  // Crear topic
-  const { data, error } = await supabase
-    .from('topics')
-    .insert({
-      subject_id: validationResult.data.subject_id,
-      exam_id: validationResult.data.exam_id || null,
-      name: validationResult.data.name,
-      description: validationResult.data.description,
-      difficulty: validationResult.data.difficulty,
-      hours: validationResult.data.hours,
-      source: validationResult.data.source,
-      source_date: validationResult.data.source_date || null,
-    })
-    .select()
-    .single();
+  const { data, error } = await insertTopic({
+    subject_id: validationResult.data.subject_id,
+    exam_id: validationResult.data.exam_id || null,
+    name: validationResult.data.name,
+    description: validationResult.data.description,
+    difficulty: validationResult.data.difficulty,
+    hours: validationResult.data.hours,
+    source: validationResult.data.source,
+    source_date: validationResult.data.source_date || null,
+  });
 
   if (error) {
-    logger.error('Error creating topic:', error);
-    return {
-      error: 'Error al crear el tema',
-    };
+    return { error };
   }
 
-  // Generar sesiones automáticamente si el topic tiene source_date
-  if (data.source_date) {
+  if (data?.source_date) {
     const sessionsResult = await generateSessions(data.id);
     if (sessionsResult.error) {
       logger.warn('Warning: Could not generate sessions:', sessionsResult.error);
-      // No retornamos error, el topic ya fue creado exitosamente
     } else if (sessionsResult.success && sessionsResult.count) {
-      // Enviar notificación sobre las sesiones generadas
       await sendNotification({
         userId: user.id,
         type: 'SESSION_REMINDER',
@@ -136,15 +98,6 @@ export async function createTopic(input: CreateTopicInput) {
           sessions_count: sessionsResult.count,
         },
       });
-
-      // Auto-sincronizar a Google Calendar si está conectado
-      try {
-        const { syncSessionsToGoogleCalendar } = await import('./google-calendar');
-        await syncSessionsToGoogleCalendar();
-      } catch (err) {
-        logger.warn('Could not sync to Google Calendar:', err);
-        // No retornar error, las sesiones ya se crearon
-      }
     }
   }
 
@@ -154,9 +107,6 @@ export async function createTopic(input: CreateTopicInput) {
 }
 
 export async function updateTopic(id: string, input: UpdateTopicInput) {
-  const supabase = await createClient();
-
-  // Validar input
   const validationResult = updateTopicSchema.safeParse(input);
   if (!validationResult.success) {
     return {
@@ -164,50 +114,30 @@ export async function updateTopic(id: string, input: UpdateTopicInput) {
     };
   }
 
-  // Obtener el topic para verificar permisos
-  const { data: topic } = await supabase
-    .from('topics')
-    .select('subject_id, subjects!inner(user_id)')
-    .eq('id', id)
-    .single();
-
+  const topic = await findTopicWithOwner(id);
   if (!topic) {
     return {
       error: 'Tema no encontrado',
     };
   }
 
-  // Verificar que el usuario es dueño
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user || (topic.subjects as { user_id: string }).user_id !== user.id) {
+  const user = await getAuthenticatedUser();
+  if (!user || topic.subjects.user_id !== user.id) {
     return {
       error: 'No autorizado',
     };
   }
 
-  // Limpiar exam_id si es string vacío
   const updateData = {
     ...validationResult.data,
     exam_id:
       validationResult.data.exam_id === '' ? null : validationResult.data.exam_id || undefined,
   };
 
-  // Actualizar topic
-  const { data, error } = await supabase
-    .from('topics')
-    .update(updateData)
-    .eq('id', id)
-    .select()
-    .single();
+  const { data, error } = await updateTopicById(id, updateData);
 
   if (error) {
-    logger.error('Error updating topic:', error);
-    return {
-      error: 'Error al actualizar el tema',
-    };
+    return { error };
   }
 
   revalidatePath('/dashboard/subjects');
@@ -216,40 +146,24 @@ export async function updateTopic(id: string, input: UpdateTopicInput) {
 }
 
 export async function deleteTopic(id: string) {
-  const supabase = await createClient();
-
-  // Obtener el topic para verificar permisos y subject_id
-  const { data: topic } = await supabase
-    .from('topics')
-    .select('subject_id, subjects!inner(user_id)')
-    .eq('id', id)
-    .single();
-
+  const topic = await findTopicWithOwner(id);
   if (!topic) {
     return {
       error: 'Tema no encontrado',
     };
   }
 
-  // Verificar que el usuario es dueño
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user || (topic.subjects as { user_id: string }).user_id !== user.id) {
+  const user = await getAuthenticatedUser();
+  if (!user || topic.subjects.user_id !== user.id) {
     return {
       error: 'No autorizado',
     };
   }
 
-  // Eliminar topic (hard delete)
-  const { error } = await supabase.from('topics').delete().eq('id', id);
+  const { error } = await deleteTopicById(id);
 
   if (error) {
-    logger.error('Error deleting topic:', error);
-    return {
-      error: 'Error al eliminar el tema',
-    };
+    return { error };
   }
 
   revalidatePath('/dashboard/subjects');
