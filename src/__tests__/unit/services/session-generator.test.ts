@@ -8,6 +8,14 @@ vi.mock('@/lib/services/priority-calculator', () => ({
   }),
 }));
 
+// Mock google-calendar service to avoid Supabase client dependency in unit tests
+vi.mock('@/lib/services/google-calendar.service', () => ({
+  getGoogleCalendarService: vi.fn(() => ({
+    isConnected: vi.fn().mockResolvedValue(false),
+    findConflictFreeSlot: vi.fn().mockResolvedValue({ date: new Date(), adjusted: false }),
+  })),
+}));
+
 // Import after mocking
 import { generateSessionsForTopic } from '@/lib/services/session-generator';
 import { calculatePriority } from '@/lib/services/priority-calculator';
