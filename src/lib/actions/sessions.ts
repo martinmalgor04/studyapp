@@ -323,8 +323,10 @@ export async function generateSessions(topicId: string) {
     return { error: 'Topic no encontrado o no pertenece al usuario' };
   }
 
-  if (!topic.source_date) {
-    return { error: 'El topic debe tener una fecha de origen (source_date)' };
+  // PARCIAL mode necesita source_date; FREE_STUDY usa today.
+  // La validación real ocurre dentro de generateSessionsForTopic.
+  if (!topic.source_date && topic.source !== 'FREE_STUDY') {
+    return { error: 'El topic debe tener una fecha de clase (source_date) cuando la fuente es Clase o Programa' };
   }
 
   let exam = null;

@@ -291,7 +291,7 @@ e2e/
 |------|-------|------------|--------|------|
 | Unit tests (Session Generator) | Core algorithm | 3h | ✅ Hecho | — |
 | Unit tests (Priority Calculator) | Core algorithm | 1h | ✅ Hecho | — |
-| **Arquitectura de Capas Modular** | Escalabilidad y mantenimiento | 10-15h | 🔄 EN PROGRESO | [ARCHITECTURAL_ANALYSIS.md](ARCHITECTURAL_ANALYSIS.md) |
+| **Arquitectura de Capas Modular** | Escalabilidad y mantenimiento | ~15h (real) | ✅ Hecho | [REFACTORING_PLAN.md](../REFACTORING_PLAN.md) |
 | **Error boundaries** | Better UX on errors | 4-6h | ✅ Hecho | [ERROR_HANDLING.md](ERROR_HANDLING.md) |
 | **Loading states** | Better perceived performance | *incluido* | ✅ Hecho | [ERROR_HANDLING.md](ERROR_HANDLING.md) |
 | **Telegram Notifications** | Notificaciones inmediatas | 6-8h | ⏳ | [TELEGRAM_INTEGRATION.md](TELEGRAM_INTEGRATION.md) |
@@ -390,10 +390,15 @@ e2e/
 36. ✅ **Troubleshooting Email Notifications** - Logging extensivo + guía de debugging ([TROUBLESHOOTING_EMAIL_NOTIFICATIONS.md](../TROUBLESHOOTING_EMAIL_NOTIFICATIONS.md))
 37. ✅ **Análisis Google Calendar Gaps** - Documentación de lo que falta (85% → 100%) ([GOOGLE_CALENDAR_GAPS_ANALYSIS.md](../GOOGLE_CALENDAR_GAPS_ANALYSIS.md))
 38. ✅ **UC-011b Preview Dialog** - Diálogo de preview con stats y comparación antes de importar disponibilidad ([TESTING_IMPORT_PREVIEW.md](../TESTING_IMPORT_PREVIEW.md))
+39. ✅ **Refactoring Fase 0-1: Capa de Repositorios** - 7 repositories creados (`subjects`, `exams`, `topics`, `sessions`, `notifications`, `user-settings`, `availability`), todas las queries Supabase encapsuladas. (commit 7f4091e)
+40. ✅ **Refactoring Fase 2: Services purificados** - `session-generator.ts`, `notification.service.ts`, `google-calendar.service.ts`, `google-tokens.helper.ts`, `google-calendar-event-handler.ts` sin imports de `createClient`. Nuevo `progress-calculator.ts`. (commit af03797)
+41. ✅ **Refactoring Fase 3: Actions adelgazadas** - Todas las Server Actions siguen el patrón: auth → validate → repo/service → revalidatePath. Sin queries directas a Supabase. (commit af03797)
+42. ✅ **Refactoring Fase 4: Migración a RSC** - `subjects/page.tsx`, `subjects/[id]/page.tsx`, `sessions/page.tsx` y `dashboard/page.tsx` son React Server Components. Sin flickeo de carga inicial. (commit af03797)
+43. ✅ **Refactoring Fase 5: Limpieza** - Helper `getAuthenticatedUser()` centralizado, `pnpm lint` pasa, merge a `main`. Arquitectura de 4 capas completada: Presentación → Aplicación → Dominio → Infraestructura. (commit af03797)
 
-### 🎉 MVP + FREE STUDY MODE + TRACKING + UC-011d COMPLETADO
+### 🎉 MVP + FREE STUDY MODE + TRACKING + UC-011d + REFACTORING ARQUITECTURAL COMPLETADO
 
-**Estado:** Sprint 1 ✅ + Sprint 2 ✅ + Sprint 4 (Free Study) ✅ = **MVP + UC-010 100%**
+**Estado:** Sprint 1 ✅ + Sprint 2 ✅ + Sprint 3 ✅ + Sprint 4 ✅ + Refactoring Arquitectural ✅ = **v1.0 (90%) + Arquitectura de Capas 100%**
 
 **Archivos actualizados (2026-01-27):**
 - `docs/spec-kit/05-use-cases.md` - Agregada columna Estado, UC-010 marcado como completado
@@ -414,7 +419,7 @@ e2e/
 4. Warning si se crea topic con final en < 25 días
 5. Prioridad URGENT/CRITICAL por defecto para finales
 
-**Próximo paso:** Activar UC-011d (emit en sessions.ts). Luego Sprint 5 - Gamificación.
+**Próximo paso:** Sprint 5 - Gamificación. Considerar: Telegram Notifications + UC-011c UI indicators + E2E tests UC-008/009.
 
 ---
 
@@ -602,31 +607,33 @@ El MVP se considera exitoso si:
 
 ---
 
-### Estado por Sprint (Actualizado 2026-03-19)
+### Estado por Sprint (Actualizado 2026-03-23)
 
 | Sprint | Estado | Completitud | Notas |
 |--------|--------|-------------|-------|
 | Sprint 1 | ✅ | 100% | Setup + Auth + Dashboard base |
 | Sprint 2 | ✅ | 100% | CRUD Subjects/Exams/Topics + Session Generator |
 | Sprint 3 | ✅ | 100% | Tracking, Reschedule, Week view |
-| Sprint 4 | ✅ | ~90% | Free Study + Google Calendar (falta UC-011d emit + UC-011c UI) |
+| Sprint 4 | ✅ | ~90% | Free Study + Google Calendar (falta UC-011c UI indicators) |
+| **Refactoring Arquitectural** | ✅ | **100%** | **4 capas: Repositories + Services puros + Actions + RSC** |
 | Sprint 5 | ⏳ | 0% | Gamificación pendiente |
 | Sprint 6 | ⏳ | 0% | Analytics + Tasks pendiente |
 
 **Bloqueadores Sprint 5:**
-- Ninguno (gamificación puede arrancar)
+- Ninguno (gamificación puede arrancar sobre la nueva arquitectura)
 - Considerar resolver Telegram Notifications primero (alta demanda de usuario)
 
 ---
 
 ## Summary
 
-**Estado actual:** Sprint 1 ✅, Sprint 2 ✅, Sprint 3 (Tracking & Reschedule) ✅, Sprint 4 (Free Study + Calendar) ✅  
-**Pulido (2026-03-19):** ✅ 0 `as any` (TypeScript strict), ✅ CI/CD GitHub Actions, ✅ Error boundaries, ✅ Security headers, ✅ Logger centralizado, ✅ Google token helper deduplicado, ✅ Aria-labels en nav/notificaciones/sesiones/pomodoro
+**Estado actual (2026-03-23):** Sprint 1 ✅, Sprint 2 ✅, Sprint 3 ✅, Sprint 4 ✅, **Refactoring Arquitectural ✅**  
+**Pulido (2026-03-19):** ✅ 0 `as any` (TypeScript strict), ✅ CI/CD GitHub Actions, ✅ Error boundaries, ✅ Security headers, ✅ Logger centralizado, ✅ Google token helper deduplicado, ✅ Aria-labels en nav/notificaciones/sesiones/pomodoro  
+**Refactoring (2026-03-23):** ✅ Capa de Repositories, ✅ Services puros (sin Supabase), ✅ Actions adelgazadas, ✅ RSC para pages, ✅ Helper `getAuthenticatedUser()`
 
-**Próximo paso:** Sprint 5 - Gamificación. Antes: considerar Telegram Notifications + activar UC-011d emit.
+**Próximo paso:** Sprint 5 - Gamificación. La base arquitectural está lista y probada.
 
-**MVP + v1.0 (parcial):** ✅ COMPLETADO al 90%. Deuda técnica documentada en sección 9.13.
+**MVP + v1.0 (parcial):** ✅ COMPLETADO al 90%. Arquitectura de 4 capas ✅ COMPLETADA al 100%.
 
 **Cambios principales vs plan original:**
 - ✅ Arquitectura simplificada (Next.js Full Stack)
@@ -634,3 +641,4 @@ El MVP se considera exitoso si:
 - ✅ Mejor Developer Experience
 - ✅ Más rápido de iterar
 - ✅ Countdown Mode implementado (v1.0 UC-010 adelantado)
+- ✅ Arquitectura de 4 capas modular implementada (Repository → Service → Action → RSC)

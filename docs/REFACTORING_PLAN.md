@@ -915,7 +915,7 @@ pnpm lint           # ✅
 - [x] `pnpm build` pasa
 - [x] `pnpm test:unit` pasa
 - [x] `pnpm lint` pasa
-- [ ] Merge a `main`
+- [x] Merge a `main`
 
 ---
 

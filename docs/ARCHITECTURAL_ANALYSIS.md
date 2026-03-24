@@ -1,6 +1,12 @@
 # Análisis Arquitectónico: StudyApp (Layered & Modular)
 
-## 1. Situación Actual y Puntos Críticos
+> **Estado: ✅ IMPLEMENTADO** — Refactoring completado en commits `7f4091e` (Fases 0-1) y `af03797` (Fases 2-5).  
+> Ver plan de ejecución completo en [`docs/REFACTORING_PLAN.md`](REFACTORING_PLAN.md).  
+> Ver arquitectura actualizada en [`docs/spec-kit/03-architecture.md`](spec-kit/03-architecture.md).
+
+---
+
+## 1. Situación Anterior y Puntos Críticos (Pre-Refactoring)
 
 ### 1.1. Deuda Técnica y Acoplamiento (Coupling)
 - **Server Actions como Controladores Obesos**: Las acciones en `src/lib/actions` manejan demasiadas responsabilidades simultáneamente: autenticación, validación de esquemas (Zod), lógica de negocio compleja y consultas directas a Supabase (SQL/PostgreSQL).
@@ -94,4 +100,13 @@ export async function getSubjects() {
 ---
 
 ## 5. Veredicto Final
-La arquitectura actual es funcional pero frágil ante el crecimiento. Implementar este esquema de capas modular permitirá al equipo desarrollar los próximos Sprints (Gamificación, Analytics, Google Calendar integration) con total confianza, manteniendo el código testeable, desacoplado y fácil de entender para cualquier nuevo desarrollador (o agente de IA).
+
+> ✅ **Implementado.** La arquitectura de 4 capas está en producción.
+
+La arquitectura anterior era funcional pero frágil ante el crecimiento. La implementación de este esquema de capas modular (completada en Sprint 4) permitirá desarrollar los próximos Sprints (Gamificación, Analytics) con total confianza, manteniendo el código testeable, desacoplado y fácil de entender.
+
+**Resultado medible post-refactoring:**
+- 0 llamadas a `supabase.from()` fuera de `src/lib/repositories/`
+- Services 100% puros y testeables sin mock de DB
+- RSC para todas las páginas de datos (sin `useEffect` de carga inicial)
+- Helper `getAuthenticatedUser()` elimina boilerplate repetido en 11+ actions

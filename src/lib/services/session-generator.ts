@@ -260,11 +260,6 @@ export async function generateSessionsForTopic(
   userId: string,
   conflictChecker?: ConflictChecker,
 ): Promise<SessionToCreate[]> {
-  // Validar que tengamos una fecha de referencia
-  if (!topic.source_date) {
-    throw new Error('Topic must have a source_date to generate sessions');
-  }
-
   // Validar que los intervalos cumplan el mínimo de 1 día
   const minInterval = Math.min(...SPACED_REPETITION_INTERVALS);
   if (minInterval < 1) {
@@ -272,6 +267,12 @@ export async function generateSessionsForTopic(
   }
 
   const mode = determineMode(exam, topic.source);
+
+  // PARCIAL necesita source_date para saber desde cuándo contar.
+  // FREE_STUDY usa today como referencia, source_date no es necesaria.
+  if (mode === 'PARCIAL' && !topic.source_date) {
+    throw new Error('Topic must have a source_date to generate sessions in PARCIAL mode');
+  }
 
   let sessions: SessionToCreate[];
   if (mode === 'FREE_STUDY') {

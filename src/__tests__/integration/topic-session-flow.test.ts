@@ -164,7 +164,9 @@ describe('Integration: Topic → Session Generation Flow', () => {
       expect(generateSessionsForTopic).not.toHaveBeenCalled();
     });
 
-    it('should return error if source_date is null', async () => {
+    it('should return error if source_date is null for CLASS source', async () => {
+      // CLASS mode requiere source_date para calcular intervalos desde la clase.
+      // FREE_STUDY ya no requiere source_date (usa today como referencia).
       const mockTopic = {
         id: 'topic-1',
         subject_id: 'subject-1',
@@ -172,8 +174,8 @@ describe('Integration: Topic → Session Generation Flow', () => {
         name: 'Test Topic',
         difficulty: 'MEDIUM',
         hours: 60,
-        source: 'FREE_STUDY',
-        source_date: null, // Sin fecha
+        source: 'CLASS', // CLASS sin source_date → debe dar error
+        source_date: null,
         subject: { user_id: 'user-1' },
       };
 

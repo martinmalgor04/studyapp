@@ -31,14 +31,12 @@
 │  └───────────────────────────────────────────────────────────────────┘ │
 │                              ▼                                          │
 │  ┌───────────────────────────────────────────────────────────────────┐ │
-│  │                     BACKEND LAYER                                 │ │
-│  │                (Server Actions + API Routes)                      │ │
+│  │              BACKEND LAYER — Arquitectura de 4 Capas             │ │
 │  ├───────────────────────────────────────────────────────────────────┤ │
-│  │  • Server Actions (data mutations)                                │ │
-│  │  • API Routes (webhooks, external integrations)                   │ │
-│  │  • Business Logic Services                                        │ │
-│  │  • Validation Schemas (Zod)                                       │ │
-│  │  • Middleware (Auth, Rate Limiting)                               │ │
+│  │  Aplicación: Server Actions (auth + validación + orquestación)    │ │
+│  │  Dominio:    Services puros (algoritmos, sin Supabase)            │ │
+│  │  Infra:      Repositories (único lugar con supabase.from())       │ │
+│  │  Shared:     Validation Schemas (Zod), Utils, Middleware          │ │
 │  └───────────────────────────────────────────────────────────────────┘ │
 │                                                                         │
 └──────────────────────────────┬──────────────────────────────────────────┘
@@ -160,17 +158,40 @@ StudyApp/
 │   │   │   ├── server.ts           # Server client
 │   │   │   └── middleware.ts       # Middleware helper
 │   │   │
-│   │   ├── actions/                 # Server Actions
-│   │   │   ├── subjects.ts         # Subject CRUD actions
+│   │   ├── repositories/            # CAPA DE INFRAESTRUCTURA (único lugar con supabase.from())
+│   │   │   ├── subjects.repository.ts
+│   │   │   ├── exams.repository.ts
+│   │   │   ├── topics.repository.ts
+│   │   │   ├── sessions.repository.ts
+│   │   │   ├── notifications.repository.ts
+│   │   │   ├── user-settings.repository.ts
+│   │   │   ├── availability.repository.ts
+│   │   │   └── index.ts            # Re-exports
+│   │   │
+│   │   ├── actions/                 # CAPA DE APLICACIÓN (auth + validate + repo/service + revalidate)
+│   │   │   ├── subjects.ts
 │   │   │   ├── exams.ts
 │   │   │   ├── topics.ts
-│   │   │   └── sessions.ts
+│   │   │   ├── sessions.ts
+│   │   │   ├── dashboard.ts
+│   │   │   ├── notifications.ts
+│   │   │   ├── availability.ts
+│   │   │   ├── google-calendar.ts
+│   │   │   ├── auth.ts
+│   │   │   ├── profile.ts
+│   │   │   └── onboarding.ts
 │   │   │
-│   │   ├── services/                # Business logic
-│   │   │   ├── session-generator.service.ts
-│   │   │   ├── priority-calculator.service.ts
-│   │   │   ├── spaced-repetition.service.ts
-│   │   │   └── slot-finder.service.ts
+│   │   ├── services/                # CAPA DE DOMINIO (lógica pura, sin Supabase)
+│   │   │   ├── session-generator.ts          # Algoritmo spaced repetition
+│   │   │   ├── priority-calculator.ts        # Cálculo de prioridades
+│   │   │   ├── progress-calculator.ts        # % de progreso por materia
+│   │   │   ├── session-events.ts             # Event registry (puro)
+│   │   │   ├── google-calendar.service.ts    # Solo Google Calendar API
+│   │   │   ├── google-calendar-event-handler.ts
+│   │   │   ├── google-tokens.helper.ts
+│   │   │   ├── notification.service.ts
+│   │   │   ├── availability-importer.service.ts
+│   │   │   └── notifications/               # Canales de notificación
 │   │   │
 │   │   ├── validations/             # Zod schemas
 │   │   │   ├── subjects.ts
@@ -179,9 +200,8 @@ StudyApp/
 │   │   │   └── sessions.ts
 │   │   │
 │   │   └── utils/                   # Utility functions
-│   │       ├── date.ts
-│   │       ├── priority.ts
-│   │       └── intervals.ts
+│   │       ├── auth.ts              # getAuthenticatedUser() helper
+│   │       └── ...
 │   │
 │   ├── hooks/                        # Custom React hooks
 │   │   ├── use-subjects.ts
@@ -248,7 +268,7 @@ StudyApp/
 └─────────────────────┘
 ```
 
-### CRUD Flow (Example: Create Subject)
+### CRUD Flow (Example: Create Subject) — Arquitectura de 4 Capas
 
 ```
 ┌─────────────┐
@@ -256,21 +276,22 @@ StudyApp/
 └──────┬──────┘
        │ 1. Fill form
        ▼
-┌─────────────────────┐
-│  SubjectForm        │
-│  (Client Component) │
+┌─────────────────────┐   CAPA DE PRESENTACIÓN
+│  SubjectForm        │   (Client Component)
+│  ('use client')     │
 └──────┬──────────────┘
        │ 2. onSubmit
        ▼
-┌─────────────────────┐
-│  createSubject()    │
-│  (Server Action)    │
+┌─────────────────────┐   CAPA DE APLICACIÓN
+│  createSubject()    │   (Server Action)
+│  auth + validate    │   → supabase.auth.getUser()
+│  + revalidatePath() │   → createSubjectSchema.safeParse()
 └──────┬──────────────┘
-       │ 3. Validate (Zod)
+       │ 3. Call repository
        ▼
-┌─────────────────────┐
-│  Supabase Client    │
-│  (supabase.from())  │
+┌─────────────────────┐   CAPA DE INFRAESTRUCTURA
+│  insertSubject()    │   (Repository — único lugar con supabase.from())
+│  subjects.repo.ts   │
 └──────┬──────────────┘
        │ 4. INSERT
        ▼
@@ -281,52 +302,51 @@ StudyApp/
        │ 5. Return data
        ▼
 ┌─────────────────────┐
-│  revalidatePath()   │
-│  (Cache invalidation)│
+│  revalidatePath()   │   Next.js invalida caché → RSC se re-ejecuta
 └──────┬──────────────┘
        │ 6. Re-render
        ▼
-┌─────────────────────┐
-│  SubjectList        │
-│  (Updated)          │
+┌─────────────────────┐   CAPA DE PRESENTACIÓN (RSC)
+│  SubjectsPage       │   Server Component re-fetches data
+│  (RSC updated)      │
 └─────────────────────┘
 ```
 
-### Session Generation Flow (Future)
+### Session Generation Flow ✅ IMPLEMENTADO
 
 ```
 ┌─────────────┐
 │  Create     │
-│  Topic      │
+│  Topic      │   (topics.ts action)
 └──────┬──────┘
-       │ 1. Trigger
+       │ 1. createTopic() → generateSessions()
        ▼
-┌─────────────────────────┐
-│  SessionGenerator       │
-│  (Service)              │
+┌─────────────────────────┐   CAPA DE APLICACIÓN
+│  generateSessions()     │   (sessions.ts action)
+│  (Server Action)        │   → findTopicWithFullInfo() via repo
 └──────┬──────────────────┘
-       │ 2. Calculate intervals
+       │ 2. Call pure service
        ▼
-┌─────────────────────────┐
-│  SpacedRepetition       │
-│  (Algorithm)            │
+┌─────────────────────────┐   CAPA DE DOMINIO (sin Supabase)
+│  session-generator.ts   │   Modo Parcial: fechas hacia adelante
+│  (Puro, sin createClient│   Modo Countdown: fechas hacia atrás (finales)
+│   Inyección de deps)    │   Usa conflictChecker inyectado desde action
 └──────┬──────────────────┘
-       │ 3. Get intervals array
+       │ 3. Calculate priority
        ▼
-┌─────────────────────────┐
-│  PriorityCalculator     │
-│  (Calculate scores)     │
+┌─────────────────────────┐   CAPA DE DOMINIO (puro)
+│  priority-calculator.ts │
 └──────┬──────────────────┘
-       │ 4. For each interval
+       │ 4. Insert sessions
        ▼
-┌─────────────────────────┐
-│  SlotFinder             │
-│  (Find free slots)      │
+┌─────────────────────────┐   CAPA DE INFRAESTRUCTURA
+│  insertSessions()       │   (sessions.repository.ts)
+│  (Repository)           │
 └──────┬──────────────────┘
-       │ 5. Create sessions
+       │ 5. Sync with Google Calendar (si está conectado)
        ▼
 ┌─────────────────────────┐
-│  Supabase (sessions)    │
+│  google-calendar.service│   Solo Google Calendar API (sin DB)
 └─────────────────────────┘
 ```
 
@@ -443,6 +463,16 @@ DATABASE_URL=postgresql://...      # Direct DB access (migrations)
 ---
 
 ## 3.7 Design Principles Applied
+
+### 0. Layered Architecture (4 Capas)
+```
+Presentación → Aplicación → Dominio → Infraestructura
+  (RSC Pages)   (Actions)  (Services)  (Repositories)
+```
+- **Repositories**: único lugar con `supabase.from()`. Encapsulan todas las queries.
+- **Services**: lógica de negocio pura, sin dependencias de infraestructura. Testeables sin DB.
+- **Actions**: autentican, validan (Zod), orquestan repos/services, revalidan caché.
+- **Pages (RSC)**: fetch de datos server-side, sin `useEffect` para carga inicial.
 
 ### 1. Server-First Architecture
 - Use Server Components by default

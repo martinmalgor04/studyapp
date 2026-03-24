@@ -21,6 +21,7 @@ import {
   findExamByIdAndSubjectId,
 } from '@/lib/repositories/topics.repository';
 import { findSubjectByIdAndUserId } from '@/lib/repositories/subjects.repository';
+import { deleteSessionsByTopicId } from '@/lib/repositories/exams.repository';
 
 export async function getTopicsBySubject(subjectId: string) {
   return findTopicsBySubjectId(subjectId);
@@ -82,7 +83,11 @@ export async function createTopic(input: CreateTopicInput) {
     return { error };
   }
 
-  if (data?.source_date) {
+  // Generar sesiones si:
+  // - source=CLASS o PROGRAM: necesita source_date (ya validado por Zod)
+  // - source=FREE_STUDY: usa today como referencia, no necesita source_date
+  const shouldGenerateSessions = data?.source_date || data?.source === 'FREE_STUDY';
+  if (shouldGenerateSessions) {
     const sessionsResult = await generateSessions(data.id);
     if (sessionsResult.error) {
       logger.warn('Warning: Could not generate sessions:', sessionsResult.error);
@@ -114,24 +119,29 @@ export async function updateTopic(id: string, input: UpdateTopicInput) {
     };
   }
 
-  const topic = await findTopicWithOwner(id);
-  if (!topic) {
+  const topicWithOwner = await findTopicWithOwner(id);
+  if (!topicWithOwner) {
     return {
       error: 'Tema no encontrado',
     };
   }
 
   const user = await getAuthenticatedUser();
-  if (!user || topic.subjects.user_id !== user.id) {
+  if (!user || topicWithOwner.subjects.user_id !== user.id) {
     return {
       error: 'No autorizado',
     };
   }
 
+  // Leer estado actual antes de actualizar (para detectar cambio de exam_id)
+  const currentTopic = await findTopicById(id);
+
+  const newExamId =
+    validationResult.data.exam_id === '' ? null : validationResult.data.exam_id || undefined;
+
   const updateData = {
     ...validationResult.data,
-    exam_id:
-      validationResult.data.exam_id === '' ? null : validationResult.data.exam_id || undefined,
+    exam_id: newExamId,
   };
 
   const { data, error } = await updateTopicById(id, updateData);
@@ -140,8 +150,24 @@ export async function updateTopic(id: string, input: UpdateTopicInput) {
     return { error };
   }
 
+  // Si se asignó (o cambió) el exam_id, regenerar sesiones desde cero
+  const examIdChanged =
+    newExamId &&
+    newExamId !== currentTopic?.exam_id;
+
+  if (examIdChanged && data) {
+    logger.debug(`[updateTopic] exam_id changed to ${newExamId}, regenerating sessions for topic ${id}`);
+    await deleteSessionsByTopicId(id);
+    const sessionsResult = await generateSessions(data.id);
+    if (sessionsResult.error) {
+      logger.warn('[updateTopic] Could not regenerate sessions after exam change:', sessionsResult.error);
+    }
+  }
+
   revalidatePath('/dashboard/subjects');
-  revalidatePath(`/dashboard/subjects/${topic.subject_id}`);
+  revalidatePath(`/dashboard/subjects/${topicWithOwner.subject_id}`);
+  revalidatePath('/dashboard/sessions');
+  revalidatePath('/dashboard');
   return { data };
 }
 
