@@ -80,9 +80,11 @@ interface SessionCardItemProps {
 }
 
 function SessionCardItem({ session, loadingSession, onComplete }: SessionCardItemProps) {
-  const time = new Date(session.scheduled_at).toLocaleTimeString('es-AR', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  const time = new Date(session.scheduled_at).toLocaleTimeString('es-AR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'America/Argentina/Buenos_Aires',
   });
   
   const topicName = session.topic?.name || 'Tema';
@@ -104,7 +106,7 @@ function SessionCardItem({ session, loadingSession, onComplete }: SessionCardIte
               className="text-amber-600 flex-shrink-0"
               title={
                 session.original_scheduled_at
-                  ? `Reubicada por conflicto. Original: ${new Date(session.original_scheduled_at).toLocaleString('es-AR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`
+                  ? `Reubicada por conflicto. Original: ${new Date(session.original_scheduled_at).toLocaleString('es-AR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Argentina/Buenos_Aires' })}`
                   : 'Reubicada por conflicto de calendario'
               }
               aria-label="Sesión reubicada por conflicto"
