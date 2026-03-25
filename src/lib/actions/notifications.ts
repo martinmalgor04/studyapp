@@ -91,6 +91,8 @@ export async function updateUserSettings(settings: {
   telegram_notifications?: boolean;
   in_app_notifications?: boolean;
   daily_summary_time?: string;
+  study_start_hour?: string;
+  study_end_hour?: string;
 }) {
   const supabase = await createClient();
 

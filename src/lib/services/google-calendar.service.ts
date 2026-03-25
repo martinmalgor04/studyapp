@@ -5,7 +5,10 @@ import {
   findPendingSessionsWithoutGoogleEvent,
   updateSessionGoogleEventId,
 } from '@/lib/repositories/sessions.repository';
-import { isGoogleCalendarEnabled } from '@/lib/repositories/user-settings.repository';
+import {
+  isGoogleCalendarEnabled,
+  updateUserSettingsById,
+} from '@/lib/repositories/user-settings.repository';
 
 interface Session {
   id: string;
@@ -17,10 +20,8 @@ interface Session {
 }
 
 export class GoogleCalendarService {
-  private oauth2Client;
-
-  constructor() {
-    this.oauth2Client = new google.auth.OAuth2(
+  private buildOAuth2Client() {
+    return new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
       process.env.GOOGLE_REDIRECT_URI
@@ -28,14 +29,43 @@ export class GoogleCalendarService {
   }
 
   /**
-   * Crea un evento en Google Calendar para una sesión
+   * Crea un cliente OAuth2 con listener de refresh para persistir tokens renovados en DB.
    */
-  async createEventForSession(tokens: GoogleTokens, session: Session): Promise<string | null> {
-    try {
-      this.oauth2Client.setCredentials(tokens);
-      const calendar = google.calendar({ version: 'v3', auth: this.oauth2Client });
+  private buildOAuth2ClientWithRefresh(tokens: GoogleTokens, userId: string) {
+    const client = this.buildOAuth2Client();
+    client.setCredentials(tokens);
+    client.on('tokens', async (newTokens) => {
+      if (newTokens.access_token) {
+        await updateUserSettingsById(userId, {
+          google_access_token: newTokens.access_token,
+          ...(newTokens.refresh_token && { google_refresh_token: newTokens.refresh_token }),
+          ...(newTokens.expiry_date && {
+            google_token_expiry: new Date(newTokens.expiry_date).toISOString(),
+          }),
+        }).catch((err) =>
+          logger.error('[GoogleCalendar] Error persisting refreshed token:', err)
+        );
+      }
+    });
+    return client;
+  }
 
-      // Calcular hora de fin
+  /**
+   * Crea un evento en Google Calendar para una sesión.
+   * Pasa userId para que el token refrescado se persista automáticamente.
+   */
+  async createEventForSession(
+    tokens: GoogleTokens,
+    session: Session,
+    userId?: string
+  ): Promise<string | null> {
+    try {
+      const oauth2Client = userId
+        ? this.buildOAuth2ClientWithRefresh(tokens, userId)
+        : (() => { const c = this.buildOAuth2Client(); c.setCredentials(tokens); return c; })();
+
+      const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
       const startDate = new Date(session.scheduled_at);
       const endDate = new Date(startDate.getTime() + session.duration * 60 * 1000);
 
@@ -52,7 +82,7 @@ export class GoogleCalendarService {
             dateTime: endDate.toISOString(),
             timeZone: 'America/Argentina/Buenos_Aires',
           },
-          colorId: '9', // Azul en Google Calendar
+          colorId: '9',
         },
       });
 
@@ -68,8 +98,9 @@ export class GoogleCalendarService {
    */
   async deleteEvent(tokens: GoogleTokens, eventId: string): Promise<boolean> {
     try {
-      this.oauth2Client.setCredentials(tokens);
-      const calendar = google.calendar({ version: 'v3', auth: this.oauth2Client });
+      const oauth2Client = this.buildOAuth2Client();
+      oauth2Client.setCredentials(tokens);
+      const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
       await calendar.events.delete({
         calendarId: 'primary',
@@ -84,7 +115,8 @@ export class GoogleCalendarService {
   }
 
   /**
-   * Sincroniza todas las sesiones pendientes de un usuario a Google Calendar
+   * Sincroniza todas las sesiones pendientes de un usuario a Google Calendar.
+   * Usa un único oauth2Client con token refresh para toda la operación.
    */
   async syncSessions(userId: string): Promise<{ synced: number; errors: number }> {
     const tokens = await getGoogleTokens(userId);
@@ -110,7 +142,7 @@ export class GoogleCalendarService {
         subject: { name: session.subject?.name || 'Sin materia' },
         number: session.number || 1,
       };
-      const eventId = await this.createEventForSession(tokens, mappedSession);
+      const eventId = await this.createEventForSession(tokens, mappedSession, userId);
       if (eventId) {
         synced++;
         await updateSessionGoogleEventId(session.id, eventId);
@@ -128,7 +160,7 @@ export class GoogleCalendarService {
   isTokenValid(tokens: GoogleTokens): boolean {
     if (!tokens.access_token) return false;
     if (tokens.expiry_date && tokens.expiry_date < Date.now()) {
-      return false; // Token expirado
+      return false;
     }
     return true;
   }
@@ -142,8 +174,9 @@ export class GoogleCalendarService {
     endDateTime: Date
   ): Promise<boolean> {
     try {
-      this.oauth2Client.setCredentials(tokens);
-      const calendar = google.calendar({ version: 'v3', auth: this.oauth2Client });
+      const oauth2Client = this.buildOAuth2Client();
+      oauth2Client.setCredentials(tokens);
+      const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
       const response = await calendar.events.list({
         calendarId: 'primary',
@@ -156,7 +189,7 @@ export class GoogleCalendarService {
       return events.length > 0;
     } catch (error) {
       logger.error('[GoogleCalendar] Error checking conflicts:', error);
-      return false; // En caso de error, asumir que no hay conflictos
+      return false;
     }
   }
 
@@ -169,8 +202,9 @@ export class GoogleCalendarService {
     endDateTime: Date
   ): Promise<Array<{ start: Date; end: Date; summary: string }>> {
     try {
-      this.oauth2Client.setCredentials(tokens);
-      const calendar = google.calendar({ version: 'v3', auth: this.oauth2Client });
+      const oauth2Client = this.buildOAuth2Client();
+      oauth2Client.setCredentials(tokens);
+      const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
       const response = await calendar.events.list({
         calendarId: 'primary',
@@ -181,7 +215,7 @@ export class GoogleCalendarService {
       });
 
       const items = response.data.items || [];
-      
+
       return items
         .filter(item => item.start?.dateTime && item.end?.dateTime)
         .map(item => ({
@@ -209,18 +243,19 @@ export class GoogleCalendarService {
     }
   ): Promise<boolean> {
     try {
-      this.oauth2Client.setCredentials(tokens);
-      const calendar = google.calendar({ version: 'v3', auth: this.oauth2Client });
+      const oauth2Client = this.buildOAuth2Client();
+      oauth2Client.setCredentials(tokens);
+      const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
-      const requestBody: { summary?: string; colorId?: string; start?: { dateTime: string; timeZone: string }; end?: { dateTime: string; timeZone: string } } = {};
+      const requestBody: {
+        summary?: string;
+        colorId?: string;
+        start?: { dateTime: string; timeZone: string };
+        end?: { dateTime: string; timeZone: string };
+      } = {};
 
-      if (updates.summary) {
-        requestBody.summary = updates.summary;
-      }
-
-      if (updates.colorId) {
-        requestBody.colorId = updates.colorId;
-      }
+      if (updates.summary) requestBody.summary = updates.summary;
+      if (updates.colorId) requestBody.colorId = updates.colorId;
 
       if (updates.startDateTime && updates.endDateTime) {
         requestBody.start = {

@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { generateSessionsForTopic } from '@/lib/services/session-generator';
 import { logger } from '@/lib/utils/logger';
+import { findAvailabilityByUserId } from '@/lib/repositories/availability.repository';
+import { findUserSettings } from '@/lib/repositories/user-settings.repository';
 import {
   findUpcomingSessions,
   findTodaySessions,
@@ -335,7 +337,20 @@ export async function generateSessions(topicId: string) {
   }
 
   try {
-    const sessionsToCreate = await generateSessionsForTopic(topic, exam, user.id);
+    const [availabilitySlots, userSettings] = await Promise.all([
+      findAvailabilityByUserId(user.id),
+      findUserSettings(user.id),
+    ]);
+
+    const studyHours = {
+      startHour: userSettings?.study_start_hour?.substring(0, 5) ?? '08:00',
+      endHour: userSettings?.study_end_hour?.substring(0, 5) ?? '23:00',
+    };
+
+    const sessionsToCreate = await generateSessionsForTopic(topic, exam, user.id, {
+      availabilitySlots,
+      studyHours,
+    });
 
     const { error: insertError } = await insertSessions(sessionsToCreate);
 

@@ -19,7 +19,9 @@ const SHIFT_TEMPLATES: Record<Shift, { start: string; end: string }> = {
 
 export async function saveOnboardingAvailability(
   shifts: Shift[],
-  includeWeekends: boolean
+  includeWeekends: boolean,
+  studyStartHour?: string,
+  studyEndHour?: string,
 ) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -66,6 +68,8 @@ export async function saveOnboardingAvailability(
     telegram_notifications: false,
     in_app_notifications: true,
     daily_summary_time: '08:00:00',
+    study_start_hour: studyStartHour ? `${studyStartHour}:00` : '08:00:00',
+    study_end_hour: studyEndHour ? `${studyEndHour}:00` : '23:00:00',
   });
 
   if (settingsResult.error) {

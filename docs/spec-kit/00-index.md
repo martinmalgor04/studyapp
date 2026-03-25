@@ -30,6 +30,7 @@
 | [Error Handling](./ERROR_HANDLING.md) | Error boundaries y loading states | ✅ Implementado |
 | [CI/CD Deployment](./CICD_DEPLOYMENT.md) | GitHub Actions y automatización | ✅ Implementado |
 | [E2E Testing](./E2E_TESTING.md) | Tests E2E + Manual Testing Checklist | 🟡 Parcial |
+| [Testing Guide](./TESTING.md) | Guía completa: unit, integration y E2E | ✅ Completo |
 
 
 ---

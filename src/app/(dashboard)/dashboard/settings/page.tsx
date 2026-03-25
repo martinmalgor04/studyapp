@@ -95,6 +95,8 @@ export default function SettingsPage() {
       telegram_notifications: settings.telegram_notifications ?? undefined,
       in_app_notifications: settings.in_app_notifications ?? undefined,
       daily_summary_time: settings.daily_summary_time ?? undefined,
+      study_start_hour: settings.study_start_hour ?? undefined,
+      study_end_hour: settings.study_end_hour ?? undefined,
     });
 
     if (result.error) {
@@ -231,6 +233,42 @@ export default function SettingsPage() {
                 onChange={(e) => handleTimeChange('daily_summary_time', e.target.value + ':00')}
                 className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Study Hours Range */}
+        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-100 flex-shrink-0">
+              <svg className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="mb-1 text-base font-semibold text-gray-900">Horario de estudio</h3>
+              <p className="mb-3 text-sm text-gray-600">Las sesiones se programarán dentro de este rango</p>
+              <div className="flex items-center gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Desde</label>
+                  <input
+                    type="time"
+                    value={settings?.study_start_hour?.substring(0, 5) || '08:00'}
+                    onChange={(e) => handleTimeChange('study_start_hour', e.target.value + ':00')}
+                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                  />
+                </div>
+                <span className="mt-5 text-gray-400">-</span>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Hasta</label>
+                  <input
+                    type="time"
+                    value={settings?.study_end_hour?.substring(0, 5) || '23:00'}
+                    onChange={(e) => handleTimeChange('study_end_hour', e.target.value + ':00')}
+                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>

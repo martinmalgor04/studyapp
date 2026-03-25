@@ -539,6 +539,8 @@ export type Database = {
           google_token_expiry: string | null
           in_app_notifications: boolean | null
           onboarding_completed: boolean | null
+          study_end_hour: string | null
+          study_start_hour: string | null
           telegram_notifications: boolean | null
           updated_at: string | null
           user_id: string
@@ -554,6 +556,8 @@ export type Database = {
           google_token_expiry?: string | null
           in_app_notifications?: boolean | null
           onboarding_completed?: boolean | null
+          study_end_hour?: string | null
+          study_start_hour?: string | null
           telegram_notifications?: boolean | null
           updated_at?: string | null
           user_id: string
@@ -569,6 +573,8 @@ export type Database = {
           google_token_expiry?: string | null
           in_app_notifications?: boolean | null
           onboarding_completed?: boolean | null
+          study_end_hour?: string | null
+          study_start_hour?: string | null
           telegram_notifications?: boolean | null
           updated_at?: string | null
           user_id?: string
