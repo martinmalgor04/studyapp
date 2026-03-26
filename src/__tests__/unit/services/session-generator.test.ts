@@ -169,13 +169,13 @@ describe('UC-006: Session Generator', () => {
         });
       });
 
-      it('should set default time to 9:00 AM', async () => {
+      it('should set default time to 09:00 Argentina (12:00 UTC) when no availability provided', async () => {
         const sessions = await generateSessionsForTopic(baseTopic, parcialExam, 'user-1');
 
         sessions.forEach((session) => {
           const date = new Date(session.scheduled_at);
-          expect(date.getHours()).toBe(9);
-          expect(date.getMinutes()).toBe(0);
+          expect(date.getUTCHours()).toBe(12);
+          expect(date.getUTCMinutes()).toBe(0);
         });
       });
     });

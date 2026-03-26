@@ -10,6 +10,23 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(() => mockSupabaseClient),
 }));
 
+// Mock repositories used by generateSessions action
+vi.mock('@/lib/repositories/availability.repository', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@/lib/repositories/availability.repository')>();
+  return {
+    ...original,
+    findAvailabilityByUserId: vi.fn(() => []),
+  };
+});
+
+vi.mock('@/lib/repositories/user-settings.repository', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@/lib/repositories/user-settings.repository')>();
+  return {
+    ...original,
+    findUserSettings: vi.fn(() => null),
+  };
+});
+
 // Mock de session generator
 vi.mock('@/lib/services/session-generator', () => ({
   generateSessionsForTopic: vi.fn(() => [
@@ -118,11 +135,15 @@ describe('Integration: Topic → Session Generation Flow', () => {
       expect(result.success).toBe(true);
       expect(result.count).toBe(2);
 
-      // Verificar que se llamó al generator
+      // Verificar que se llamó al generator con options de availability
       expect(generateSessionsForTopic).toHaveBeenCalledWith(
         mockTopic,
         mockExam,
-        'user-1'
+        'user-1',
+        expect.objectContaining({
+          availabilitySlots: expect.any(Array),
+          studyHours: expect.any(Object),
+        })
       );
 
       // Verificar que se insertaron las sesiones
@@ -236,7 +257,15 @@ describe('Integration: Topic → Session Generation Flow', () => {
       const result = await generateSessions('topic-1');
 
       expect(result.success).toBe(true);
-      expect(generateSessionsForTopic).toHaveBeenCalledWith(mockTopic, null, 'user-1');
+      expect(generateSessionsForTopic).toHaveBeenCalledWith(
+        mockTopic,
+        null,
+        'user-1',
+        expect.objectContaining({
+          availabilitySlots: expect.any(Array),
+          studyHours: expect.any(Object),
+        })
+      );
     });
   });
 });
