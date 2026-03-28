@@ -89,7 +89,8 @@ describe('Integration: Topic → Session Generation Flow', () => {
 
       const mockExam = {
         id: 'exam-1',
-        type: 'PARCIAL_THEORY',
+        category: 'PARCIAL',
+        modality: 'THEORY',
         date: '2026-02-28',
       };
 

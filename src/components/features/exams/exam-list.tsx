@@ -1,10 +1,11 @@
 import { ExamCard } from './exam-card';
-import type { ExamType } from '@/lib/validations/exams';
+import type { ExamCategory, ExamModality } from '@/lib/validations/exams';
 
 interface ExamListProps {
   exams: Array<{
     id: string;
-    type: ExamType;
+    category: ExamCategory;
+    modality: ExamModality;
     number: number | null;
     date: string;
     description: string | null;

@@ -41,13 +41,15 @@ describe('UC-006: Session Generator', () => {
     const parcialExam = {
       id: 'exam-1',
       date: '2026-02-28',
-      type: 'PARCIAL_THEORY',
+      category: 'PARCIAL',
+      modality: 'THEORY',
     };
 
     const finalExam = {
       id: 'exam-2',
       date: '2026-03-15',
-      type: 'FINAL_THEORY',
+      category: 'FINAL',
+      modality: 'THEORY',
     };
 
     describe('Input Validation', () => {
@@ -71,8 +73,8 @@ describe('UC-006: Session Generator', () => {
         );
       });
 
-      it('should generate PARCIAL mode for PARCIAL_PRACTICE exam', async () => {
-        const exam = { ...parcialExam, type: 'PARCIAL_PRACTICE' };
+      it('should generate PARCIAL mode for PARCIAL PRACTICE exam', async () => {
+        const exam = { ...parcialExam, category: 'PARCIAL', modality: 'PRACTICE' };
         const sessions = await generateSessionsForTopic(baseTopic, exam, 'user-1');
 
         expect(sessions).toHaveLength(4);
@@ -81,8 +83,8 @@ describe('UC-006: Session Generator', () => {
         );
       });
 
-      it('should generate PARCIAL mode for RECUPERATORIO_THEORY exam', async () => {
-        const exam = { ...parcialExam, type: 'RECUPERATORIO_THEORY' };
+      it('should generate PARCIAL mode for RECUPERATORIO exam', async () => {
+        const exam = { ...parcialExam, category: 'RECUPERATORIO', modality: 'THEORY' };
         const sessions = await generateSessionsForTopic(baseTopic, exam, 'user-1');
 
         expect(sessions).toHaveLength(4);
@@ -101,8 +103,8 @@ describe('UC-006: Session Generator', () => {
         );
       });
 
-      it('should generate COUNTDOWN mode for FINAL_PRACTICE exam', async () => {
-        const exam = { ...finalExam, type: 'FINAL_PRACTICE' };
+      it('should generate COUNTDOWN mode for FINAL PRACTICE exam', async () => {
+        const exam = { ...finalExam, category: 'FINAL', modality: 'PRACTICE' };
         const topic = { ...baseTopic, exam_id: exam.id };
         const sessions = await generateSessionsForTopic(topic, exam, 'user-1');
 

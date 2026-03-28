@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { completeSessionWithRating } from '@/lib/actions/sessions';
 import { CompleteSessionDialog } from '@/components/features/sessions/complete-session-dialog';
+import { formatExamShortLabel, formatExamLabel, type ExamCategory, type ExamModality } from '@/lib/validations/exams';
 
 interface Session {
   id: string;
@@ -23,7 +24,8 @@ interface Session {
 
 interface Exam {
   id: string;
-  type: string;
+  category: string;
+  modality: string;
   number: number | null;
   date: string;
   description: string | null;
@@ -475,7 +477,7 @@ export function UnifiedCalendar({
                         <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                         </svg>
-                        <span>{exam.type.includes('FINAL') ? 'Final' : `P${exam.number}`}</span>
+                        <span>{formatExamShortLabel(exam.category as ExamCategory, exam.number)}</span>
                       </div>
                     ))}
                   </div>
@@ -502,6 +504,17 @@ export function UnifiedCalendar({
             );
           })}
         </div>
+
+        {/* Complete Session Dialog (week / 2weeks) */}
+        <CompleteSessionDialog
+          isOpen={showCompleteDialog}
+          session={sessionToComplete}
+          onComplete={handleCompleteWithRating}
+          onClose={() => {
+            setShowCompleteDialog(false);
+            setSessionToComplete(null);
+          }}
+        />
       </div>
     );
   }
@@ -619,12 +632,12 @@ export function UnifiedCalendar({
                   <div
                     key={exam.id}
                     className={`rounded border px-2 py-1 text-xs font-medium mb-1 flex items-center gap-1 ${getExamColor(exam.date)}`}
-                    title={`${exam.type}${exam.number ? ` ${exam.number}` : ''}`}
+                    title={formatExamLabel(exam.category as ExamCategory, exam.modality as ExamModality) + (exam.number ? ` ${exam.number}` : '')}
                   >
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
-                    <span>{exam.type.includes('FINAL') ? 'Final' : `P${exam.number}`}</span>
+                    <span>{formatExamShortLabel(exam.category as ExamCategory, exam.number)}</span>
                   </div>
                 ))}
                 

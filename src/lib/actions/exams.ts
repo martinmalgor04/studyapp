@@ -64,7 +64,8 @@ export async function createExam(input: CreateExamInput) {
 
   const result = await insertExam({
     subject_id: validationResult.data.subject_id,
-    type: validationResult.data.type,
+    category: validationResult.data.category,
+    modality: validationResult.data.modality,
     number: validationResult.data.number,
     date: validationResult.data.date,
     description: validationResult.data.description,
@@ -76,7 +77,7 @@ export async function createExam(input: CreateExamInput) {
 
   const data = result.data!;
 
-  if (data.type.startsWith('FINAL_')) {
+  if (data.category === 'FINAL') {
     await convertTopicsToFinal(data.id, data.subject_id);
     await updateSubjectStatusById(data.subject_id, 'REGULAR');
   }

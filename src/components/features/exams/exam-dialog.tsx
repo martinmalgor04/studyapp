@@ -1,7 +1,7 @@
 'use client';
 
 import { ExamForm } from './exam-form';
-import type { ExamType } from '@/lib/validations/exams';
+import type { ExamCategory, ExamModality } from '@/lib/validations/exams';
 
 interface ExamDialogProps {
   isOpen: boolean;
@@ -9,7 +9,8 @@ interface ExamDialogProps {
   subjectId: string;
   exam?: {
     id: string;
-    type: ExamType;
+    category: ExamCategory;
+    modality: ExamModality;
     number: number | null;
     date: string;
     description: string | null;

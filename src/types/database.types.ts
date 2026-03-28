@@ -96,33 +96,36 @@ export type Database = {
       }
       exams: {
         Row: {
+          category: Database["public"]["Enums"]["exam_category"]
           created_at: string | null
           date: string
           description: string | null
           id: string
+          modality: Database["public"]["Enums"]["exam_modality"]
           number: number | null
           subject_id: string
-          type: Database["public"]["Enums"]["exam_type"]
           updated_at: string | null
         }
         Insert: {
+          category: Database["public"]["Enums"]["exam_category"]
           created_at?: string | null
           date: string
           description?: string | null
           id?: string
+          modality?: Database["public"]["Enums"]["exam_modality"]
           number?: number | null
           subject_id: string
-          type: Database["public"]["Enums"]["exam_type"]
           updated_at?: string | null
         }
         Update: {
+          category?: Database["public"]["Enums"]["exam_category"]
           created_at?: string | null
           date?: string
           description?: string | null
           id?: string
+          modality?: Database["public"]["Enums"]["exam_modality"]
           number?: number | null
           subject_id?: string
-          type?: Database["public"]["Enums"]["exam_type"]
           updated_at?: string | null
         }
         Relationships: [
@@ -667,14 +670,8 @@ export type Database = {
     }
     Enums: {
       difficulty: "EASY" | "MEDIUM" | "HARD"
-      exam_type:
-        | "PARCIAL_THEORY"
-        | "PARCIAL_PRACTICE"
-        | "RECUPERATORIO_THEORY"
-        | "RECUPERATORIO_PRACTICE"
-        | "FINAL_THEORY"
-        | "FINAL_PRACTICE"
-        | "TP"
+      exam_category: "PARCIAL" | "RECUPERATORIO" | "FINAL" | "TP"
+      exam_modality: "THEORY" | "PRACTICE" | "THEORY_PRACTICE"
       notification_type:
         | "SESSION_REMINDER"
         | "EXAM_APPROACHING"

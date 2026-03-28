@@ -6,26 +6,21 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { createExam, updateExam } from '@/lib/actions/exams';
 import {
   createExamSchema,
-  examTypes,
+  examCategories,
+  examModalities,
+  CATEGORY_LABELS,
+  MODALITY_LABELS,
   type CreateExamInput,
-  type ExamType,
+  type ExamCategory,
+  type ExamModality,
 } from '@/lib/validations/exams';
-
-const EXAM_TYPE_LABELS: Record<ExamType, string> = {
-  PARCIAL_THEORY: 'Parcial Teórico',
-  PARCIAL_PRACTICE: 'Parcial Práctico',
-  RECUPERATORIO_THEORY: 'Recuperatorio Teórico',
-  RECUPERATORIO_PRACTICE: 'Recuperatorio Práctico',
-  FINAL_THEORY: 'Final Teórico',
-  FINAL_PRACTICE: 'Final Práctico',
-  TP: 'Trabajo Práctico',
-};
 
 interface ExamFormProps {
   subjectId: string;
   exam?: {
     id: string;
-    type: ExamType;
+    category: ExamCategory;
+    modality: ExamModality;
     number: number | null;
     date: string;
     description: string | null;
@@ -45,22 +40,28 @@ export function ExamForm({ subjectId, exam, onSuccess, onCancel }: ExamFormProps
     resolver: zodResolver(createExamSchema),
     defaultValues: {
       subject_id: subjectId,
-      type: exam?.type || 'PARCIAL_THEORY',
+      category: exam?.category || 'PARCIAL',
+      modality: exam?.modality || 'THEORY_PRACTICE',
       number: exam?.number || undefined,
       date: exam?.date ? new Date(exam.date).toISOString().split('T')[0] : '',
       description: exam?.description || '',
     },
   });
 
-  const selectedType = watch('type');
+  const selectedCategory = watch('category');
   const showNumberField =
-    selectedType &&
-    (selectedType.includes('PARCIAL') || selectedType.includes('RECUPERATORIO'));
+    selectedCategory === 'PARCIAL' || selectedCategory === 'RECUPERATORIO';
+  const showModalityField = selectedCategory !== 'TP';
 
   const onSubmit = async (data: CreateExamInput) => {
     setError(null);
 
-    const result = exam ? await updateExam(exam.id, data) : await createExam(data);
+    const payload = {
+      ...data,
+      modality: data.category === 'TP' ? ('PRACTICE' as const) : data.modality,
+    };
+
+    const result = exam ? await updateExam(exam.id, payload) : await createExam(payload);
 
     if (result.error) {
       setError(result.error);
@@ -78,22 +79,42 @@ export function ExamForm({ subjectId, exam, onSuccess, onCancel }: ExamFormProps
       )}
 
       <div>
-        <label htmlFor="type" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="category" className="block text-sm font-medium text-gray-700">
           Tipo de Examen
         </label>
         <select
-          id="type"
-          {...register('type')}
+          id="category"
+          {...register('category')}
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
         >
-          {examTypes.map((type) => (
-            <option key={type} value={type}>
-              {EXAM_TYPE_LABELS[type]}
+          {examCategories.map((cat) => (
+            <option key={cat} value={cat}>
+              {CATEGORY_LABELS[cat]}
             </option>
           ))}
         </select>
-        {errors.type && <p className="mt-1 text-sm text-red-600">{errors.type.message}</p>}
+        {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category.message}</p>}
       </div>
+
+      {showModalityField && (
+        <div>
+          <label htmlFor="modality" className="block text-sm font-medium text-gray-700">
+            Modalidad
+          </label>
+          <select
+            id="modality"
+            {...register('modality')}
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+          >
+            {examModalities.map((mod) => (
+              <option key={mod} value={mod}>
+                {MODALITY_LABELS[mod]}
+              </option>
+            ))}
+          </select>
+          {errors.modality && <p className="mt-1 text-sm text-red-600">{errors.modality.message}</p>}
+        </div>
+      )}
 
       {showNumberField && (
         <div>

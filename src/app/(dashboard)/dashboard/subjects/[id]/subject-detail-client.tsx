@@ -19,7 +19,8 @@ interface SubjectRow {
 interface ExamRow {
   id: string;
   date: string;
-  type: 'PARCIAL_THEORY' | 'FINAL_THEORY' | 'PARCIAL_PRACTICE' | 'RECUPERATORIO_THEORY' | 'RECUPERATORIO_PRACTICE' | 'FINAL_PRACTICE' | 'TP';
+  category: 'PARCIAL' | 'RECUPERATORIO' | 'FINAL' | 'TP';
+  modality: 'THEORY' | 'PRACTICE' | 'THEORY_PRACTICE';
   number: number | null;
   description: string | null;
 }

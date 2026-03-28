@@ -84,10 +84,11 @@ test.describe('UC-004: Create Exam', () => {
     await page.click('text=Nuevo Examen');
     
     // Wait for form
-    await page.waitForSelector('select[name="type"]', { timeout: 10000 });
+    await page.waitForSelector('select[name="category"]', { timeout: 10000 });
     
     // Fill exam form
-    await page.selectOption('select[name="type"]', 'PARCIAL_THEORY');
+    await page.selectOption('select[name="category"]', 'PARCIAL');
+    await page.selectOption('select[name="modality"]', 'THEORY');
     
     // Set date (30 days from now)
     const futureDate = new Date();
@@ -101,7 +102,7 @@ test.describe('UC-004: Create Exam', () => {
     await page.click('button[type="submit"]');
     
     // Verify exam appears
-    await expect(page.locator('text=Parcial 1')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=Parcial Teórico 1')).toBeVisible({ timeout: 10000 });
   });
 
   test('should create a final exam', async ({ authenticatedPage: page }) => {
@@ -114,10 +115,11 @@ test.describe('UC-004: Create Exam', () => {
     
     await page.waitForLoadState('networkidle');
     await page.click('text=Nuevo Examen');
-    await page.waitForSelector('select[name="type"]');
+    await page.waitForSelector('select[name="category"]');
     
     // Create FINAL exam
-    await page.selectOption('select[name="type"]', 'FINAL_THEORY');
+    await page.selectOption('select[name="category"]', 'FINAL');
+    await page.selectOption('select[name="modality"]', 'THEORY');
     
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 60);

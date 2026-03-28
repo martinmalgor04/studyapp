@@ -8,6 +8,7 @@ import { createTopic } from '@/lib/actions/topics';
 import { createSubject } from '@/lib/actions/subjects';
 import { getExamsBySubject } from '@/lib/actions/exams';
 import { difficulties, topicSources, type Difficulty, type TopicSource } from '@/lib/validations/topics';
+import { formatExamLabel, type ExamCategory, type ExamModality } from '@/lib/validations/exams';
 
 const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   EASY: 'Fácil',
@@ -59,7 +60,7 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
   const [newSubjectName, setNewSubjectName] = useState('');
   const [isCreatingSubject, setIsCreatingSubject] = useState(false);
   const [createdSubjects, setCreatedSubjects] = useState<Array<{ id: string; name: string }>>([]);
-  const [examsForSubject, setExamsForSubject] = useState<Array<{ id: string; type: string; number: number | null; date: string }>>([]);
+  const [examsForSubject, setExamsForSubject] = useState<Array<{ id: string; category: string; modality: string; number: number | null; date: string }>>([]);
 
   // Combinar materias existentes con las creadas localmente
   const allSubjects = [...subjects, ...createdSubjects];
@@ -313,7 +314,7 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
               <option value="">Sin examen asignado</option>
               {examsForSubject.map((exam) => (
                 <option key={exam.id} value={exam.id}>
-                  {exam.type} {exam.number != null ? `${exam.number}` : ''} -{' '}
+                  {formatExamLabel(exam.category as ExamCategory, exam.modality as ExamModality)} {exam.number != null ? `${exam.number}` : ''} -{' '}
                   {new Date(exam.date).toLocaleDateString('es-AR')}
                 </option>
               ))}

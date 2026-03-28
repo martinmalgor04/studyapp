@@ -7,7 +7,7 @@ interface TopicDialogProps {
   isOpen: boolean;
   onClose: () => void;
   subjectId: string;
-  exams: Array<{ id: string; type: string; number: number | null; date: string }>;
+  exams: Array<{ id: string; category: string; modality: string; number: number | null; date: string }>;
   topic?: {
     id: string;
     name: string;

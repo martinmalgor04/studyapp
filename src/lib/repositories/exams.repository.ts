@@ -225,10 +225,10 @@ export async function findExamsBySubjectIds(subjectIds: string[]): Promise<ExamR
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('exams')
-    .select('id, date, subject_id, type')
+    .select('id, date, subject_id, category, modality')
     .in('subject_id', subjectIds);
   if (error) {
-    logger.error('Error fetching exams by subject IDs:', error);
+    logger.error('Error fetching exams by subject IDs:', JSON.stringify(error), 'message:', error.message, 'code:', error.code, 'details:', error.details, 'hint:', error.hint);
     return [];
   }
   return (data ?? []) as ExamRow[];

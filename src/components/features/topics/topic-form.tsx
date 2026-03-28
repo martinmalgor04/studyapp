@@ -12,6 +12,7 @@ import {
   type Difficulty,
   type TopicSource,
 } from '@/lib/validations/topics';
+import { formatExamLabel, type ExamCategory, type ExamModality } from '@/lib/validations/exams';
 
 const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   EASY: 'Fácil',
@@ -25,23 +26,18 @@ const SOURCE_LABELS: Record<TopicSource, string> = {
   PROGRAM: 'Programa',
 };
 
-// Función para detectar si debe activarse el modo automático de Estudio Libre
-function isAutoFreeStudyMode(exams: Array<{ type: string; date: string }>) {
+function isAutoFreeStudyMode(exams: Array<{ category: string; date: string }>) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  const finals = exams.filter(e => e.type.startsWith('FINAL_'));
+  const finals = exams.filter(e => e.category === 'FINAL');
   const parciales = exams.filter(e => 
-    e.type.startsWith('PARCIAL_') || e.type.startsWith('RECUPERATORIO_')
+    e.category === 'PARCIAL' || e.category === 'RECUPERATORIO'
   );
   
-  // Debe tener al menos un Final
   if (finals.length === 0) return false;
-  
-  // Si no hay parciales, está en modo auto
   if (parciales.length === 0) return true;
   
-  // Si todos los parciales ya pasaron, está en modo auto
   const allParcialsPassed = parciales.every(p => {
     const examDate = new Date(p.date);
     examDate.setHours(0, 0, 0, 0);
@@ -53,7 +49,7 @@ function isAutoFreeStudyMode(exams: Array<{ type: string; date: string }>) {
 
 interface TopicFormProps {
   subjectId: string;
-  exams: Array<{ id: string; type: string; number: number | null; date: string }>;
+  exams: Array<{ id: string; category: string; modality: string; number: number | null; date: string }>;
   topic?: {
     id: string;
     name: string;
@@ -71,7 +67,7 @@ interface TopicFormProps {
 export function TopicForm({ subjectId, exams, topic, onSuccess, onCancel }: TopicFormProps) {
   // Detectar modo automático (solo para temas nuevos, no para edición)
   const isAutoMode = !topic && isAutoFreeStudyMode(exams);
-  const autoFinalExam = isAutoMode ? exams.find(e => e.type.startsWith('FINAL_')) : null;
+  const autoFinalExam = isAutoMode ? exams.find(e => e.category === 'FINAL') : null;
   
   const [error, setError] = useState<string | null>(null);
   const {
@@ -115,7 +111,7 @@ export function TopicForm({ subjectId, exams, topic, onSuccess, onCancel }: Topi
     if (data.exam_id) {
       const exam = exams.find((e) => e.id === data.exam_id);
 
-      if (exam && exam.type.startsWith('FINAL_')) {
+      if (exam && exam.category === 'FINAL') {
         const today = new Date();
         const examDate = new Date(exam.date);
         const daysToExam = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
@@ -164,7 +160,7 @@ export function TopicForm({ subjectId, exams, topic, onSuccess, onCancel }: Topi
                   <strong> Estudio Libre</strong> y se asociará al final:
                 </p>
                 <p className="mt-1 font-medium">
-                  {autoFinalExam.type} - {new Date(autoFinalExam.date).toLocaleDateString('es-AR')}
+                  {formatExamLabel(autoFinalExam.category as ExamCategory, autoFinalExam.modality as ExamModality)} - {new Date(autoFinalExam.date).toLocaleDateString('es-AR')}
                 </p>
               </div>
             </div>
@@ -275,7 +271,7 @@ export function TopicForm({ subjectId, exams, topic, onSuccess, onCancel }: Topi
             <option value="">Sin examen asignado</option>
             {exams.map((exam) => (
               <option key={exam.id} value={exam.id}>
-                {exam.type} {exam.number ? `${exam.number}` : ''} -{' '}
+                {formatExamLabel(exam.category as ExamCategory, exam.modality as ExamModality)} {exam.number ? `${exam.number}` : ''} -{' '}
                 {new Date(exam.date).toLocaleDateString('es-AR')}
               </option>
             ))}

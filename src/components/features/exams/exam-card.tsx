@@ -1,30 +1,16 @@
 import { deleteExam } from '@/lib/actions/exams';
-import type { ExamType } from '@/lib/validations/exams';
-
-const EXAM_TYPE_LABELS: Record<ExamType, string> = {
-  PARCIAL_THEORY: 'Parcial Teórico',
-  PARCIAL_PRACTICE: 'Parcial Práctico',
-  RECUPERATORIO_THEORY: 'Recuperatorio Teórico',
-  RECUPERATORIO_PRACTICE: 'Recuperatorio Práctico',
-  FINAL_THEORY: 'Final Teórico',
-  FINAL_PRACTICE: 'Final Práctico',
-  TP: 'Trabajo Práctico',
-};
-
-const EXAM_TYPE_COLORS: Record<ExamType, string> = {
-  PARCIAL_THEORY: 'bg-blue-100 text-blue-800',
-  PARCIAL_PRACTICE: 'bg-green-100 text-green-800',
-  RECUPERATORIO_THEORY: 'bg-yellow-100 text-yellow-800',
-  RECUPERATORIO_PRACTICE: 'bg-orange-100 text-orange-800',
-  FINAL_THEORY: 'bg-purple-100 text-purple-800',
-  FINAL_PRACTICE: 'bg-pink-100 text-pink-800',
-  TP: 'bg-gray-100 text-gray-800',
-};
+import {
+  type ExamCategory,
+  type ExamModality,
+  CATEGORY_COLORS,
+  formatExamLabel,
+} from '@/lib/validations/exams';
 
 interface ExamCardProps {
   exam: {
     id: string;
-    type: ExamType;
+    category: ExamCategory;
+    modality: ExamModality;
     number: number | null;
     date: string;
     description: string | null;
@@ -72,9 +58,9 @@ export function ExamCard({ exam, onEdit, onDelete }: ExamCardProps) {
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <span
-              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${EXAM_TYPE_COLORS[exam.type]}`}
+              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${CATEGORY_COLORS[exam.category]}`}
             >
-              {EXAM_TYPE_LABELS[exam.type]}
+              {formatExamLabel(exam.category, exam.modality)}
               {exam.number && ` ${exam.number}`}
             </span>
             {daysRemaining >= 0 && daysRemaining <= 30 && (

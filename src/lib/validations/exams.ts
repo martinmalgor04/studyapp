@@ -1,22 +1,66 @@
 import { z } from 'zod';
 
-// Enum de tipos de examen (debe coincidir con el enum de la DB)
-export const examTypes = [
-  'PARCIAL_THEORY',
-  'PARCIAL_PRACTICE',
-  'RECUPERATORIO_THEORY',
-  'RECUPERATORIO_PRACTICE',
-  'FINAL_THEORY',
-  'FINAL_PRACTICE',
+export const examCategories = [
+  'PARCIAL',
+  'RECUPERATORIO',
+  'FINAL',
   'TP',
 ] as const;
 
-export type ExamType = (typeof examTypes)[number];
+export const examModalities = [
+  'THEORY',
+  'PRACTICE',
+  'THEORY_PRACTICE',
+] as const;
+
+export type ExamCategory = (typeof examCategories)[number];
+export type ExamModality = (typeof examModalities)[number];
+
+export const CATEGORY_LABELS: Record<ExamCategory, string> = {
+  PARCIAL: 'Parcial',
+  RECUPERATORIO: 'Recuperatorio',
+  FINAL: 'Final',
+  TP: 'Trabajo Práctico',
+};
+
+export const MODALITY_LABELS: Record<ExamModality, string> = {
+  THEORY: 'Teórico',
+  PRACTICE: 'Práctico',
+  THEORY_PRACTICE: 'Teórico-Práctico',
+};
+
+export const CATEGORY_COLORS: Record<ExamCategory, string> = {
+  PARCIAL: 'bg-blue-100 text-blue-800',
+  RECUPERATORIO: 'bg-yellow-100 text-yellow-800',
+  FINAL: 'bg-purple-100 text-purple-800',
+  TP: 'bg-gray-100 text-gray-800',
+};
+
+export function formatExamLabel(category: ExamCategory, modality: ExamModality): string {
+  if (category === 'TP') return CATEGORY_LABELS.TP;
+  return `${CATEGORY_LABELS[category]} ${MODALITY_LABELS[modality]}`;
+}
+
+const SHORT_CATEGORY_PREFIX: Record<ExamCategory, string> = {
+  PARCIAL: 'P',
+  RECUPERATORIO: 'R',
+  FINAL: 'Final',
+  TP: 'TP',
+};
+
+export function formatExamShortLabel(category: ExamCategory, number: number | null): string {
+  const prefix = SHORT_CATEGORY_PREFIX[category];
+  if (category === 'TP' || category === 'FINAL') return prefix;
+  return number != null ? `${prefix}${number}` : prefix;
+}
 
 export const createExamSchema = z.object({
   subject_id: z.string().uuid('ID de materia inválido'),
-  type: z.enum(examTypes, {
-    errorMap: () => ({ message: 'Tipo de examen inválido' }),
+  category: z.enum(examCategories, {
+    errorMap: () => ({ message: 'Categoría de examen inválida' }),
+  }),
+  modality: z.enum(examModalities, {
+    errorMap: () => ({ message: 'Modalidad de examen inválida' }),
   }),
   number: z.number().int().min(1).max(10).optional(),
   date: z.string().min(1, 'La fecha es requerida'),
@@ -26,10 +70,14 @@ export const createExamSchema = z.object({
     .optional()
     .or(z.literal(''))
     .transform((val) => (val === '' ? undefined : val)),
-});
+}).refine(
+  (data) => data.category !== 'TP' || data.modality === 'PRACTICE',
+  { message: 'TP siempre es modalidad práctica', path: ['modality'] },
+);
 
 export const updateExamSchema = z.object({
-  type: z.enum(examTypes).optional(),
+  category: z.enum(examCategories).optional(),
+  modality: z.enum(examModalities).optional(),
   number: z.number().int().min(1).max(10).optional(),
   date: z.string().optional(),
   description: z.string().max(500, 'La descripción no puede exceder 500 caracteres').optional(),

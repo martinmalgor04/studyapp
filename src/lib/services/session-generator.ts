@@ -37,7 +37,8 @@ interface Topic {
 interface Exam {
   id: string;
   date: string;
-  type: string;
+  category: string;
+  modality?: string;
 }
 
 export interface SessionToCreate {
@@ -67,7 +68,7 @@ export interface GenerateSessionsOptions {
 }
 
 function determineMode(exam: Exam | null, source: string): 'PARCIAL' | 'FREE_STUDY' {
-  if (source === 'FREE_STUDY' || (exam && exam.type.startsWith('FINAL_'))) {
+  if (source === 'FREE_STUDY' || (exam && exam.category === 'FINAL')) {
     return 'FREE_STUDY';
   }
   return 'PARCIAL';
@@ -231,7 +232,7 @@ async function generateFreeStudySessions(
       difficulty: topic.difficulty,
       sessionNumber,
       daysToSession,
-      isFinal: exam?.type.startsWith('FINAL_') || false,
+      isFinal: exam?.category === 'FINAL' || false,
     });
 
     const adjusted = slotResult.adjusted || conflictResult?.adjusted || false;
