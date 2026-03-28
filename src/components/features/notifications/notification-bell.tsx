@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { getNotifications, markAllNotificationsAsRead } from '@/lib/actions/notifications';
 import { NotificationItem } from './notification-item';
 
@@ -122,15 +123,13 @@ export function NotificationBell() {
             {/* Footer */}
             {notifications.length > 0 && (
               <div className="border-t border-gray-200 p-3 text-center">
-                <button
-                  onClick={() => {
-                    setIsOpen(false);
-                    // TODO: Navegar a página de notificaciones completa si existe
-                  }}
+                <Link
+                  href="/dashboard/notifications"
+                  onClick={() => setIsOpen(false)}
                   className="text-sm text-blue-600 hover:text-blue-700"
                 >
                   Ver todas las notificaciones
-                </button>
+                </Link>
               </div>
             )}
           </div>

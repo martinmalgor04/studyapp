@@ -11,7 +11,7 @@ interface NotificationItemProps {
     read: boolean;
     created_at: string;
   };
-  onRead?: () => void;
+  onRead?: (id: string) => void;
 }
 
 const NOTIFICATION_COLORS: Record<string, string> = {
@@ -75,7 +75,7 @@ export function NotificationItem({ notification, onRead }: NotificationItemProps
     if (notification.read) return;
     
     await markNotificationAsRead(notification.id);
-    onRead?.();
+    onRead?.(notification.id);
   };
 
   const timeAgo = getTimeAgo(notification.created_at);

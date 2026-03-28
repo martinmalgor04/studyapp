@@ -42,6 +42,68 @@ export async function findNotificationsByUserId(
 }
 
 // ---------------------------------------------------------------------------
+// Filtered + paginated query
+// ---------------------------------------------------------------------------
+
+export interface NotificationFilters {
+  readFilter?: 'all' | 'unread' | 'read';
+  typeFilter?: string | null;
+  limit?: number;
+  offset?: number;
+}
+
+export interface PaginatedNotifications {
+  notifications: NotificationRow[];
+  totalCount: number;
+  unreadCount: number;
+}
+
+export async function findFilteredNotifications(
+  userId: string,
+  filters: NotificationFilters = {},
+): Promise<PaginatedNotifications> {
+  const { readFilter = 'all', typeFilter = null, limit = 20, offset = 0 } = filters;
+  const supabase = await createClient();
+
+  // Base query with count
+  let query = supabase
+    .from('notifications')
+    .select('*', { count: 'exact', head: false })
+    .eq('user_id', userId);
+
+  if (readFilter === 'read') query = query.eq('read', true);
+  else if (readFilter === 'unread') query = query.eq('read', false);
+
+  if (typeFilter) query = query.eq('type', typeFilter as NotificationType);
+
+  query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);
+
+  const { data, error, count } = await query;
+
+  if (error) {
+    logger.error('Error fetching filtered notifications:', error);
+    return { notifications: [], totalCount: 0, unreadCount: 0 };
+  }
+
+  // Separate lightweight query for global unread count (independent of current filters)
+  const { count: unread, error: unreadError } = await supabase
+    .from('notifications')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('read', false);
+
+  if (unreadError) {
+    logger.error('Error fetching unread count:', unreadError);
+  }
+
+  return {
+    notifications: (data ?? []) as NotificationRow[],
+    totalCount: count ?? 0,
+    unreadCount: unread ?? 0,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Mutations
 // ---------------------------------------------------------------------------
 

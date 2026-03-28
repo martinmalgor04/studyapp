@@ -7,9 +7,11 @@ import { getNotificationService } from '@/lib/services/notifications/notificatio
 import type { NotificationPayload } from '@/lib/services/notifications/channels/notification-channel.interface';
 import {
   findNotificationsByUserId,
+  findFilteredNotifications,
   markNotificationRead,
   markAllNotificationsRead,
 } from '@/lib/repositories/notifications.repository';
+import type { NotificationFilters } from '@/lib/repositories/notifications.repository';
 import {
   findUserSettingsOrCreate,
   updateUserSettingsById,
@@ -27,6 +29,21 @@ export async function getNotifications() {
   }
 
   return findNotificationsByUserId(user.id);
+}
+
+/**
+ * Obtiene notificaciones con filtros y paginación.
+ * Pensada para la página /dashboard/notifications.
+ */
+export async function getFilteredNotifications(filters?: NotificationFilters) {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { notifications: [], totalCount: 0, unreadCount: 0 };
+  }
+
+  return findFilteredNotifications(user.id, filters);
 }
 
 /**
