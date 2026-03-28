@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { updateSessionStatus, deleteSession, completeSessionWithRating, startSession } from '@/lib/actions/sessions';
+import { updateSessionStatus, deleteSession, completeSessionWithRating, startSession, createPartialSession, markSessionIncomplete } from '@/lib/actions/sessions';
 import { CompleteSessionDialog } from './complete-session-dialog';
 import { StudyModeDialog } from './study-mode-dialog';
 
@@ -11,7 +11,7 @@ const safeConfirm = (message: string): boolean => {
 };
 
 type Priority = 'CRITICAL' | 'URGENT' | 'IMPORTANT' | 'NORMAL' | 'LOW';
-type SessionStatus = 'PENDING' | 'COMPLETED' | 'RESCHEDULED' | 'ABANDONED';
+type SessionStatus = 'PENDING' | 'COMPLETED' | 'INCOMPLETE' | 'RESCHEDULED' | 'ABANDONED';
 
 interface Session {
   id: string;
@@ -44,6 +44,7 @@ const PRIORITY_CONFIG = {
 const STATUS_CONFIG = {
   PENDING: { bg: 'bg-blue-100', text: 'text-blue-800', label: '⏰ Pendiente' },
   COMPLETED: { bg: 'bg-green-100', text: 'text-green-800', label: '✅ Completada' },
+  INCOMPLETE: { bg: 'bg-purple-100', text: 'text-purple-800', label: '⏸️ Parcial' },
   RESCHEDULED: { bg: 'bg-orange-100', text: 'text-orange-800', label: '🔄 Reagendada' },
   ABANDONED: { bg: 'bg-red-100', text: 'text-red-800', label: '❌ Abandonada' },
 };
@@ -91,21 +92,24 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
   const handleIncompleteFromStudy = async (actualMinutes: number) => {
     setShowStudyMode(false);
     setLoading(true);
-    
-    // Marcar como INCOMPLETE con duración real
-    const result = await updateSessionStatus(session.id, 'INCOMPLETE');
 
-    if (!result.error) {
-      // Ofrecer reagendar el tiempo restante
-      const remaining = duration - actualMinutes;
-      if (remaining > 10 && safeConfirm(`Estudiaste ${actualMinutes} de ${duration} minutos. ¿Querés reagendar los ${remaining} minutos restantes?`)) {
-        // Crear una nueva sesión con el tiempo restante
-        // TODO: Implementar createPartialSession o usar reschedule modificado
-        onReschedule(session);
+    const remaining = duration - actualMinutes;
+    const wantsRemaining = remaining > 10 && safeConfirm(
+      `Estudiaste ${actualMinutes} de ${duration} minutos. ¿Querés crear una sesión con los ${remaining} minutos restantes?`
+    );
+
+    if (wantsRemaining) {
+      const result = await createPartialSession(session.id, actualMinutes);
+      if (!result.error) {
+        onStatusChange();
       }
-      onStatusChange();
+    } else {
+      const result = await markSessionIncomplete(session.id, actualMinutes);
+      if (!result.error) {
+        onStatusChange();
+      }
     }
-    
+
     setLoading(false);
   };
 

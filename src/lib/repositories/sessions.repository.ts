@@ -495,12 +495,12 @@ export async function findTopicWithFullInfo(
 
 export async function findExamByIdForGeneration(
   examId: string,
-): Promise<{ id: string; type: string; date: string } | null> {
+): Promise<{ id: string; category: string; modality: string; date: string } | null> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('exams')
-    .select('id, type, date')
+    .select('id, category, modality, date')
     .eq('id', examId)
     .single();
 
@@ -527,6 +527,43 @@ export async function insertSessions(
   }
 
   return { error: null };
+}
+
+// ---------------------------------------------------------------------------
+// Partial session (remaining time)
+// ---------------------------------------------------------------------------
+
+export interface SessionForPartial {
+  id: string;
+  topic_id: string;
+  subject_id: string;
+  exam_id: string | null;
+  user_id: string;
+  number: number;
+  duration: number;
+  priority: SessionRow['priority'];
+  scheduled_at: string;
+}
+
+export async function findSessionForPartial(
+  id: string,
+  userId: string,
+): Promise<SessionForPartial | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('sessions')
+    .select('id, topic_id, subject_id, exam_id, user_id, number, duration, priority, scheduled_at')
+    .eq('id', id)
+    .eq('user_id', userId)
+    .single();
+
+  if (error) {
+    logger.error('Error fetching session for partial:', error);
+    return null;
+  }
+
+  return data as unknown as SessionForPartial;
 }
 
 // ---------------------------------------------------------------------------

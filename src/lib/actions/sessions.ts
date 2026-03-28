@@ -26,6 +26,7 @@ import {
   findExamByIdForGeneration,
   insertSessions,
   findOverduePendingSessions,
+  findSessionForPartial,
 } from '@/lib/repositories/sessions.repository';
 
 export async function getUpcomingSessions(days = 7) {
@@ -185,6 +186,78 @@ export async function markSessionIncomplete(
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/sessions');
   return { success: true };
+}
+
+const MIN_REMAINING_MINUTES = 10;
+
+export async function createPartialSession(
+  sessionId: string,
+  actualMinutes: number
+): Promise<{ error?: string; success?: boolean; remainingSessionCreated?: boolean }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'No autenticado' };
+  }
+
+  if (actualMinutes <= 0) {
+    return { error: 'La duración real debe ser mayor a 0' };
+  }
+
+  const session = await findSessionForPartial(sessionId, user.id);
+
+  if (!session) {
+    return { error: 'Sesión no encontrada' };
+  }
+
+  if (actualMinutes > session.duration) {
+    return { error: 'La duración real no puede superar la duración planificada' };
+  }
+
+  const { error: incompleteError } = await updateSessionIncomplete(
+    sessionId,
+    user.id,
+    actualMinutes,
+  );
+
+  if (incompleteError) {
+    return { error: incompleteError };
+  }
+
+  const remaining = session.duration - actualMinutes;
+
+  if (remaining < MIN_REMAINING_MINUTES) {
+    revalidatePath('/dashboard');
+    revalidatePath('/dashboard/sessions');
+    return { success: true, remainingSessionCreated: false };
+  }
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(9, 0, 0, 0);
+
+  const { error: insertError } = await insertSessions([{
+    topic_id: session.topic_id,
+    subject_id: session.subject_id,
+    exam_id: session.exam_id,
+    user_id: user.id,
+    number: session.number,
+    duration: remaining,
+    priority: session.priority,
+    scheduled_at: tomorrow.toISOString(),
+    status: 'PENDING',
+  }]);
+
+  if (insertError) {
+    revalidatePath('/dashboard');
+    revalidatePath('/dashboard/sessions');
+    return { error: `Sesión marcada como incompleta, pero falló al crear sesión restante: ${insertError}` };
+  }
+
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/sessions');
+  return { success: true, remainingSessionCreated: true };
 }
 
 export async function rescheduleSession(id: string, newDate: string) {
