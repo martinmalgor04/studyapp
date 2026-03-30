@@ -210,12 +210,12 @@ export async function findSessionsByDateRange(
 export async function findSessionForStatusUpdate(
   id: string,
   userId: string,
-): Promise<{ topic_id: string; scheduled_at: string } | null> {
+): Promise<{ topic_id: string; scheduled_at: string; duration: number } | null> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('sessions')
-    .select('topic_id, scheduled_at')
+    .select('topic_id, scheduled_at, duration')
     .eq('id', id)
     .eq('user_id', userId)
     .single();

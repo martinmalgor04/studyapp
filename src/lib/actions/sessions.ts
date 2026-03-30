@@ -73,8 +73,8 @@ export async function updateSessionStatus(
     return { error: 'No autenticado' };
   }
 
-  let sessionData: { topic_id: string; scheduled_at: string } | null = null;
-  if (status === 'ABANDONED') {
+  let sessionData: { topic_id: string; scheduled_at: string; duration: number } | null = null;
+  if (status === 'ABANDONED' || status === 'COMPLETED') {
     sessionData = await findSessionForStatusUpdate(id, user.id);
   }
 
@@ -92,6 +92,19 @@ export async function updateSessionStatus(
       topicId: sessionData.topic_id,
       reason: 'MANUAL',
       scheduledAt: new Date(sessionData.scheduled_at)
+    });
+  }
+
+  if (status === 'COMPLETED' && sessionData?.topic_id) {
+    const { SessionEventRegistry } = await import('@/lib/services/session-events');
+    await SessionEventRegistry.emitCompleted({
+      sessionId: id,
+      userId: user.id,
+      topicId: sessionData.topic_id,
+      rating: 'NORMAL',
+      actualDuration: null,
+      plannedDuration: sessionData.duration,
+      completedAt: new Date()
     });
   }
 
