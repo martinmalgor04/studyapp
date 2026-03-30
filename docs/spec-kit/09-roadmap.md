@@ -589,8 +589,8 @@ El MVP se considera exitoso si:
 ### Checklist de Acciones Post-Pulido
 
 **Inmediato (antes de Sprint 5):**
-- [ ] Activar `SessionEventRegistry.emitCompleted` en `sessions.ts`
-- [ ] Verificar que `topic_id` esté en el select para eventos
+- [x] Activar `SessionEventRegistry.emitCompleted` en `sessions.ts` ✅ (commit adf6076)
+- [x] Verificar que `topic_id` esté en el select para eventos ✅ (commit adf6076)
 - [ ] Implementar UC-011c UI indicators (badges de conflicto)
 - [ ] Configurar Telegram Bot (si se prioriza notificaciones)
 
@@ -614,7 +614,7 @@ El MVP se considera exitoso si:
 | Sprint 1 | ✅ | 100% | Setup + Auth + Dashboard base |
 | Sprint 2 | ✅ | 100% | CRUD Subjects/Exams/Topics + Session Generator |
 | Sprint 3 | ✅ | 100% | Tracking, Reschedule, Week view |
-| Sprint 4 | ✅ | ~90% | Free Study + Google Calendar (falta UC-011c UI indicators) |
+| Sprint 4 | ✅ | 100% | Free Study + Google Calendar + emitCompleted activado |
 | **Refactoring Arquitectural** | ✅ | **100%** | **4 capas: Repositories + Services puros + Actions + RSC** |
 | Sprint 5 | ⏳ | 0% | Gamificación pendiente |
 | Sprint 6 | ⏳ | 0% | Analytics + Tasks pendiente |
@@ -627,7 +627,7 @@ El MVP se considera exitoso si:
 
 ## Summary
 
-**Estado actual (2026-03-23):** Sprint 1 ✅, Sprint 2 ✅, Sprint 3 ✅, Sprint 4 ✅, **Refactoring Arquitectural ✅**  
+**Estado actual (2026-03-30):** Sprint 1 ✅, Sprint 2 ✅, Sprint 3 ✅, Sprint 4 ✅ (100%), **Refactoring Arquitectural ✅**  
 **Pulido (2026-03-19):** ✅ 0 `as any` (TypeScript strict), ✅ CI/CD GitHub Actions, ✅ Error boundaries, ✅ Security headers, ✅ Logger centralizado, ✅ Google token helper deduplicado, ✅ Aria-labels en nav/notificaciones/sesiones/pomodoro  
 **Refactoring (2026-03-23):** ✅ Capa de Repositories, ✅ Services puros (sin Supabase), ✅ Actions adelgazadas, ✅ RSC para pages, ✅ Helper `getAuthenticatedUser()`
 

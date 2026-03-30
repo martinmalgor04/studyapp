@@ -4,8 +4,8 @@
 ---
 
 ## 🗓 Última actualización
-**Fecha:** 2026-03-21  
-**Actualizado por:** [vos, al retomar]
+**Fecha:** 2026-03-30  
+**Actualizado por:** Cierre sesión — activar emitCompleted en updateSessionStatus [4i]
 
 ---
 
@@ -20,7 +20,7 @@
 | Sprint 1 — Setup + Auth | ✅ | 100% |
 | Sprint 2 — CRUD + Session Generator | ✅ | 100% |
 | Sprint 3 — Tracking + Reschedule + Week View | ✅ | 100% |
-| Sprint 4 — Free Study + Google Calendar | ✅ | ~90% |
+| Sprint 4 — Free Study + Google Calendar | ✅ | 100% |
 | Sprint 5 — Gamificación | ⏳ | 0% |
 | Sprint 6 — Analytics + Tasks | ⏳ | 0% |
 
@@ -28,66 +28,104 @@
 
 ## 🔧 Última sesión de trabajo
 
-**Trabajé en:** [completar al cerrar sesión]  
-**Archivos tocados:** [completar al cerrar sesión]  
-**Quedó a medias:** [completar al cerrar sesión, o "nada"]  
-**Notas:** [algo que el AI hizo distinto a lo esperado, decisiones tomadas]
+**Trabajé en:** [4i] Activar `SessionEventRegistry.emitCompleted` en `updateSessionStatus`  
+
+**Archivos tocados:**
+- `src/lib/actions/sessions.ts` — `emitCompleted` en `updateSessionStatus` para el caso `COMPLETED`
+- `src/lib/repositories/sessions.repository.ts` — `duration` en el select de `findSessionForStatusUpdate`
+
+**Commit:** `adf6076`  
+
+**Quedó a medias:** nada  
+
+**Notas:** Se activó `emitCompleted` en `updateSessionStatus` para el caso `COMPLETED`, alineándolo con `completeSessionWithRating` que ya lo tenía. Se agregó `duration` al select de `findSessionForStatusUpdate`. Cierra Sprint 4 y la integración bidireccional con Google Calendar.
 
 ---
 
-## ✅ Próxima tarea (la de HOY)
+## ✅ Próxima tarea
 
-### UC-011c — Badges de conflicto en UI de sesiones
-**Estimación:** 3h  
-**Prioridad:** 🟠 Media  
-**Estado del backend:** ✅ Funciona — el campo `adjusted_for_conflict` ya existe en la tabla `sessions`
+### [5a] Streaks calculator — Sprint 5 (UC-013)
+**Archivos principales:** `src/lib/services/` (cálculo de rachas + persistencia en `user_stats`), enganche al completar sesión (p. ej. `sessions.ts` o flujo de eventos existente)  
+**Estimación:** 4h  
+**Prioridad:** Alta (entrada Sprint 5)  
+**Estado backend:** pendiente · **Estado UI:** N/A
 
 **Qué hacer:**
-- Mostrar un badge/indicador visual en `session-card.tsx` cuando `adjusted_for_conflict === true`
-- Archivo principal: `src/components/features/sessions/session-card.tsx`
-- El dato ya llega desde `getDashboardData()` en `src/lib/actions/dashboard.ts`
-- No hay que tocar la DB ni el backend
+- Implementar reglas UC-013: racha = días consecutivos con al menos 1 sesión completada; reset si hay un día sin completar; actualizar `current_streak`, `longest_streak`, `last_activity_date` en `user_stats`.
+- Sin UI en esta sub-tarea (5e cubre Gamification UI); foco en servicio puro + mutación/upsert seguro con RLS.
+- Dependencias del backlog: ninguna (5b en adelante apoyan en 5a).
 
 **Prompt sugerido para Cursor:**
+
+```text
+/ship 5a
+
+Implementá [5a] Streaks calculator (UC-013): servicio en lib/services/ que calcule racha al completar sesión, persista en user_stats (current_streak, longest_streak, last_activity_date) según reglas de UC-013 en docs/spec-kit/05-use-cases.md (Track Streaks). Integrá el enganche donde ya se confirma COMPLETED sin duplicar lógica. Al final: pnpm typecheck && pnpm build.
 ```
-Leé CONTEXT.md. Vamos a trabajar en UC-011c: agregar un badge visual en session-card.tsx 
-cuando adjusted_for_conflict sea true. El backend ya funciona, solo es UI. 
-No toques nada fuera de src/components/features/sessions/.
-```
+
+**Uso:** `/ship 5a`
 
 ---
 
-## 📋 Backlog ordenado (próximas tareas después de la de hoy)
+## 📋 Backlog ordenado por sub-sprint
 
-| # | Tarea | Archivo/Área | Tiempo | Notas |
-|---|-------|-------------|--------|-------|
-| 1 | ✅ UC-011c — Badges conflicto UI | `session-card.tsx` | 3h | ← ESTA |
-| 2 | Activar `SessionEventRegistry.emitCompleted` | `src/lib/actions/sessions.ts` | 30 min | Solo descomentar + agregar `topic_id` al select |
-| 3 | UC-011b — Preview Dialog antes de importar disponibilidad | `src/components/features/calendar/` | 2-3h | Backend OK, falta UI de confirmación |
-| 4 | Sprint 5 — Streaks calculator | `src/lib/services/` + nueva tabla | 4h | Primer ítem de gamificación |
-| 5 | Sprint 5 — Points system | `src/lib/services/` | 3h | Después de streaks |
-| 6 | Sprint 5 — Achievements system | `src/lib/services/` + UI | 6h | Depende de streaks + points |
-| 7 | Página `/dashboard/notifications` | `src/app/(dashboard)/notifications/` | 3-4h | Lista completa + "marcar todas leídas" |
-| 8 | Sesión parcial (tiempo restante) | `session-card.tsx` | 2-3h | TODO existente en el archivo |
-| 9 | E2E tests UC-008 y UC-009 | `tests/` | 8-10h | Solo hay E2E hasta UC-007 |
-| 10 | Telegram Notifications | `src/lib/services/notifications/` | 6-8h | Canal implementado, falta bot |
+### Sprint 4 — ✅ Completo
+
+| Sub-sprint | Tarea | Tiempo | Estado |
+|-----------|-------|--------|--------|
+| ~~4f~~ | ~~UC-011c Badges conflicto UI~~ | ~~3h~~ | ✅ Hecho |
+| ~~4g~~ | ~~Sesión parcial (tiempo restante)~~ | ~~2.5h~~ | ✅ Hecho |
+| ~~4h~~ | ~~Página /dashboard/notifications~~ | ~~3.5h~~ | ✅ Hecho |
+| ~~4i~~ | ~~Activar emitCompleted~~ | ~~1h~~ | ✅ Hecho (`adf6076`) |
+
+**Nota:** Sprint 4 al 100%; última pieza fue 4i (Calendar bidireccional al completar vía `updateSessionStatus` + `completeSessionWithRating`).
+
+### Sprint 5 — Gamificación (próxima: 5a)
+
+| Sub-sprint | Tarea | Tiempo | Dependencias |
+|-----------|-------|--------|-------------|
+| **5a** | **Streaks calculator** | **4h** | **Ninguna ← próxima tarea** |
+| 5b | Points system | 3h | Requiere: 5a |
+| 5c | Levels per subject | 5h | Ninguna (paralelo con 5b) |
+| 5d | Achievements system | 6h | Requiere: 5a + 5b |
+| 5e | Gamification UI | 8h | Requiere: 5a + 5b + 5c + 5d |
+
+### Sprint 6 — Analytics + Tasks
+
+| Sub-sprint | Tarea | Tiempo | Dependencias |
+|-----------|-------|--------|-------------|
+| 6a | E2E tests UC-008/009 | 9h | UC-008 + UC-009 ✅ |
+| 6b | Analytics calculator | 6h | Session Tracking + Gamification UI |
+| 6c | Analytics Dashboard UI | 10h | Requiere: 6b |
+| 6d | Tasks CRUD (TPs) | 5h | CRUD Subjects ✅ |
+| 6e | Task tracking | 3h | Requiere: 6d |
+| 6f | Telegram Notifications | 7h | Notifications module ✅ |
+
+### Extras
+
+| Sub-sprint | Tarea | Tiempo |
+|-----------|-------|--------|
+| Ex | Sentry error tracking | 2h |
+| Ex | Vercel Analytics | 1h |
+| Ex | Dark Mode | 6h |
+| Ex | Optimistic updates | 5h |
+| Ex | Keyboard shortcuts | 5h |
+| Ex | Export CSV/PDF | 6h |
+| Ex | Accessibility audit | 8h |
 
 ---
 
 ## ⚠️ NO TOCAR sin leer esto primero
 
-### 1. `SessionEventRegistry.emitCompleted` — está comentado a propósito
-**Dónde:** `src/lib/actions/sessions.ts` → funciones `completeSessionWithRating` y `updateSessionStatus`  
-**Por qué:** El handler `GoogleCalendarEventHandler` está registrado pero el `topic_id` no está en el select actual.  
-**Cuándo activar:** Tarea #2 del backlog. Requiere agregar `topic_id` al select primero.
-
-### 2. Google Calendar tokens — helper deduplicado
+### 1. Google Calendar tokens — helper deduplicado
 **Dónde:** Existe un helper centralizado para tokens de Google Calendar.  
 **Regla:** No crear nuevas funciones de refresh/validación de tokens. Usar el helper existente.
 
-### 3. `notifications.ts` — tiene `createClient() as any`
+### 2. `notifications.ts` — tiene `createClient() as any`
 **Estado:** Deuda técnica conocida. No es un bug activo.  
 **Solución futura:** Reemplazar con `createClient<Database>()` tipado. Pero no hacerlo en medio de otra tarea.
+
+**Resuelto (2026-03-30):** `SessionEventRegistry.emitCompleted` quedó activo en `completeSessionWithRating` y `updateSessionStatus` (COMPLETED); `findSessionForStatusUpdate` incluye los campos necesarios para el handler de Calendar.
 
 ---
 
@@ -96,7 +134,8 @@ No toques nada fuera de src/components/features/sessions/.
 ```
 src/
 ├── app/(dashboard)/          → Páginas protegidas (rutas)
-├── components/features/      → UI por dominio (sessions/, subjects/, exams/, etc.)
+│       └── dashboard/notifications/ → Lista de notificaciones (filtros, paginación server-side)
+├── components/features/      → UI por dominio (sessions/, subjects/, exams/, notifications/, etc.)
 ├── lib/actions/              → Server Actions (mutations + queries complejas)
 │   ├── sessions.ts           ← Tracking, reschedule, complete
 │   ├── subjects.ts           ← CRUD materias
@@ -129,7 +168,7 @@ src/
 
 ## 📐 Reglas para Cursor en este proyecto
 
-Pegá esto al inicio de sesiones importantes:
+Para ejecutar tareas usá: `/ship [sub-sprint]` (ej: `/ship 5a`, `/ship 4f`)
 
 ```
 Sos un asistente trabajando en StudyApp (Next.js 16 + Supabase). 
