@@ -508,6 +508,13 @@ export async function processOverdueSessions() {
       abandoned++;
     } else if (hoursOverdue > 24) {
       try {
+        const { hasRecentNotificationForSession } = await import('@/lib/repositories/notifications.repository');
+        const alreadyNotified = await hasRecentNotificationForSession(user.id, session.id);
+        if (alreadyNotified) {
+          logger.debug('[processOverdueSessions] Session already notified recently, skipping:', session.id);
+          continue;
+        }
+
         logger.debug('[processOverdueSessions] Sending notification for session:', session.id);
         const { sendNotification } = await import('./notifications');
         await sendNotification({

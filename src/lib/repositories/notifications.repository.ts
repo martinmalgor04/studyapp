@@ -104,6 +104,36 @@ export async function findFilteredNotifications(
 }
 
 // ---------------------------------------------------------------------------
+// Dedup helpers
+// ---------------------------------------------------------------------------
+
+export async function hasRecentNotificationForSession(
+  userId: string,
+  sessionId: string,
+  hoursWindow: number = 24,
+): Promise<boolean> {
+  const supabase = await createClient();
+  const cutoff = new Date();
+  cutoff.setHours(cutoff.getHours() - hoursWindow);
+
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('type', 'SESSION_REMINDER')
+    .gte('created_at', cutoff.toISOString())
+    .contains('metadata', { session_id: sessionId })
+    .limit(1);
+
+  if (error) {
+    logger.warn('[hasRecentNotificationForSession] Query failed, allowing notification:', error.message);
+    return false;
+  }
+
+  return (data?.length ?? 0) > 0;
+}
+
+// ---------------------------------------------------------------------------
 // Mutations
 // ---------------------------------------------------------------------------
 
