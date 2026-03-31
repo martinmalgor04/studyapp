@@ -24,7 +24,7 @@ export interface UpcomingSession {
   original_scheduled_at: string | null;
   topic: { id: string; name: string; difficulty: string | null } | null;
   subject: { id: string; name: string } | null;
-  exam: { id: string; type: string; date: string } | null;
+  exam: { id: string; category: string; modality: string; date: string } | null;
 }
 
 export interface SessionWithTopicSubject extends SessionRow {
@@ -35,7 +35,7 @@ export interface SessionWithTopicSubject extends SessionRow {
 export interface SessionWithFullJoins extends SessionRow {
   topic: { id: string; name: string } | null;
   subject: { id: string; name: string } | null;
-  exam: { id: string; type: string; date: string } | null;
+  exam: { id: string; category: string; modality: string; date: string } | null;
 }
 
 export interface SessionForReschedule {
@@ -105,7 +105,7 @@ export async function findUpcomingSessions(
       original_scheduled_at,
       topic:topics(id, name, difficulty),
       subject:subjects(id, name),
-      exam:exams(id, type, date)
+      exam:exams(id, category, modality, date)
     `)
     .eq('user_id', userId)
     .gte('scheduled_at', today.toISOString())
@@ -192,7 +192,7 @@ export async function findSessionsByDateRange(
       *,
       topic:topics(id, name),
       subject:subjects(id, name),
-      exam:exams(id, type, date)
+      exam:exams(id, category, modality, date)
     `)
     .eq('user_id', userId)
     .gte('scheduled_at', startDate)

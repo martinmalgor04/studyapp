@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createTopic } from '@/lib/actions/topics';
@@ -70,7 +70,7 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     reset,
     setValue,
     formState: { errors, isSubmitting },
@@ -87,15 +87,20 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
     },
   });
 
-  const selectedSubjectId = watch('subject_id');
-  const selectedSource = watch('source');
+  const selectedSubjectId = useWatch({ control, name: 'subject_id' });
+  const selectedSource = useWatch({ control, name: 'source' });
   const showSourceDate = selectedSource === 'CLASS';
 
-  useEffect(() => {
+  const [prevSubjectId, setPrevSubjectId] = useState(selectedSubjectId);
+  if (selectedSubjectId !== prevSubjectId) {
+    setPrevSubjectId(selectedSubjectId);
     if (!selectedSubjectId || selectedSubjectId === '__new__') {
       setExamsForSubject([]);
-      return;
     }
+  }
+
+  useEffect(() => {
+    if (!selectedSubjectId || selectedSubjectId === '__new__') return;
     getExamsBySubject(selectedSubjectId).then(setExamsForSubject);
   }, [selectedSubjectId]);
 

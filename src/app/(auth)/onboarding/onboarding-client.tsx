@@ -19,11 +19,12 @@ export function OnboardingClient() {
   const [studyEndHour, setStudyEndHour] = useState('23:00');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [googleConnectedSuccess, setGoogleConnectedSuccess] = useState(false);
+  const [googleConnectedSuccess] = useState(
+    () => searchParams?.get('google_connected') === 'true'
+  );
 
   useEffect(() => {
     if (searchParams?.get('google_connected') === 'true') {
-      setGoogleConnectedSuccess(true);
       router.replace('/onboarding', { scroll: false });
     }
   }, [searchParams, router]);

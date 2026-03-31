@@ -520,14 +520,9 @@ export async function processOverdueSessions() {
         logger.debug('[processOverdueSessions] Notification sent successfully');
         notified++;
       } catch (notifError) {
-        logger.error('[processOverdueSessions] Failed to send notification:', notifError);
+        logger.warn('[processOverdueSessions] Notification failed (auth context may be unavailable in fire-and-forget):', notifError instanceof Error ? notifError.message : notifError);
       }
     }
-  }
-
-  if (abandoned > 0 || notified > 0) {
-    revalidatePath('/dashboard');
-    revalidatePath('/dashboard/sessions');
   }
 
   return { notified, abandoned, processed: notified + abandoned };

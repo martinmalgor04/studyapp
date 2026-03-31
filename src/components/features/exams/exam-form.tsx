@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createExam, updateExam } from '@/lib/actions/exams';
 import {
@@ -38,7 +38,7 @@ export function ExamForm({ subjectId, exam, onSuccess, onCancel }: ExamFormProps
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<CreateExamInput>({
     resolver: zodResolver(createExamSchema),
@@ -52,7 +52,7 @@ export function ExamForm({ subjectId, exam, onSuccess, onCancel }: ExamFormProps
     },
   });
 
-  const selectedCategory = watch('category');
+  const selectedCategory = useWatch({ control, name: 'category' });
   const showNumberField =
     selectedCategory === 'PARCIAL' || selectedCategory === 'RECUPERATORIO';
   const showModalityField = selectedCategory !== 'TP';

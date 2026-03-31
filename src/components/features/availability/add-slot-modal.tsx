@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AvailabilitySlot } from '@/lib/validations/availability';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -16,23 +16,25 @@ interface AddSlotModalProps {
 }
 
 export function AddSlotModal({ isOpen, onClose, onSave, initialSlot, preselectedDay }: AddSlotModalProps) {
-  const [dayOfWeek, setDayOfWeek] = useState(preselectedDay ?? 1);
-  const [startTime, setStartTime] = useState('09:00');
-  const [endTime, setEndTime] = useState('11:00');
+  const getInitialDay = () => initialSlot?.day_of_week ?? preselectedDay ?? 1;
+  const getInitialStart = () => initialSlot?.start_time ?? '09:00';
+  const getInitialEnd = () => initialSlot?.end_time ?? '11:00';
+
+  const [dayOfWeek, setDayOfWeek] = useState(getInitialDay);
+  const [startTime, setStartTime] = useState(getInitialStart);
+  const [endTime, setEndTime] = useState(getInitialEnd);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (initialSlot) {
-      setDayOfWeek(initialSlot.day_of_week);
-      setStartTime(initialSlot.start_time);
-      setEndTime(initialSlot.end_time);
-    } else if (preselectedDay !== undefined) {
-      setDayOfWeek(preselectedDay);
-      setStartTime('09:00');
-      setEndTime('11:00');
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+    if (isOpen) {
+      setDayOfWeek(getInitialDay());
+      setStartTime(getInitialStart());
+      setEndTime(getInitialEnd());
+      setError(null);
     }
-    setError(null);
-  }, [isOpen, initialSlot, preselectedDay]);
+  }
 
   const handleSave = () => {
     const [startHour, startMinute] = startTime.split(':').map(Number);

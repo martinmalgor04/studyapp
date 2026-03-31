@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createSubject, updateSubject } from '@/lib/actions/subjects';
 import { createSubjectSchema, type CreateSubjectInput, type SemesterType, type SubjectStatus } from '@/lib/validations/subjects';
@@ -34,7 +34,6 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
     register,
     handleSubmit,
     control,
-    watch,
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<CreateSubjectInput>({
@@ -55,7 +54,7 @@ export function SubjectForm({ subject, onSuccess, onCancel }: SubjectFormProps) 
     name: 'schedule',
   });
 
-  const professors = watch('professors') || [];
+  const professors = useWatch({ control, name: 'professors' }) || [];
 
   const onSubmit = async (data: CreateSubjectInput) => {
     setError(null);

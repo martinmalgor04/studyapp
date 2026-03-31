@@ -21,10 +21,25 @@ export function NotificationBell() {
   };
 
   useEffect(() => {
-    loadNotifications();
-    
-    const interval = setInterval(loadNotifications, 60000);
-    return () => clearInterval(interval);
+    let cancelled = false;
+
+    const fetchNotifications = async () => {
+      setLoading(true);
+      const result = await getNotifications();
+      if (!cancelled) {
+        setNotifications(result.notifications);
+        setUnreadCount(result.unreadCount);
+        setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 60000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, []);
 
   const handleMarkAllAsRead = async () => {

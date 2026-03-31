@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 const QUOTES = [
   { text: "La repetición es la madre de la retención.", author: "Proverbio académico" },
   { text: "El conocimiento es poder, pero la práctica es la llave.", author: "Thomas Fuller" },
@@ -11,11 +13,15 @@ const QUOTES = [
   { text: "La disciplina es la clave que abre las puertas del éxito académico.", author: "Anónimo" },
 ];
 
-export function MotivationalQuote() {
-  const dayOfYear = Math.floor(
+function getDayOfYear() {
+  return Math.floor(
     (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000
   );
-  const quote = QUOTES[dayOfYear % QUOTES.length];
+}
+
+export function MotivationalQuote() {
+  const [quoteIndex] = useState(() => getDayOfYear() % QUOTES.length);
+  const quote = QUOTES[quoteIndex];
 
   return (
     <div className="mt-12 pt-8 border-t border-outline-variant/10">

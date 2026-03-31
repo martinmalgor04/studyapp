@@ -15,7 +15,9 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<UserSettingsRow>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState(
+    () => searchParams?.get('google_connected') === 'true'
+  );
   const [error, setError] = useState<string | null>(null);
   const [googleConnected, setGoogleConnected] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -30,13 +32,25 @@ export default function SettingsPage() {
   };
 
   useEffect(() => {
-    loadSettings();
-    
-    const googleSuccess = searchParams?.get('google_connected');
-    if (googleSuccess === 'true') {
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+    let cancelled = false;
+
+    (async () => {
+      setLoading(true);
+      const data = await getUserSettings();
+      const connected = await isGoogleCalendarConnected();
+      if (!cancelled) {
+        setSettings(data);
+        setGoogleConnected(connected);
+        setLoading(false);
+      }
+    })();
+
+    if (searchParams?.get('google_connected') === 'true') {
+      const timer = setTimeout(() => setSuccess(false), 3000);
+      return () => { cancelled = true; clearTimeout(timer); };
     }
+
+    return () => { cancelled = true; };
   }, [searchParams]);
 
   const handleToggle = (field: string, value: boolean) => {

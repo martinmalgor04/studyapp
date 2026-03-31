@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createTopic, updateTopic } from '@/lib/actions/topics';
 import {
@@ -76,7 +76,7 @@ export function TopicForm({ subjectId, exams, topic, onSuccess, onCancel }: Topi
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<CreateTopicInput>({
@@ -103,7 +103,7 @@ export function TopicForm({ subjectId, exams, topic, onSuccess, onCancel }: Topi
     }
   }, [isAutoMode, autoFinalExam, setValue]);
 
-  const selectedSource = watch('source');
+  const selectedSource = useWatch({ control, name: 'source' });
   const showSourceDate = selectedSource === 'CLASS';
 
   const onSubmit = async (data: CreateTopicInput) => {
