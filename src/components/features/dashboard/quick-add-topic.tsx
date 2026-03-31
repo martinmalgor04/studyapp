@@ -9,6 +9,9 @@ import { createSubject } from '@/lib/actions/subjects';
 import { getExamsBySubject } from '@/lib/actions/exams';
 import { difficulties, topicSources, type Difficulty, type TopicSource } from '@/lib/validations/topics';
 import { formatExamLabel, type ExamCategory, type ExamModality } from '@/lib/validations/exams';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 
 const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   EASY: 'Fácil',
@@ -62,11 +65,8 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
   const [createdSubjects, setCreatedSubjects] = useState<Array<{ id: string; name: string }>>([]);
   const [examsForSubject, setExamsForSubject] = useState<Array<{ id: string; category: string; modality: string; number: number | null; date: string }>>([]);
 
-  // Combinar materias existentes con las creadas localmente
   const allSubjects = [...subjects, ...createdSubjects];
 
-
-  // Declarar useForm PRIMERO antes de usar watch
   const {
     register,
     handleSubmit,
@@ -87,12 +87,10 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
     },
   });
 
-  // Ahora sí podemos usar watch
   const selectedSubjectId = watch('subject_id');
   const selectedSource = watch('source');
   const showSourceDate = selectedSource === 'CLASS';
 
-  // Effect para cargar exámenes cuando cambia la materia seleccionada
   useEffect(() => {
     if (!selectedSubjectId || selectedSubjectId === '__new__') {
       setExamsForSubject([]);
@@ -118,17 +116,12 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
         setIsCreatingSubject(false);
       } else if (result.data) {
         const newSubject = { id: result.data.id, name: result.data.name };
-        
-        // Agregar a la lista de materias creadas localmente
         setCreatedSubjects([...createdSubjects, newSubject]);
-        
-        // Actualizar el form con la nueva materia
         setValue('subject_id', result.data.id, {
           shouldValidate: true,
           shouldDirty: true,
           shouldTouch: true,
         });
-        
         setShowNewSubject(false);
         setNewSubjectName('');
         setIsCreatingSubject(false);
@@ -162,29 +155,29 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
       setShowNewSubject(false);
       setNewSubjectName('');
       onSuccess?.();
-      // Ocultar mensaje de éxito después de 3 segundos
       setTimeout(() => setSuccess(false), 3000);
     }
   };
 
   if (!isExpanded) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-4 shadow-card">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-gray-900">Agregar Tema Rápido</h3>
-            <p className="text-sm text-gray-500">Registrá una clase o tema nuevo</p>
+            <h3 className="font-medium text-on-surface">Agregar Tema Rápido</h3>
+            <p className="text-sm text-on-surface-variant">Registrá una clase o tema nuevo</p>
           </div>
-          <button
-            onClick={() => setIsExpanded(true)}
-            className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
-          >
-            + Nuevo Tema
-          </button>
+          <Button variant="secondary" onClick={() => setIsExpanded(true)}>
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            Nuevo Tema
+          </Button>
         </div>
         {success && (
-          <div className="mt-3 rounded-md bg-green-50 p-3">
-            <p className="text-sm text-green-800">✓ Tema agregado correctamente</p>
+          <div className="mt-3 rounded-lg bg-secondary-container/30 p-3">
+            <p className="text-sm text-on-secondary-container flex items-center gap-1">
+              <span className="material-symbols-outlined text-[16px]">check_circle</span>
+              Tema agregado correctamente
+            </p>
           </div>
         )}
       </div>
@@ -192,33 +185,32 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
   }
 
   return (
-    <div className="rounded-lg border border-green-200 bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-secondary/20 bg-surface-container-lowest p-4 shadow-card">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="font-semibold text-gray-900">Agregar Tema Rápido</h3>
+        <h3 className="font-medium text-on-surface">Agregar Tema Rápido</h3>
         <button
           onClick={() => setIsExpanded(false)}
-          className="text-gray-400 hover:text-gray-600"
+          className="text-on-surface-variant hover:text-on-surface transition-colors"
         >
-          ✕
+          <span className="material-symbols-outlined text-[20px]">close</span>
         </button>
       </div>
 
       {error && (
-        <div className="mb-4 rounded-md bg-red-50 p-3">
-          <p className="text-sm text-red-800">{error}</p>
+        <div className="mb-4 rounded-lg bg-error-container/20 border border-error/20 p-4">
+          <p className="text-sm text-on-error-container">{error}</p>
         </div>
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
         <div className="grid gap-3 md:grid-cols-2">
-          {/* Materia */}
           <div>
-            <label htmlFor="subject_id" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="subject_id" className="block text-sm font-headline text-on-surface mb-1.5">
               Materia *
             </label>
             {!showNewSubject ? (
               <>
-                <select
+                <Select
                   id="subject_id"
                   {...register('subject_id', {
                     onChange: (e) => {
@@ -228,26 +220,25 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
                       }
                     }
                   })}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 text-sm focus:border-green-500 focus:outline-none focus:ring-green-500"
                 >
-              <option value="">Seleccionar...</option>
-              {allSubjects.map((subject) => (
-                <option key={subject.id} value={subject.id}>
-                  {subject.name}
-                </option>
-              ))}
-                  <option value="__new__" className="text-green-600 font-medium">
+                  <option value="">Seleccionar...</option>
+                  {allSubjects.map((subject) => (
+                    <option key={subject.id} value={subject.id}>
+                      {subject.name}
+                    </option>
+                  ))}
+                  <option value="__new__">
                     + Nueva Materia
                   </option>
-                </select>
+                </Select>
                 {errors.subject_id && (
-                  <p className="mt-1 text-xs text-red-600">{errors.subject_id.message}</p>
+                  <p className="mt-1 text-xs text-error">{errors.subject_id.message}</p>
                 )}
               </>
             ) : (
-              <div className="mt-1 space-y-2">
+              <div className="space-y-2">
                 <div className="flex gap-2">
-                  <input
+                  <Input
                     type="text"
                     value={newSubjectName}
                     onChange={(e) => setNewSubjectName(e.target.value)}
@@ -258,59 +249,57 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
                       }
                     }}
                     placeholder="Nombre de la materia"
-                    className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-gray-900 text-sm focus:border-green-500 focus:outline-none focus:ring-green-500"
+                    className="flex-1"
                     disabled={isCreatingSubject}
                   />
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
+                    size="sm"
                     onClick={handleCreateNewSubject}
                     disabled={isCreatingSubject}
-                    className="rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
                   >
-                    {isCreatingSubject ? '...' : '✓'}
-                  </button>
-                  <button
+                    {isCreatingSubject ? '...' : (
+                      <span className="material-symbols-outlined text-[16px]">check</span>
+                    )}
+                  </Button>
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={() => {
                       setShowNewSubject(false);
                       setNewSubjectName('');
                     }}
-                    className="rounded-md bg-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-300"
                   >
-                    ✕
-                  </button>
+                    <span className="material-symbols-outlined text-[16px]">close</span>
+                  </Button>
                 </div>
-                <p className="text-xs text-gray-500">Presioná Enter o click en ✓ para crear</p>
+                <p className="text-xs text-on-surface-variant">Presioná Enter o click en el check para crear</p>
               </div>
             )}
           </div>
 
-          {/* Nombre */}
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="name" className="block text-sm font-headline text-on-surface mb-1.5">
               Tema *
             </label>
-            <input
+            <Input
               id="name"
               type="text"
               {...register('name')}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 text-sm focus:border-green-500 focus:outline-none focus:ring-green-500"
               placeholder="Ej: Integrales Dobles"
             />
-            {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
+            {errors.name && <p className="mt-1 text-xs text-error">{errors.name.message}</p>}
           </div>
         </div>
 
         {examsForSubject.length > 0 && (
           <div>
-            <label htmlFor="exam_id" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="exam_id" className="block text-sm font-headline text-on-surface mb-1.5">
               Examen (opcional)
             </label>
-            <select
-              id="exam_id"
-              {...register('exam_id')}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 text-sm focus:border-green-500 focus:outline-none focus:ring-green-500"
-            >
+            <Select id="exam_id" {...register('exam_id')}>
               <option value="">Sin examen asignado</option>
               {examsForSubject.map((exam) => (
                 <option key={exam.id} value={exam.id}>
@@ -318,35 +307,29 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
                   {new Date(exam.date).toLocaleDateString('es-AR')}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         )}
 
         <div className="grid gap-3 md:grid-cols-4">
-          {/* Dificultad */}
           <div>
-            <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="difficulty" className="block text-sm font-headline text-on-surface mb-1.5">
               Dificultad
             </label>
-            <select
-              id="difficulty"
-              {...register('difficulty')}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 text-sm focus:border-green-500 focus:outline-none focus:ring-green-500"
-            >
+            <Select id="difficulty" {...register('difficulty')}>
               {difficulties.map((diff) => (
                 <option key={diff} value={diff}>
                   {DIFFICULTY_LABELS[diff]}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
-          {/* Duración */}
           <div>
-            <label htmlFor="hours" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="hours" className="block text-sm font-headline text-on-surface mb-1.5">
               Duración (min)
             </label>
-            <input
+            <Input
               id="hours"
               type="number"
               min="1"
@@ -354,63 +337,55 @@ export function QuickAddTopic({ subjects, onSuccess }: QuickAddTopicProps) {
               {...register('hours', {
                 setValueAs: (v) => (v === '' ? undefined : parseInt(v, 10)),
               })}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 text-sm focus:border-green-500 focus:outline-none focus:ring-green-500"
               placeholder="60"
             />
           </div>
 
-          {/* Fuente */}
           <div>
-            <label htmlFor="source" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="source" className="block text-sm font-headline text-on-surface mb-1.5">
               Fuente
             </label>
-            <select
-              id="source"
-              {...register('source')}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 text-sm focus:border-green-500 focus:outline-none focus:ring-green-500"
-            >
+            <Select id="source" {...register('source')}>
               {topicSources.map((source) => (
                 <option key={source} value={source}>
                   {SOURCE_LABELS[source]}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
-          {/* Fecha (condicional) */}
           {showSourceDate && (
             <div>
-              <label htmlFor="source_date" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="source_date" className="block text-sm font-headline text-on-surface mb-1.5">
                 Fecha Clase
               </label>
-              <input
+              <Input
                 id="source_date"
                 type="date"
                 {...register('source_date')}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 text-sm focus:border-green-500 focus:outline-none focus:ring-green-500"
               />
               {errors.source_date && (
-                <p className="mt-1 text-xs text-red-600">{errors.source_date.message}</p>
+                <p className="mt-1 text-xs text-error">{errors.source_date.message}</p>
               )}
             </div>
           )}
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => setIsExpanded(false)}
-            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
+            variant="secondary"
             disabled={isSubmitting}
-            className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
           >
             {isSubmitting ? 'Guardando...' : 'Agregar Tema'}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

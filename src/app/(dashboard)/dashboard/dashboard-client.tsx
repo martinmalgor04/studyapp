@@ -9,6 +9,8 @@ import { RecentSubjects } from '@/components/features/dashboard/recent-subjects'
 import { RecentTopics } from '@/components/features/dashboard/recent-topics';
 import { QuickAddTopic } from '@/components/features/dashboard/quick-add-topic';
 import { UnifiedCalendar } from '@/components/shared/calendar/unified-calendar';
+import { MotivationalQuote } from '@/components/shared/motivational-quote';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
 
@@ -21,7 +23,6 @@ export function DashboardClient({ userName, initialData }: DashboardClientProps)
   const router = useRouter();
   const [data, setData] = useState<DashboardData>(initialData);
 
-  // Sincronizar estado cuando el RSC re-renderiza con datos frescos (post router.refresh())
   useEffect(() => {
     setData(initialData);
   }, [initialData]);
@@ -30,62 +31,68 @@ export function DashboardClient({ userName, initialData }: DashboardClientProps)
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Bienvenido, {userName}</h2>
-        <p className="mt-1 text-gray-600">
+        <h2 className="font-headline text-2xl text-on-surface">Bienvenido, {userName}</h2>
+        <p className="mt-1 text-on-surface-variant">
           Acá tenés un resumen de tu progreso de estudio
         </p>
       </div>
 
-      {/* Stats Cards */}
       <StatsCards stats={data.stats} />
 
-      {/* Quick Add Topic */}
       <QuickAddTopic
         subjects={data.subjects.map((s) => ({ id: s.id, name: s.name }))}
         onSuccess={() => router.refresh()}
       />
 
-      {/* Sesiones Próximas - Vista Semanal */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h3 className="font-semibold text-gray-900">Próximas Sesiones</h3>
-            <p className="text-sm text-gray-500">
-              {data.sessions.length} sesiones pendientes
-            </p>
+      {/* Upcoming Sessions */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Próximas Sesiones</CardTitle>
+              <p className="text-sm text-on-surface-variant mt-1">
+                {data.sessions.length} sesiones pendientes
+              </p>
+            </div>
+            <Link
+              href="/dashboard/sessions"
+              className="text-sm font-medium text-tertiary hover:text-tertiary-dim"
+            >
+              Ver todas las sesiones →
+            </Link>
           </div>
-          <Link
-            href="/dashboard/sessions"
-            className="text-sm font-medium text-blue-600 hover:text-blue-700"
-          >
-            Ver todas las sesiones →
-          </Link>
-        </div>
-        <UnifiedCalendar
-          defaultView="week"
-          sessions={data.sessions}
-          onStatusChange={() => router.refresh()}
-        />
-      </div>
+        </CardHeader>
+        <CardContent>
+          <UnifiedCalendar
+            defaultView="week"
+            sessions={data.sessions}
+            onStatusChange={() => router.refresh()}
+          />
+        </CardContent>
+      </Card>
 
-      {/* Two columns: Recent Subjects + Recent Topics */}
+      {/* Two columns */}
       <div className="grid gap-6 lg:grid-cols-2">
         <RecentSubjects subjects={data.subjects} />
         <RecentTopics topics={data.topics} />
       </div>
 
-      {/* Info about next features */}
+      {/* Onboarding info */}
       {data.stats.subjects === 0 && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-6">
-          <h3 className="font-semibold text-blue-900">¿Por dónde empezar?</h3>
-          <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-blue-800">
-            <li>Creá una <strong>materia</strong> haciendo click en &quot;Materias&quot; en el menú</li>
-            <li>Agregá los <strong>exámenes</strong> de esa materia con sus fechas</li>
-            <li>Registrá los <strong>temas</strong> a medida que vas teniendo clases</li>
-            <li>El sistema generará automáticamente tus <strong>sesiones de repaso</strong></li>
-          </ol>
-        </div>
+        <Card className="border-tertiary/20 bg-tertiary-container/20">
+          <CardContent className="pt-6">
+            <h3 className="font-semibold text-on-tertiary-container">¿Por dónde empezar?</h3>
+            <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-on-tertiary-container/80 marker:text-tertiary">
+              <li>Creá una <strong>materia</strong> haciendo click en &quot;Materias&quot; en el menú</li>
+              <li>Agregá los <strong>exámenes</strong> de esa materia con sus fechas</li>
+              <li>Registrá los <strong>temas</strong> a medida que vas teniendo clases</li>
+              <li>El sistema generará automáticamente tus <strong>sesiones de repaso</strong></li>
+            </ol>
+          </CardContent>
+        </Card>
       )}
+
+      <MotivationalQuote />
     </div>
   );
 }

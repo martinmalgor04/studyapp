@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateUserName, updatePassword, deleteUserAccount } from '@/lib/actions/profile';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface ProfileClientProps {
   user: {
@@ -94,109 +97,108 @@ export function ProfileClient({ user }: ProfileClientProps) {
   return (
     <div className="space-y-8">
       {error && (
-        <div className="rounded-md bg-red-50 p-4">
-          <p className="text-sm text-red-800">{error}</p>
+        <div className="rounded-lg bg-error-container/20 border border-error/20 p-4">
+          <p className="text-sm text-on-error-container">{error}</p>
         </div>
       )}
       
       {success && (
-        <div className="rounded-md bg-green-50 p-4">
-          <p className="text-sm text-green-800">{success}</p>
+        <div className="rounded-lg bg-secondary-container/20 border border-secondary/20 p-4">
+          <p className="text-sm text-on-secondary-container">{success}</p>
         </div>
       )}
 
       {/* Información Básica */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900">Información Personal</h2>
-        <form onSubmit={handleUpdateName} className="mt-4 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
-            <input
-              type="email"
-              value={user.email}
-              disabled
-              className="mt-1 block w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-gray-500"
-            />
-            <p className="mt-1 text-xs text-gray-500">El email no se puede cambiar</p>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Nombre</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-            />
-          </div>
-          
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? 'Guardando...' : 'Guardar Cambios'}
-          </button>
-        </form>
-      </div>
+      <Card>
+        <CardContent className="pt-6">
+          <h2 className="font-headline text-lg text-on-surface">Información Personal</h2>
+          <form onSubmit={handleUpdateName} className="mt-4 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-on-surface-variant">Email</label>
+              <Input
+                type="email"
+                value={user.email}
+                disabled
+                className="mt-1 bg-surface-container-low opacity-60"
+              />
+              <p className="mt-1 text-xs text-on-surface-variant/60">El email no se puede cambiar</p>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-on-surface-variant">Nombre</label>
+              <Input
+                type="text"
+                value={name}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Guardando...' : 'Guardar Cambios'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       {/* Cambiar Contraseña */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900">Cambiar Contraseña</h2>
-        <form onSubmit={handleUpdatePassword} className="mt-4 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Nueva Contraseña</label>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-              placeholder="Mínimo 6 caracteres"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Confirmar Contraseña</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
-            />
-          </div>
-          
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? 'Actualizando...' : 'Cambiar Contraseña'}
-          </button>
-        </form>
-      </div>
+      <Card>
+        <CardContent className="pt-6">
+          <h2 className="font-headline text-lg text-on-surface">Cambiar Contraseña</h2>
+          <form onSubmit={handleUpdatePassword} className="mt-4 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-on-surface-variant">Nueva Contraseña</label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPassword(e.target.value)}
+                className="mt-1"
+                placeholder="Mínimo 6 caracteres"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-on-surface-variant">Confirmar Contraseña</label>
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Actualizando...' : 'Cambiar Contraseña'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       {/* Zona Peligrosa */}
-      <div className="rounded-lg border border-red-200 bg-red-50 p-6">
-        <h2 className="text-lg font-semibold text-red-900">Zona Peligrosa</h2>
-        <p className="mt-2 text-sm text-red-700">
-          Una vez que eliminés tu cuenta, no hay vuelta atrás. Por favor, estar seguro.
-        </p>
-        <button
-          onClick={() => setShowDeleteModal(true)}
-          disabled={loading}
-          className="mt-4 rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
-        >
-          Eliminar Cuenta Permanentemente
-        </button>
-      </div>
+      <Card className="border-error/20 bg-error-container/10">
+        <CardContent className="pt-6">
+          <h2 className="font-headline text-lg text-error">Zona Peligrosa</h2>
+          <p className="mt-2 text-sm text-on-error-container/80">
+            Una vez que eliminés tu cuenta, no hay vuelta atrás. Por favor, estar seguro.
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => setShowDeleteModal(true)}
+            disabled={loading}
+            className="mt-4 border-error/30 text-error hover:bg-error-container/20"
+          >
+            Eliminar Cuenta Permanentemente
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Modal de Confirmación de Eliminación */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="mx-4 max-w-md rounded-lg bg-white p-6 shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-900">¿Eliminar Cuenta?</h3>
-            <div className="mt-4 space-y-2 text-sm text-gray-700">
-              <p className="font-medium text-red-600">Esta acción es IRREVERSIBLE.</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-on-surface/50">
+          <div className="mx-4 max-w-md rounded-xl bg-surface-container-lowest p-6 shadow-xl border border-outline-variant/10">
+            <h3 className="font-headline text-lg text-on-surface">¿Eliminar Cuenta?</h3>
+            <div className="mt-4 space-y-2 text-sm text-on-surface-variant">
+              <p className="font-medium text-error">Esta acción es IRREVERSIBLE.</p>
               <p>Se eliminarán permanentemente:</p>
               <ul className="list-inside list-disc space-y-1 pl-2">
                 <li>Todas tus materias</li>
@@ -208,37 +210,37 @@ export function ProfileClient({ user }: ProfileClientProps) {
             </div>
 
             <div className="mt-6">
-              <label className="block text-sm font-medium text-gray-700">
-                Escribí <span className="font-mono font-bold text-red-600">ELIMINAR</span> para confirmar:
+              <label className="block text-sm font-medium text-on-surface-variant">
+                Escribí <span className="font-mono font-bold text-error">ELIMINAR</span> para confirmar:
               </label>
-              <input
+              <Input
                 type="text"
                 value={deleteConfirmText}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeleteConfirmText(e.target.value)}
-                className="mt-2 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+                className="mt-2"
                 placeholder="ELIMINAR"
                 autoFocus
               />
             </div>
 
             <div className="mt-6 flex justify-end gap-3">
-              <button
+              <Button
+                variant="outline"
                 onClick={() => {
                   setShowDeleteModal(false);
                   setDeleteConfirmText('');
                   setError(null);
                 }}
-                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="destructive"
                 onClick={handleDeleteAccount}
                 disabled={loading || deleteConfirmText !== 'ELIMINAR'}
-                className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
               >
                 {loading ? 'Eliminando...' : 'Eliminar Cuenta'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

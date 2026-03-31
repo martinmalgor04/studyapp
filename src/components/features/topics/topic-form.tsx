@@ -13,6 +13,10 @@ import {
   type TopicSource,
 } from '@/lib/validations/topics';
 import { formatExamLabel, type ExamCategory, type ExamModality } from '@/lib/validations/exams';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 
 const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   EASY: 'Fácil',
@@ -65,7 +69,6 @@ interface TopicFormProps {
 }
 
 export function TopicForm({ subjectId, exams, topic, onSuccess, onCancel }: TopicFormProps) {
-  // Detectar modo automático (solo para temas nuevos, no para edición)
   const isAutoMode = !topic && isAutoFreeStudyMode(exams);
   const autoFinalExam = isAutoMode ? exams.find(e => e.category === 'FINAL') : null;
   
@@ -92,7 +95,6 @@ export function TopicForm({ subjectId, exams, topic, onSuccess, onCancel }: Topi
     },
   });
 
-  // Si está en modo auto, asegurar valores ocultos
   useEffect(() => {
     if (isAutoMode && autoFinalExam) {
       setValue('source', 'FREE_STUDY');
@@ -107,7 +109,6 @@ export function TopicForm({ subjectId, exams, topic, onSuccess, onCancel }: Topi
   const onSubmit = async (data: CreateTopicInput) => {
     setError(null);
 
-    // Validar warning para finales con poco tiempo
     if (data.exam_id) {
       const exam = exams.find((e) => e.id === data.exam_id);
 
@@ -141,25 +142,25 @@ export function TopicForm({ subjectId, exams, topic, onSuccess, onCancel }: Topi
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {error && (
-        <div className="rounded-md bg-red-50 p-4">
-          <p className="text-sm text-red-800">{error}</p>
+        <div className="rounded-lg bg-error-container/20 border border-error/20 p-4">
+          <p className="text-sm text-on-error-container">{error}</p>
         </div>
       )}
 
       {isAutoMode && autoFinalExam && (
-        <div className="rounded-md bg-blue-50 border border-blue-200 p-4">
+        <div className="rounded-lg bg-tertiary-container/20 border border-tertiary/20 p-4">
           <div className="flex">
             <div className="flex-shrink-0">
-              <span className="text-blue-600">ℹ️</span>
+              <span className="material-symbols-outlined text-[18px] text-tertiary">info</span>
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-blue-800">Modo Estudio Libre</h3>
-              <div className="mt-2 text-sm text-blue-700">
+              <h3 className="text-sm font-headline text-on-surface">Modo Estudio Libre</h3>
+              <div className="mt-2 text-sm text-on-surface-variant">
                 <p>
                   Esta materia tiene solo exámenes finales. El tema se creará automáticamente como
                   <strong> Estudio Libre</strong> y se asociará al final:
                 </p>
-                <p className="mt-1 font-medium">
+                <p className="mt-1 font-medium text-on-surface">
                   {formatExamLabel(autoFinalExam.category as ExamCategory, autoFinalExam.modality as ExamModality)} - {new Date(autoFinalExam.date).toLocaleDateString('es-AR')}
                 </p>
               </div>
@@ -169,44 +170,39 @@ export function TopicForm({ subjectId, exams, topic, onSuccess, onCancel }: Topi
       )}
 
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="name" className="block text-sm font-headline text-on-surface mb-1.5">
           Nombre del Tema
         </label>
-        <input
+        <Input
           id="name"
           type="text"
           {...register('name')}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
           placeholder="Ej: Ecuaciones Diferenciales"
         />
-        {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
+        {errors.name && <p className="mt-1 text-sm text-error">{errors.name.message}</p>}
       </div>
 
       <div>
-        <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="difficulty" className="block text-sm font-headline text-on-surface mb-1.5">
           Dificultad
         </label>
-        <select
-          id="difficulty"
-          {...register('difficulty')}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-        >
+        <Select id="difficulty" {...register('difficulty')}>
           {difficulties.map((diff) => (
             <option key={diff} value={diff}>
               {DIFFICULTY_LABELS[diff]}
             </option>
           ))}
-        </select>
+        </Select>
         {errors.difficulty && (
-          <p className="mt-1 text-sm text-red-600">{errors.difficulty.message}</p>
+          <p className="mt-1 text-sm text-error">{errors.difficulty.message}</p>
         )}
       </div>
 
       <div>
-        <label htmlFor="hours" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="hours" className="block text-sm font-headline text-on-surface mb-1.5">
           Duración (minutos)
         </label>
-        <input
+        <Input
           id="hours"
           type="number"
           min="1"
@@ -214,60 +210,50 @@ export function TopicForm({ subjectId, exams, topic, onSuccess, onCancel }: Topi
           {...register('hours', {
             setValueAs: (v) => (v === '' ? undefined : parseInt(v, 10)),
           })}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
           placeholder="Ej: 120"
         />
-        <p className="mt-1 text-xs text-gray-500">Ejemplos: 60min (1h), 120min (2h), 180min (3h)</p>
-        {errors.hours && <p className="mt-1 text-sm text-red-600">{errors.hours.message}</p>}
+        <p className="mt-1 text-xs text-on-surface-variant">Ejemplos: 60min (1h), 120min (2h), 180min (3h)</p>
+        {errors.hours && <p className="mt-1 text-sm text-error">{errors.hours.message}</p>}
       </div>
 
       {!isAutoMode && (
         <div>
-          <label htmlFor="source" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="source" className="block text-sm font-headline text-on-surface mb-1.5">
             Fuente
           </label>
-          <select
-            id="source"
-            {...register('source')}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-          >
+          <Select id="source" {...register('source')}>
             {topicSources.map((source) => (
               <option key={source} value={source}>
                 {SOURCE_LABELS[source]}
               </option>
             ))}
-          </select>
-          {errors.source && <p className="mt-1 text-sm text-red-600">{errors.source.message}</p>}
+          </Select>
+          {errors.source && <p className="mt-1 text-sm text-error">{errors.source.message}</p>}
         </div>
       )}
 
       {!isAutoMode && showSourceDate && (
         <div>
-          <label htmlFor="source_date" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="source_date" className="block text-sm font-headline text-on-surface mb-1.5">
             Fecha de Clase
           </label>
-          <input
+          <Input
             id="source_date"
             type="date"
             {...register('source_date')}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
           />
           {errors.source_date && (
-            <p className="mt-1 text-sm text-red-600">{errors.source_date.message}</p>
+            <p className="mt-1 text-sm text-error">{errors.source_date.message}</p>
           )}
         </div>
       )}
 
       {exams.length > 0 && (
         <div>
-          <label htmlFor="exam_id" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="exam_id" className="block text-sm font-headline text-on-surface mb-1.5">
             Examen (opcional)
           </label>
-          <select
-            id="exam_id"
-            {...register('exam_id')}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-          >
+          <Select id="exam_id" {...register('exam_id')}>
             <option value="">Sin examen asignado</option>
             {exams.map((exam) => (
               <option key={exam.id} value={exam.id}>
@@ -275,42 +261,33 @@ export function TopicForm({ subjectId, exams, topic, onSuccess, onCancel }: Topi
                 {new Date(exam.date).toLocaleDateString('es-AR')}
               </option>
             ))}
-          </select>
-          {errors.exam_id && <p className="mt-1 text-sm text-red-600">{errors.exam_id.message}</p>}
+          </Select>
+          {errors.exam_id && <p className="mt-1 text-sm text-error">{errors.exam_id.message}</p>}
         </div>
       )}
 
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="description" className="block text-sm font-headline text-on-surface mb-1.5">
           Descripción (opcional)
         </label>
-        <textarea
+        <Textarea
           id="description"
           {...register('description')}
           rows={3}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
           placeholder="Notas sobre el tema..."
         />
         {errors.description && (
-          <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
+          <p className="mt-1 text-sm text-error">{errors.description.message}</p>
         )}
       </div>
 
       <div className="flex justify-end gap-3">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-        >
+        <Button type="button" variant="ghost" onClick={onCancel}>
           Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-        >
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Guardando...' : topic ? 'Actualizar' : 'Crear Tema'}
-        </button>
+        </Button>
       </div>
     </form>
   );

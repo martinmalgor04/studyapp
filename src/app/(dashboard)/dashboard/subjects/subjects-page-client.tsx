@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { getSubjects } from '@/lib/actions/subjects';
 import { SubjectList } from '@/components/features/subjects/subject-list';
 import { SubjectDialog } from '@/components/features/subjects/subject-dialog';
+import { MotivationalQuote } from '@/components/shared/motivational-quote';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface SubjectRow {
   id: string;
@@ -30,12 +33,10 @@ export function SubjectsPageClient({ initialSubjects }: SubjectsPageClientProps)
   const [sortBy, setSortBy] = useState<'fecha' | 'nombre' | 'progreso'>('fecha');
   const isFirstRender = useRef(true);
 
-  // Sincronizar estado cuando el RSC re-renderiza con datos frescos (post router.refresh())
   useEffect(() => {
     setSubjects(initialSubjects);
   }, [initialSubjects]);
 
-  // Re-fetch cuando cambia el filtro showAprobadas, pero saltar el montaje inicial
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
@@ -50,7 +51,6 @@ export function SubjectsPageClient({ initialSubjects }: SubjectsPageClientProps)
     fetchFiltered();
   }, [showAprobadas]);
 
-  // Aplicar búsqueda y ordenamiento
   useEffect(() => {
     let filtered = [...subjects];
 
@@ -97,41 +97,36 @@ export function SubjectsPageClient({ initialSubjects }: SubjectsPageClientProps)
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Materias</h1>
-          <p className="mt-1 text-sm text-gray-600">Gestiona las materias que estás cursando</p>
+          <h1 className="font-headline text-3xl text-on-surface">Materias</h1>
+          <p className="mt-1 text-sm text-on-surface-variant">Gestiona las materias que estás cursando</p>
         </div>
-        <button
-          onClick={handleNewSubject}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
+        <Button onClick={handleNewSubject}>
           + Nueva Materia
-        </button>
+        </Button>
       </div>
 
       {/* Búsqueda y Filtros */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 max-w-md">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+            <span className="material-symbols-rounded text-[20px] text-on-surface-variant/50">search</span>
           </div>
-          <input
+          <Input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Buscar materia..."
-            className="block w-full rounded-md border border-gray-300 pl-10 pr-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+            className="pl-10"
           />
         </div>
 
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-on-surface-variant cursor-pointer">
             <input
               type="checkbox"
               checked={showAprobadas}
               onChange={(e) => setShowAprobadas(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="h-4 w-4 rounded border-outline-variant/30 text-secondary accent-secondary focus:ring-secondary/30"
             />
             <span>Mostrar aprobadas</span>
           </label>
@@ -139,7 +134,7 @@ export function SubjectsPageClient({ initialSubjects }: SubjectsPageClientProps)
           <select
             value={sortBy}
             onChange={(e) => setSortBy((e.target as HTMLSelectElement).value as 'fecha' | 'nombre' | 'progreso')}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+            className="rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface focus:border-tertiary focus:outline-none focus:ring-2 focus:ring-tertiary/30"
           >
             <option value="fecha">Ordenar por Fecha</option>
             <option value="nombre">Ordenar por Nombre</option>
@@ -149,13 +144,13 @@ export function SubjectsPageClient({ initialSubjects }: SubjectsPageClientProps)
       </div>
 
       {searchTerm && (
-        <div className="mb-4 text-sm text-gray-600">
+        <div className="mb-4 text-sm text-on-surface-variant">
           Mostrando {filteredSubjects.length} de {subjects.length} materias
         </div>
       )}
 
       {loading ? (
-        <div className="text-center text-gray-500">Cargando...</div>
+        <div className="text-center text-on-surface-variant">Cargando...</div>
       ) : (
         <SubjectList subjects={filteredSubjects} onEdit={handleEdit} onDelete={handleDelete} />
       )}
@@ -165,6 +160,8 @@ export function SubjectsPageClient({ initialSubjects }: SubjectsPageClientProps)
         onClose={handleCloseDialog}
         subject={editingSubject ?? undefined}
       />
+
+      <MotivationalQuote />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { logger } from '@/lib/utils/logger';
+import { Button } from '@/components/ui/button';
 
 export default function DashboardError({
   error,
@@ -16,21 +17,20 @@ export default function DashboardError({
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-md border border-red-100 text-center">
-        <div className="mb-4 text-4xl">😕</div>
-        <h2 className="mb-2 text-xl font-bold text-gray-900">Error al cargar la página</h2>
-        <p className="mb-6 text-gray-600">
+      <div className="w-full max-w-md rounded-xl bg-surface-container-lowest p-8 shadow-card border border-error/10 text-center">
+        <div className="mb-4 flex justify-center">
+          <span className="material-symbols-rounded text-[48px] text-error/60">error</span>
+        </div>
+        <h2 className="mb-2 font-headline text-xl text-on-surface">Error al cargar la página</h2>
+        <p className="mb-6 text-on-surface-variant">
           Algo salió mal cargando este contenido. Podés intentar de nuevo.
         </p>
         {error.digest && (
-          <p className="mb-4 text-xs text-gray-400">Ref: {error.digest}</p>
+          <p className="mb-4 text-xs text-on-surface-variant/40">Ref: {error.digest}</p>
         )}
-        <button
-          onClick={reset}
-          className="rounded-md bg-blue-600 px-6 py-2 text-white font-medium hover:bg-blue-700 transition-colors"
-        >
+        <Button onClick={reset}>
           Intentar de nuevo
-        </button>
+        </Button>
       </div>
     </div>
   );

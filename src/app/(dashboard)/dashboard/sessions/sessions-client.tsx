@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { UnifiedCalendar } from '@/components/shared/calendar/unified-calendar';
 import { SessionFilters } from '@/components/features/sessions/session-filters';
 import { RescheduleDialog } from '@/components/features/sessions/reschedule-dialog';
+import { MotivationalQuote } from '@/components/shared/motivational-quote';
 
 interface SessionWithRelations {
   id: string;
@@ -35,7 +36,6 @@ export function SessionsClient({ initialSessions, initialSubjects }: SessionsCli
   const [filters, setFilters] = useState<{ status?: string; priority?: string; subjectId?: string }>({});
   const [rescheduleSession, setRescheduleSession] = useState<SessionWithRelations | null>(null);
 
-  // Sincronizar estado cuando el RSC re-renderiza con datos frescos (post router.refresh())
   useEffect(() => {
     setSessions(initialSessions);
     setFilteredSessions(initialSessions);
@@ -45,7 +45,6 @@ export function SessionsClient({ initialSessions, initialSubjects }: SessionsCli
     setSubjects(initialSubjects);
   }, [initialSubjects]);
 
-  // Aplicar filtros
   useEffect(() => {
     let filtered = [...sessions];
 
@@ -73,10 +72,9 @@ export function SessionsClient({ initialSessions, initialSubjects }: SessionsCli
   return (
     <div className="space-y-6">
       {/* Stats con gráfico circular */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <h3 className="mb-4 text-sm font-semibold text-gray-500 uppercase tracking-wide">Progreso Mensual</h3>
+      <div className="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-6 shadow-card">
+        <h3 className="mb-4 text-sm font-semibold text-on-surface-variant uppercase tracking-wide">Progreso Mensual</h3>
         <div className="flex items-center gap-6">
-          {/* Gráfico circular simple */}
           <div className="relative flex h-32 w-32 items-center justify-center">
             <svg className="h-full w-full -rotate-90 transform">
               <circle
@@ -86,7 +84,7 @@ export function SessionsClient({ initialSessions, initialSubjects }: SessionsCli
                 stroke="currentColor"
                 strokeWidth="12"
                 fill="none"
-                className="text-gray-200"
+                className="text-outline-variant/10"
               />
               <circle
                 cx="64"
@@ -97,46 +95,45 @@ export function SessionsClient({ initialSessions, initialSubjects }: SessionsCli
                 fill="none"
                 strokeDasharray={`${2 * Math.PI * 56}`}
                 strokeDashoffset={`${2 * Math.PI * 56 * (1 - progressPercentage / 100)}`}
-                className="text-blue-600 transition-all duration-500"
+                className="text-tertiary transition-all duration-500"
                 strokeLinecap="round"
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <p className="text-3xl font-bold text-gray-900">{pendingCount}</p>
-              <p className="text-xs text-gray-500">/ {totalCount} sesiones</p>
+              <p className="text-3xl font-bold text-on-surface">{pendingCount}</p>
+              <p className="text-xs text-on-surface-variant">/ {totalCount} sesiones</p>
             </div>
           </div>
 
-          {/* Stats secundarias */}
           <div className="flex-1 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-green-500"></div>
-                <span className="text-sm text-gray-700">Completadas</span>
+                <div className="h-3 w-3 rounded-full bg-secondary"></div>
+                <span className="text-sm text-on-surface-variant">Completadas</span>
               </div>
-              <span className="text-sm font-semibold text-gray-900">{completedCount}</span>
+              <span className="text-sm font-semibold text-on-surface">{completedCount}</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-blue-500"></div>
-                <span className="text-sm text-gray-700">Pendientes</span>
+                <div className="h-3 w-3 rounded-full bg-tertiary"></div>
+                <span className="text-sm text-on-surface-variant">Pendientes</span>
               </div>
-              <span className="text-sm font-semibold text-gray-900">{pendingCount}</span>
+              <span className="text-sm font-semibold text-on-surface">{pendingCount}</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-orange-500"></div>
-                <span className="text-sm text-gray-700">Reagendadas</span>
+                <div className="h-3 w-3 rounded-full bg-warning"></div>
+                <span className="text-sm text-on-surface-variant">Reagendadas</span>
               </div>
-              <span className="text-sm font-semibold text-gray-900">{rescheduledCount}</span>
+              <span className="text-sm font-semibold text-on-surface">{rescheduledCount}</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Filtros */}
-      <div className="rounded-lg border border-gray-200 bg-white p-4">
-        <h3 className="mb-4 text-sm font-semibold text-gray-900">Filtros</h3>
+      <div className="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-4 shadow-card">
+        <h3 className="mb-4 text-sm font-semibold text-on-surface">Filtros</h3>
         <SessionFilters
           filters={filters}
           subjects={subjects}
@@ -146,7 +143,7 @@ export function SessionsClient({ initialSessions, initialSubjects }: SessionsCli
         {(filters.status || filters.priority || filters.subjectId) && (
           <button
             onClick={() => setFilters({})}
-            className="mt-4 text-xs text-blue-600 hover:text-blue-700"
+            className="mt-4 text-xs text-tertiary hover:text-tertiary-dim"
           >
             Limpiar filtros
           </button>
@@ -168,6 +165,8 @@ export function SessionsClient({ initialSessions, initialSubjects }: SessionsCli
         onClose={() => setRescheduleSession(null)}
         onSuccess={() => router.refresh()}
       />
+
+      <MotivationalQuote />
     </div>
   );
 }

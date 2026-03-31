@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getUpcomingSessions } from '@/lib/actions/sessions';
 import { getSubjects } from '@/lib/actions/subjects';
 import { SessionsClient } from './sessions-client';
+import { Button } from '@/components/ui/button';
 
 export default async function SessionsPage() {
   const supabase = await createClient();
@@ -20,18 +21,17 @@ export default async function SessionsPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Sesiones de Estudio</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="font-headline text-3xl text-on-surface">Sesiones de Estudio</h1>
+          <p className="mt-2 text-on-surface-variant">
             Próximos 30 días - Gestioná tus sesiones de repaso programadas
           </p>
         </div>
-        <button
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 shadow-sm"
+        <Button
           title="Funcionalidad próximamente"
           disabled
         >
           + Nueva Sesión
-        </button>
+        </Button>
       </div>
 
       <SessionsClient

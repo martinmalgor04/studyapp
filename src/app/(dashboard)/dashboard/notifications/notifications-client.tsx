@@ -6,6 +6,7 @@ import {
   markAllNotificationsAsRead,
 } from '@/lib/actions/notifications';
 import { NotificationItem } from '@/components/features/notifications/notification-item';
+import { Button } from '@/components/ui/button';
 
 interface NotificationRow {
   id: string;
@@ -137,11 +138,11 @@ export function NotificationsClient({ initialData }: Props) {
   return (
     <div className="space-y-4">
       {/* Header con contador y mark all */}
-      <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-5 py-4 shadow-sm">
-        <p className="text-sm text-gray-700">
+      <div className="flex items-center justify-between rounded-xl border border-outline-variant/10 bg-surface-container-lowest px-5 py-4 shadow-card">
+        <p className="text-sm text-on-surface-variant">
           {unreadCount > 0 ? (
             <>
-              <span className="font-semibold text-gray-900">{unreadCount}</span>{' '}
+              <span className="font-semibold text-on-surface">{unreadCount}</span>{' '}
               {unreadCount === 1 ? 'notificación sin leer' : 'notificaciones sin leer'}
             </>
           ) : (
@@ -149,21 +150,21 @@ export function NotificationsClient({ initialData }: Props) {
           )}
         </p>
         {unreadCount > 0 && (
-          <button
+          <Button
             onClick={handleMarkAllRead}
             disabled={isMarkingAll}
-            className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            size="sm"
             aria-label="Marcar todas las notificaciones como leídas"
           >
             {isMarkingAll ? 'Marcando…' : 'Marcar todas como leídas'}
-          </button>
+          </Button>
         )}
       </div>
 
       {/* Filtros: tabs + tipo */}
-      <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+      <div className="rounded-xl border border-outline-variant/10 bg-surface-container-lowest shadow-card">
         {/* Tabs */}
-        <div className="flex border-b border-gray-200" role="tablist" aria-label="Filtrar por estado de lectura">
+        <div className="flex border-b border-outline-variant/10" role="tablist" aria-label="Filtrar por estado de lectura">
           {TABS.map((tab) => (
             <button
               key={tab.key}
@@ -172,8 +173,8 @@ export function NotificationsClient({ initialData }: Props) {
               onClick={() => handleTabChange(tab.key)}
               className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                 readFilter === tab.key
-                  ? 'border-b-2 border-blue-600 text-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'border-b-2 border-tertiary text-tertiary'
+                  : 'text-on-surface-variant hover:text-on-surface'
               }`}
             >
               {tab.label}
@@ -190,7 +191,7 @@ export function NotificationsClient({ initialData }: Props) {
             id="type-filter"
             value={typeFilter ?? ''}
             onChange={(e) => handleTypeChange(e.target.value)}
-            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:w-64"
+            className="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface focus:border-tertiary focus:outline-none focus:ring-2 focus:ring-tertiary/30 sm:w-64"
           >
             <option value="">Todos los tipos</option>
             {Object.entries(TYPE_LABELS).map(([value, label]) => (
@@ -220,19 +221,20 @@ export function NotificationsClient({ initialData }: Props) {
           </div>
 
           {/* Paginación */}
-          <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-5 py-3 shadow-sm">
-            <p className="text-sm text-gray-500">
+          <div className="flex items-center justify-between rounded-xl border border-outline-variant/10 bg-surface-container-lowest px-5 py-3 shadow-card">
+            <p className="text-sm text-on-surface-variant">
               {notifications.length} de {totalCount}{' '}
               {totalCount === 1 ? 'notificación' : 'notificaciones'}
             </p>
             {hasMore && (
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleLoadMore}
                 disabled={isLoadingMore || isPending}
-                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
                 {isLoadingMore ? 'Cargando…' : 'Cargar más'}
-              </button>
+              </Button>
             )}
           </div>
         </>
@@ -247,14 +249,14 @@ function SkeletonList() {
       {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}
-          className="animate-pulse rounded-md border border-gray-200 bg-white p-3"
+          className="animate-pulse rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-3"
         >
           <div className="flex items-start gap-3">
-            <div className="mt-1 h-6 w-6 rounded-full bg-gray-200" />
+            <div className="mt-1 h-6 w-6 rounded-full bg-surface-container" />
             <div className="flex-1 space-y-2">
-              <div className="h-4 w-1/3 rounded bg-gray-200" />
-              <div className="h-3 w-2/3 rounded bg-gray-200" />
-              <div className="h-3 w-16 rounded bg-gray-200" />
+              <div className="h-4 w-1/3 rounded bg-surface-container" />
+              <div className="h-3 w-2/3 rounded bg-surface-container" />
+              <div className="h-3 w-16 rounded bg-surface-container" />
             </div>
           </div>
         </div>
@@ -277,37 +279,29 @@ function EmptyState({
     const label = TYPE_LABELS[typeFilter] ?? typeFilter;
     text = `No hay notificaciones de tipo "${label}"`;
     icon = (
-      <svg className="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-      </svg>
+      <span className="material-symbols-rounded mx-auto text-[48px] text-on-surface-variant/30" aria-hidden="true">folder_open</span>
     );
   } else if (readFilter === 'unread') {
     text = 'No hay notificaciones sin leer';
     icon = (
-      <svg className="mx-auto h-12 w-12 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
-      </svg>
+      <span className="material-symbols-rounded mx-auto text-[48px] text-secondary/40" aria-hidden="true">check_circle</span>
     );
   } else if (readFilter === 'read') {
     text = 'No hay notificaciones leídas';
     icon = (
-      <svg className="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 19v-8.93a2 2 0 01.89-1.664l7-4.666a2 2 0 012.22 0l7 4.666A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-1.14.76a2 2 0 01-2.22 0l-1.14-.76" />
-      </svg>
+      <span className="material-symbols-rounded mx-auto text-[48px] text-on-surface-variant/30" aria-hidden="true">mark_email_read</span>
     );
   } else {
     text = 'No tenés notificaciones todavía';
     icon = (
-      <svg className="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-      </svg>
+      <span className="material-symbols-rounded mx-auto text-[48px] text-on-surface-variant/30" aria-hidden="true">notifications_off</span>
     );
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white py-16 text-center shadow-sm">
-      {icon}
-      <p className="mt-4 text-sm text-gray-500">{text}</p>
+    <div className="rounded-xl border border-outline-variant/10 bg-surface-container-lowest py-16 text-center shadow-card">
+      <div className="flex justify-center">{icon}</div>
+      <p className="mt-4 text-sm text-on-surface-variant">{text}</p>
     </div>
   );
 }

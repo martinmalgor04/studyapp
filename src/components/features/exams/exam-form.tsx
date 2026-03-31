@@ -14,6 +14,10 @@ import {
   type ExamCategory,
   type ExamModality,
 } from '@/lib/validations/exams';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 
 interface ExamFormProps {
   subjectId: string;
@@ -73,55 +77,47 @@ export function ExamForm({ subjectId, exam, onSuccess, onCancel }: ExamFormProps
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {error && (
-        <div className="rounded-md bg-red-50 p-4">
-          <p className="text-sm text-red-800">{error}</p>
+        <div className="rounded-lg bg-error-container/20 border border-error/20 p-4">
+          <p className="text-sm text-on-error-container">{error}</p>
         </div>
       )}
 
       <div>
-        <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="category" className="block text-sm font-headline text-on-surface mb-1.5">
           Tipo de Examen
         </label>
-        <select
-          id="category"
-          {...register('category')}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-        >
+        <Select id="category" {...register('category')}>
           {examCategories.map((cat) => (
             <option key={cat} value={cat}>
               {CATEGORY_LABELS[cat]}
             </option>
           ))}
-        </select>
-        {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category.message}</p>}
+        </Select>
+        {errors.category && <p className="mt-1 text-sm text-error">{errors.category.message}</p>}
       </div>
 
       {showModalityField && (
         <div>
-          <label htmlFor="modality" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="modality" className="block text-sm font-headline text-on-surface mb-1.5">
             Modalidad
           </label>
-          <select
-            id="modality"
-            {...register('modality')}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-          >
+          <Select id="modality" {...register('modality')}>
             {examModalities.map((mod) => (
               <option key={mod} value={mod}>
                 {MODALITY_LABELS[mod]}
               </option>
             ))}
-          </select>
-          {errors.modality && <p className="mt-1 text-sm text-red-600">{errors.modality.message}</p>}
+          </Select>
+          {errors.modality && <p className="mt-1 text-sm text-error">{errors.modality.message}</p>}
         </div>
       )}
 
       {showNumberField && (
         <div>
-          <label htmlFor="number" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="number" className="block text-sm font-headline text-on-surface mb-1.5">
             Número (opcional)
           </label>
-          <input
+          <Input
             id="number"
             type="number"
             min="1"
@@ -129,57 +125,46 @@ export function ExamForm({ subjectId, exam, onSuccess, onCancel }: ExamFormProps
             {...register('number', {
               setValueAs: (v) => (v === '' ? undefined : parseInt(v, 10)),
             })}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
             placeholder="Ej: 1, 2, 3..."
           />
-          {errors.number && <p className="mt-1 text-sm text-red-600">{errors.number.message}</p>}
+          {errors.number && <p className="mt-1 text-sm text-error">{errors.number.message}</p>}
         </div>
       )}
 
       <div>
-        <label htmlFor="date" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="date" className="block text-sm font-headline text-on-surface mb-1.5">
           Fecha del Examen
         </label>
-        <input
+        <Input
           id="date"
           type="date"
           {...register('date')}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
         />
-        {errors.date && <p className="mt-1 text-sm text-red-600">{errors.date.message}</p>}
+        {errors.date && <p className="mt-1 text-sm text-error">{errors.date.message}</p>}
       </div>
 
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="description" className="block text-sm font-headline text-on-surface mb-1.5">
           Descripción (opcional)
         </label>
-        <textarea
+        <Textarea
           id="description"
           {...register('description')}
           rows={3}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
           placeholder="Notas sobre el examen..."
         />
         {errors.description && (
-          <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
+          <p className="mt-1 text-sm text-error">{errors.description.message}</p>
         )}
       </div>
 
       <div className="flex justify-end gap-3">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-        >
+        <Button type="button" variant="ghost" onClick={onCancel}>
           Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-        >
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Guardando...' : exam ? 'Actualizar' : 'Crear Examen'}
-        </button>
+        </Button>
       </div>
     </form>
   );

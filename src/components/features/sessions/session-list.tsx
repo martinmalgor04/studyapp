@@ -24,13 +24,14 @@ interface SessionListProps {
 export function SessionList({ sessions, onStatusChange, onReschedule }: SessionListProps) {
   if (sessions.length === 0) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-gray-50 p-12 text-center">
-        <p className="text-gray-500">No hay sesiones para mostrar</p>
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-3">event_available</span>
+        <p className="font-headline text-lg text-on-surface-variant">No hay sesiones para mostrar</p>
+        <p className="text-sm text-on-surface-variant/60 mt-1">Las sesiones se generan automáticamente al crear temas</p>
       </div>
     );
   }
 
-  // Agrupar sesiones por día
   const sessionsByDay = sessions.reduce((acc, session) => {
     const date = new Date(session.scheduled_at);
     const dayKey = date.toISOString().split('T')[0];
@@ -69,7 +70,7 @@ export function SessionList({ sessions, onStatusChange, onReschedule }: SessionL
     <div className="space-y-6">
       {sortedDays.map((dayKey) => (
         <div key={dayKey}>
-          <h3 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">
+          <h3 className="mb-3 font-label text-[10px] font-semibold text-on-surface-variant uppercase tracking-widest">
             {formatDayHeader(dayKey)} ({sessionsByDay[dayKey].length})
           </h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { PomodoroTimer } from './pomodoro-timer';
+import { Button } from '@/components/ui/button';
 
 interface StudyModeDialogProps {
   isOpen: boolean;
@@ -32,17 +33,13 @@ export function StudyModeDialog({
   const duration = session.duration ?? session.duration_minutes ?? 30;
 
   const handleStudyComplete = () => {
-    // El timer terminó un pomodoro
     console.log('Pomodoro cycle completed');
   };
 
   const handleEndSession = (totalMinutes: number) => {
-    // Usuario terminó antes
     if (totalMinutes >= duration) {
-      // Estudió todo el tiempo planeado o más
       onComplete();
     } else {
-      // Estudió parcialmente
       onIncomplete(totalMinutes);
     }
   };
@@ -57,60 +54,50 @@ export function StudyModeDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-gradient-to-br from-blue-50 to-white">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-gradient-to-br from-surface-container-low to-surface-container-lowest">
       <div className="min-h-screen p-8">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <p className="text-sm text-gray-600">{session.subject?.name ?? 'Sin materia'}</p>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <p className="text-sm text-on-surface-variant">{session.subject?.name ?? 'Sin materia'}</p>
+            <h1 className="font-headline text-3xl text-on-surface">
               {session.topic?.name ?? 'Sin tema'} - R{session.number ?? 1}
             </h1>
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="mt-1 text-sm text-on-surface-variant">
               Duración estimada: {duration} minutos
             </p>
           </div>
-          <button
-            onClick={handleClose}
-            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
+          <Button variant="outline" onClick={handleClose}>
             {showExitConfirm ? 'Confirmar salida' : 'Salir'}
-          </button>
+          </Button>
         </div>
 
-        {/* Exit Confirmation Warning */}
         {showExitConfirm && (
-          <div className="mb-6 rounded-md bg-yellow-50 border border-yellow-300 p-4">
-            <p className="text-sm text-yellow-800">
+          <div className="mb-6 rounded-xl bg-surface-container-high border border-outline-variant/20 p-4">
+            <p className="text-sm text-on-surface-variant">
               ¿Estás seguro de salir? Se perderá el progreso del timer.
             </p>
           </div>
         )}
 
-        {/* Timer Central */}
         <div className="flex justify-center">
           <PomodoroTimer
-            studyMinutes={Math.min(duration, 50)} // Max 50min por pomodoro
+            studyMinutes={Math.min(duration, 50)}
             breakMinutes={5}
             onStudyComplete={handleStudyComplete}
             onSessionEnd={handleEndSession}
           />
         </div>
 
-        {/* Action Buttons */}
         <div className="mt-12 flex justify-center gap-4">
-          <button
-            onClick={onComplete}
-            className="rounded-md bg-green-600 px-6 py-3 text-sm font-medium text-white shadow-md hover:bg-green-700"
-          >
+          <Button variant="secondary" size="lg" onClick={onComplete}>
+            <span className="material-symbols-outlined text-[18px]">check_circle</span>
             Completar Sesión
-          </button>
-          <button
-            onClick={() => onIncomplete(0)}
-            className="rounded-md border border-orange-300 bg-orange-50 px-6 py-3 text-sm font-medium text-orange-700 hover:bg-orange-100"
-          >
+          </Button>
+          <Button variant="outline" size="lg" onClick={() => onIncomplete(0)}>
+            <span className="material-symbols-outlined text-[18px]">close</span>
             No pude terminar
-          </button>
+          </Button>
         </div>
       </div>
     </div>

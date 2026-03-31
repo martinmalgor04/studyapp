@@ -1,13 +1,19 @@
+import { Skeleton } from '@/components/ui/skeleton';
+
 export default function SessionsLoading() {
   return (
-    <div className="space-y-4 animate-pulse">
-      <div className="h-8 w-48 rounded bg-gray-200" />
+    <div className="space-y-4">
+      <Skeleton className="h-8 w-48" />
       <div className="flex gap-3">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-10 w-28 rounded bg-gray-200" />
+          <Skeleton key={i} className="h-10 w-28 rounded-lg" />
         ))}
       </div>
-      <div className="h-96 rounded-lg bg-gray-200" />
+      <div className="space-y-3">
+        {[...Array(4)].map((_, i) => (
+          <Skeleton key={i} className="h-24 rounded-xl" />
+        ))}
+      </div>
     </div>
   );
 }

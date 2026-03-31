@@ -18,9 +18,10 @@ interface SubjectListProps {
 export function SubjectList({ subjects, onEdit, onDelete }: SubjectListProps) {
   if (subjects.length === 0) {
     return (
-      <div className="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
-        <p className="text-gray-500">No tienes materias creadas aún.</p>
-        <p className="mt-1 text-sm text-gray-400">Hace click en &quot;Nueva Materia&quot; para empezar.</p>
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-3">school</span>
+        <p className="font-headline text-lg text-on-surface-variant">No hay materias todavía</p>
+        <p className="text-sm text-on-surface-variant/60 mt-1">Creá tu primera materia para empezar</p>
       </div>
     );
   }

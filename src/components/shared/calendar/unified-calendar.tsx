@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { completeSessionWithRating } from '@/lib/actions/sessions';
 import { CompleteSessionDialog } from '@/components/features/sessions/complete-session-dialog';
 import { formatExamShortLabel, formatExamLabel, type ExamCategory, type ExamModality } from '@/lib/validations/exams';
+import { Button } from '@/components/ui/button';
 
 interface Session {
   id: string;
@@ -40,11 +41,11 @@ interface UnifiedCalendarProps {
 }
 
 const PRIORITY_COLORS: Record<string, string> = {
-  CRITICAL: 'bg-red-100 border-red-300 text-red-800',
-  URGENT: 'bg-orange-100 border-orange-300 text-orange-800',
-  IMPORTANT: 'bg-yellow-100 border-yellow-300 text-yellow-800',
-  NORMAL: 'bg-blue-100 border-blue-300 text-blue-800',
-  LOW: 'bg-gray-100 border-gray-300 text-gray-700',
+  CRITICAL: 'bg-error-container/30 border-error/30 text-on-error-container',
+  URGENT: 'bg-primary-container/30 border-primary/30 text-on-primary-container',
+  IMPORTANT: 'bg-surface-container-high border-outline-variant/30 text-on-surface',
+  NORMAL: 'bg-tertiary-container/20 border-tertiary/30 text-on-tertiary-container',
+  LOW: 'bg-surface-container border-outline-variant/20 text-on-surface-variant',
 };
 
 const MONTHS = [
@@ -54,7 +55,6 @@ const MONTHS = [
 
 const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
-// Colores según proximidad del examen
 function getExamColor(date: string) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -64,17 +64,16 @@ function getExamColor(date: string) {
   const daysUntil = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   
   if (daysUntil < 0) {
-    return 'bg-gray-200 text-gray-600 border-gray-400'; // Pasado
+    return 'bg-surface-container text-on-surface-variant border-outline-variant/30';
   } else if (daysUntil <= 3) {
-    return 'bg-red-100 text-red-800 border-red-400'; // Urgente
+    return 'bg-error-container/30 text-on-error-container border-error/30';
   } else if (daysUntil <= 7) {
-    return 'bg-orange-100 text-orange-800 border-orange-400'; // Próximo
+    return 'bg-primary-container/30 text-on-primary-container border-primary/30';
   } else {
-    return 'bg-purple-100 text-purple-800 border-purple-300'; // Futuro
+    return 'bg-tertiary-container/30 text-tertiary border-tertiary/30';
   }
 }
 
-// Componente reutilizable para la tarjeta de sesión
 interface SessionCardItemProps {
   session: Session;
   loadingSession: string | null;
@@ -94,9 +93,9 @@ function SessionCardItem({ session, loadingSession, onComplete }: SessionCardIte
   
   return (
     <div
-      className={`rounded-md border p-2 mb-1 ${
+      className={`rounded-lg border-l-2 p-2 mb-1 ${
         isCompleted 
-          ? 'bg-green-50 border-green-300 opacity-75' 
+          ? 'bg-secondary-container/20 border-l-secondary opacity-75' 
           : PRIORITY_COLORS[session.priority ?? 'NORMAL'] || PRIORITY_COLORS.NORMAL
       }`}
     >
@@ -105,7 +104,7 @@ function SessionCardItem({ session, loadingSession, onComplete }: SessionCardIte
           {topicName} - R{session.number}
           {session.adjusted_for_conflict && (
             <span
-              className="text-amber-600 flex-shrink-0"
+              className="material-symbols-outlined text-[12px] text-primary flex-shrink-0"
               title={
                 session.original_scheduled_at
                   ? `Reubicada por conflicto. Original: ${new Date(session.original_scheduled_at).toLocaleString('es-AR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Argentina/Buenos_Aires' })}`
@@ -113,79 +112,69 @@ function SessionCardItem({ session, loadingSession, onComplete }: SessionCardIte
               }
               aria-label="Sesión reubicada por conflicto"
             >
-              ⚠️
+              warning
             </span>
           )}
         </div>
         {isCompleted && (
-          <svg className="h-4 w-4 text-green-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+          <span className="material-symbols-outlined text-[16px] text-secondary flex-shrink-0">check_circle</span>
         )}
       </div>
-      <div className="flex items-center gap-1 text-xs text-gray-600 mt-0.5">
-        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+      <div className="flex items-center gap-1 text-xs text-on-surface-variant mt-0.5">
+        <span className="material-symbols-outlined text-[12px]">schedule</span>
         <span>{time}</span>
       </div>
-      <div className="flex items-center gap-1 text-xs text-gray-600">
-        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
+      <div className="flex items-center gap-1 text-xs text-on-surface-variant">
+        <span className="material-symbols-outlined text-[12px]">timer</span>
         <span>{session.duration}min</span>
       </div>
       {!isCompleted && (
-        <button
+        <Button
+          size="sm"
+          variant="secondary"
           onClick={() => onComplete(session)}
           disabled={loadingSession === session.id}
-          className="mt-2 w-full rounded bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-1"
+          className="mt-2 w-full text-xs h-7"
         >
           {loadingSession === session.id ? (
             '...'
           ) : (
             <>
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+              <span className="material-symbols-outlined text-[12px]">check</span>
               <span>Completar</span>
             </>
           )}
-        </button>
+        </Button>
       )}
       {isCompleted && (
-        <div className="mt-2 text-xs text-green-700 font-medium text-center">
-          ✓ Completada
+        <div className="mt-2 text-xs text-secondary font-medium text-center flex items-center justify-center gap-1">
+          <span className="material-symbols-outlined text-[12px]">check_circle</span>
+          Completada
         </div>
       )}
     </div>
   );
 }
 
-// Obtener días del mes con contexto
 function getCalendarDays(year: number, month: number) {
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
   
-  // Ajustar para que Lunes sea 0 (en JS, Domingo es 0)
   let firstDayOfWeek = firstDay.getDay() - 1;
   if (firstDayOfWeek === -1) firstDayOfWeek = 6;
   
   const days: Array<{ date: Date; isCurrentMonth: boolean }> = [];
   
-  // Días del mes anterior para completar la primera semana
   for (let i = firstDayOfWeek - 1; i >= 0; i--) {
     const date = new Date(year, month, -i);
     days.push({ date, isCurrentMonth: false });
   }
   
-  // Días del mes actual
   for (let day = 1; day <= lastDay.getDate(); day++) {
     const date = new Date(year, month, day);
     days.push({ date, isCurrentMonth: true });
   }
   
-  // Días del mes siguiente para completar la última semana
   const remainingDays = 7 - (days.length % 7);
   if (remainingDays < 7) {
     for (let day = 1; day <= remainingDays; day++) {
@@ -197,14 +186,12 @@ function getCalendarDays(year: number, month: number) {
   return days;
 }
 
-// Obtener eventos de un día específico
 function getEventsForDay(date: Date, sessions: Session[], exams: Exam[] = []) {
   const dateStr = date.toISOString().split('T')[0];
   const today = new Date().toISOString().split('T')[0];
   
   const daySessions = sessions.filter(s => {
     const sessionDate = new Date(s.scheduled_at).toISOString().split('T')[0];
-    // Mostrar PENDING siempre + COMPLETED solo del día actual
     return sessionDate === dateStr && (
       s.status === 'PENDING' || 
       (s.status === 'COMPLETED' && sessionDate === today)
@@ -226,7 +213,7 @@ export function UnifiedCalendar({
   onStatusChange,
   onReschedule,
 }: UnifiedCalendarProps) {
-  void onReschedule; // Reserved for future reschedule from calendar
+  void onReschedule;
   const [view, setView] = useState<'week' | '2weeks' | 'month'>(defaultView);
   const [weekOffset, setWeekOffset] = useState(0);
   const [twoWeekOffset, setTwoWeekOffset] = useState(0);
@@ -235,7 +222,6 @@ export function UnifiedCalendar({
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [sessionToComplete, setSessionToComplete] = useState<Session | null>(null);
 
-  // Lógica de navegación semanal
   const getWeekDays = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -253,7 +239,6 @@ export function UnifiedCalendar({
     return days;
   };
 
-  // Lógica de navegación de 2 semanas
   const getTwoWeekDays = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -288,6 +273,12 @@ export function UnifiedCalendar({
     return date.toDateString() === today.toDateString();
   };
 
+  const isPast = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date < today;
+  };
+
   const handleComplete = (session: Session) => {
     setSessionToComplete(session);
     setShowCompleteDialog(true);
@@ -304,17 +295,14 @@ export function UnifiedCalendar({
     setSessionToComplete(null);
   };
 
-  // Navegación semanal
   const goToPreviousWeek = () => setWeekOffset(weekOffset - 1);
   const goToNextWeek = () => setWeekOffset(weekOffset + 1);
   const goToCurrentWeek = () => setWeekOffset(0);
   
-  // Navegación de 2 semanas
   const goToPreviousTwoWeeks = () => setTwoWeekOffset(twoWeekOffset - 1);
   const goToNextTwoWeeks = () => setTwoWeekOffset(twoWeekOffset + 1);
   const goToCurrentTwoWeeks = () => setTwoWeekOffset(0);
   
-  // Navegación mensual
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
   const calendarDays = getCalendarDays(currentYear, currentMonth);
@@ -336,43 +324,51 @@ export function UnifiedCalendar({
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Vista semanal o de 2 semanas
+  const viewToggle = (
+    <div className="flex rounded-lg bg-surface-container p-1">
+      {(['week', '2weeks', 'month'] as const).map((v) => (
+        <button
+          key={v}
+          onClick={() => setView(v)}
+          className={`rounded-lg px-2 py-1 text-xs sm:px-3 sm:text-sm font-medium transition-colors ${
+            view === v ? 'bg-surface-container-lowest text-on-surface shadow-card' : 'text-on-surface-variant hover:text-on-surface'
+          }`}
+          title={v === 'week' ? 'Vista semanal' : v === '2weeks' ? 'Vista de 2 semanas' : 'Vista mensual'}
+        >
+          <span className="hidden sm:inline">{v === 'week' ? 'Semanal' : v === '2weeks' ? '2 Semanas' : 'Mensual'}</span>
+          <span className="sm:hidden">{v === 'week' ? 'S' : v === '2weeks' ? '2S' : 'M'}</span>
+        </button>
+      ))}
+    </div>
+  );
+
   if (view === 'week' || view === '2weeks') {
     const days = view === 'week' ? getWeekDays() : getTwoWeekDays();
     
-    // Agrupar sesiones por día
     const sessionsByDay = sessions.reduce((acc, session) => {
       const date = new Date(session.scheduled_at);
       const dayKey = date.toISOString().split('T')[0];
-      
-      if (!acc[dayKey]) {
-        acc[dayKey] = [];
-      }
+      if (!acc[dayKey]) acc[dayKey] = [];
       acc[dayKey].push(session);
       return acc;
     }, {} as Record<string, Session[]>);
 
-    // Agrupar exámenes por día
     const examsByDay = exams.reduce((acc, exam) => {
       const date = new Date(exam.date);
       const dayKey = date.toISOString().split('T')[0];
-      
-      if (!acc[dayKey]) {
-        acc[dayKey] = [];
-      }
+      if (!acc[dayKey]) acc[dayKey] = [];
       acc[dayKey].push(exam);
       return acc;
     }, {} as Record<string, Exam[]>);
 
     if (sessions.length === 0 && exams.length === 0) {
       return (
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-12 text-center">
-          <p className="text-gray-500">No hay sesiones ni exámenes para mostrar</p>
+        <div className="rounded-xl border border-outline-variant/20 bg-surface-container-low p-12 text-center">
+          <p className="text-on-surface-variant">No hay sesiones ni exámenes para mostrar</p>
         </div>
       );
     }
 
-    // Funciones de navegación según la vista
     const goToPrevious = view === 'week' ? goToPreviousWeek : goToPreviousTwoWeeks;
     const goToNext = view === 'week' ? goToNextWeek : goToNextTwoWeeks;
     const goToCurrent = view === 'week' ? goToCurrentWeek : goToCurrentTwoWeeks;
@@ -381,113 +377,69 @@ export function UnifiedCalendar({
 
     return (
       <div className="space-y-4">
-        {/* Navegación con selector de vistas */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
-            <button
-              onClick={goToPrevious}
-              className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              ← Anterior
-            </button>
+            <Button variant="outline" size="sm" onClick={goToPrevious}>
+              <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+              Anterior
+            </Button>
             {currentOffset !== 0 && (
-              <button
-                onClick={goToCurrent}
-                className="rounded-md border border-blue-300 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100"
-              >
+              <Button variant="outline" size="sm" onClick={goToCurrent}>
                 Esta {viewLabel}
-              </button>
+              </Button>
             )}
-            <button
-              onClick={goToNext}
-              className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Siguiente →
-            </button>
+            <Button variant="outline" size="sm" onClick={goToNext}>
+              Siguiente
+              <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+            </Button>
           </div>
-          
-          {/* Selector de vistas */}
-          <div className="flex rounded-md bg-gray-100 p-1">
-            <button
-              onClick={() => setView('week')}
-              className={`rounded px-2 py-1 text-xs sm:px-3 sm:text-sm font-medium transition-colors ${
-                view === 'week' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'
-              }`}
-              title="Vista semanal"
-            >
-              <span className="hidden sm:inline">Semanal</span>
-              <span className="sm:hidden">S</span>
-            </button>
-            <button
-              onClick={() => setView('2weeks')}
-              className={`rounded px-2 py-1 text-xs sm:px-3 sm:text-sm font-medium transition-colors ${
-                view === '2weeks' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'
-              }`}
-              title="Vista de 2 semanas"
-            >
-              <span className="hidden sm:inline">2 Semanas</span>
-              <span className="sm:hidden">2S</span>
-            </button>
-            <button
-              onClick={() => setView('month')}
-              className="rounded px-2 py-1 text-xs sm:px-3 sm:text-sm font-medium transition-colors text-gray-500 hover:text-gray-900"
-              title="Vista mensual"
-            >
-              <span className="hidden sm:inline">Mensual</span>
-              <span className="sm:hidden">M</span>
-            </button>
-          </div>
+          {viewToggle}
         </div>
 
-        {/* Grid de días (7 columnas, se envuelve automáticamente para 2 semanas) */}
         <div className="grid grid-cols-7 gap-3">
           {days.map((day, index) => {
             const dayKey = day.toISOString().split('T')[0];
             const daySessions = sessionsByDay[dayKey] || [];
             const dayExams = examsByDay[dayKey] || [];
             const todayClass = isToday(day);
+            const pastDay = isPast(day);
 
             return (
               <div
                 key={index}
-                className={`flex flex-col rounded-lg border-2 min-h-[180px] ${
+                className={`flex flex-col rounded-xl border-2 min-h-[180px] ${
                   todayClass 
-                    ? 'border-blue-500 bg-blue-50/50' 
-                    : 'border-gray-200 bg-white'
-                } p-3`}
+                    ? 'border-tertiary/20 bg-surface-container-lowest ring-2 ring-tertiary/20 shadow-xl' 
+                    : 'border-outline-variant/10 bg-surface-container-lowest'
+                } ${pastDay && !todayClass ? 'opacity-60' : ''} p-3`}
               >
-                {/* Header del día */}
-                <div className="mb-2 text-center border-b pb-2">
-                  <div className={`text-xs font-bold ${todayClass ? 'text-blue-600' : 'text-gray-500'}`}>
+                <div className="mb-2 text-center border-b border-outline-variant/10 pb-2">
+                  <div className={`font-label text-[10px] font-bold uppercase tracking-widest ${todayClass ? 'text-tertiary' : 'text-on-surface-variant'}`}>
                     {formatDayLabel(day)}
                   </div>
-                  <div className={`text-2xl font-bold ${todayClass ? 'text-blue-700' : 'text-gray-900'}`}>
+                  <div className={`font-headline text-2xl ${todayClass ? 'text-tertiary' : 'text-on-surface'}`}>
                     {day.getDate()}
                   </div>
                 </div>
 
-                {/* Exámenes del día */}
                 {dayExams.length > 0 && (
                   <div className="mb-2 space-y-1">
                     {dayExams.map((exam) => (
                       <div
                         key={exam.id}
-                        className={`rounded border px-2 py-1 text-xs font-medium flex items-center gap-1 ${getExamColor(exam.date)}`}
+                        className={`rounded-lg border px-2 py-1 text-xs font-medium flex items-center gap-1 ${getExamColor(exam.date)}`}
                       >
-                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
+                        <span className="material-symbols-outlined text-[12px]">assignment</span>
                         <span>{formatExamShortLabel(exam.category as ExamCategory, exam.number)}</span>
                       </div>
                     ))}
                   </div>
                 )}
 
-                {/* Sesiones del día */}
                 <div className="flex-1 space-y-2">
                   {daySessions.length === 0 ? (
                     <div className="flex h-full items-center justify-center">
-                      <p className="text-xs text-gray-400">—</p>
+                      <p className="text-xs text-on-surface-variant/40">—</p>
                     </div>
                   ) : (
                     daySessions.map((session) => (
@@ -505,7 +457,6 @@ export function UnifiedCalendar({
           })}
         </div>
 
-        {/* Complete Session Dialog (week / 2weeks) */}
         <CompleteSessionDialog
           isOpen={showCompleteDialog}
           session={sessionToComplete}
@@ -519,132 +470,85 @@ export function UnifiedCalendar({
     );
   }
 
-  // Vista mensual
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
-      {/* Header con navegación y selector de vistas */}
+    <div className="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-4">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">
+        <h3 className="font-headline text-lg text-on-surface">
           {MONTHS[currentMonth]} {currentYear}
         </h3>
         <div className="flex items-center gap-2">
           <div className="flex gap-2">
-            <button
-              onClick={goToPreviousMonth}
-              className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              ←
-            </button>
-            <button
-              onClick={goToToday}
-              className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
+            <Button variant="outline" size="sm" onClick={goToPreviousMonth}>
+              <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={goToToday}>
               Hoy
-            </button>
-            <button
-              onClick={goToNextMonth}
-              className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              →
-            </button>
+            </Button>
+            <Button variant="outline" size="sm" onClick={goToNextMonth}>
+              <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+            </Button>
           </div>
-          
-          {/* Selector de vistas */}
-          <div className="flex rounded-md bg-gray-100 p-1">
-            <button
-              onClick={() => setView('week')}
-              className="rounded px-2 py-1 text-xs sm:px-3 sm:text-sm font-medium transition-colors text-gray-500 hover:text-gray-900"
-              title="Vista semanal"
-            >
-              <span className="hidden sm:inline">Semanal</span>
-              <span className="sm:hidden">S</span>
-            </button>
-            <button
-              onClick={() => setView('2weeks')}
-              className="rounded px-2 py-1 text-xs sm:px-3 sm:text-sm font-medium transition-colors text-gray-500 hover:text-gray-900"
-              title="Vista de 2 semanas"
-            >
-              <span className="hidden sm:inline">2 Semanas</span>
-              <span className="sm:hidden">2S</span>
-            </button>
-            <button
-              onClick={() => setView('month')}
-              className="rounded px-2 py-1 text-xs sm:px-3 sm:text-sm font-medium transition-colors bg-white text-gray-900 shadow-sm"
-              title="Vista mensual"
-            >
-              <span className="hidden sm:inline">Mensual</span>
-              <span className="sm:hidden">M</span>
-            </button>
-          </div>
+          {viewToggle}
         </div>
       </div>
 
-      {/* Leyenda */}
       <div className="mb-4 flex flex-wrap gap-3 text-xs">
         <div className="flex items-center gap-1">
-          <div className="h-3 w-3 rounded bg-blue-200 border border-blue-400"></div>
-          <span>Sesión Pendiente</span>
+          <div className="h-3 w-3 rounded bg-tertiary-container/30 border border-tertiary/30"></div>
+          <span className="text-on-surface-variant">Sesión Pendiente</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="h-3 w-3 rounded bg-green-200 border border-green-400"></div>
-          <span>Sesión Completada</span>
+          <div className="h-3 w-3 rounded bg-secondary-container/30 border border-secondary/30"></div>
+          <span className="text-on-surface-variant">Sesión Completada</span>
         </div>
         {exams.length > 0 && (
           <div className="flex items-center gap-1">
-            <div className="h-3 w-3 rounded bg-purple-200 border border-purple-400"></div>
-            <span>Examen</span>
+            <div className="h-3 w-3 rounded bg-tertiary-container/50 border border-tertiary/30"></div>
+            <span className="text-on-surface-variant">Examen</span>
           </div>
         )}
       </div>
 
-      {/* Grid del calendario */}
       <div className="grid grid-cols-7 gap-1">
-        {/* Header de días de la semana */}
         {WEEKDAYS.map(day => (
-          <div key={day} className="py-2 text-center text-sm font-semibold text-gray-500">
+          <div key={day} className="py-2 text-center font-label text-[10px] font-semibold text-on-surface-variant uppercase tracking-widest">
             {day}
           </div>
         ))}
         
-        {/* Días del mes */}
         {calendarDays.map((day, index) => {
           const events = getEventsForDay(day.date, sessions, exams);
           const isTodayDate = day.date.toDateString() === today.toDateString();
+          const pastDay = day.date < today && !isTodayDate;
           
           return (
             <div
               key={index}
-              className={`min-h-[180px] border border-gray-200 p-2 flex flex-col ${
-                !day.isCurrentMonth ? 'bg-gray-50' : 'bg-white'
-              } ${isTodayDate ? 'ring-2 ring-blue-500' : ''}`}
+              className={`min-h-[180px] border border-outline-variant/10 p-2 flex flex-col rounded-lg ${
+                !day.isCurrentMonth ? 'bg-surface-container-low' : 'bg-surface-container-lowest'
+              } ${isTodayDate ? 'ring-2 ring-tertiary/20 shadow-xl bg-surface-container-lowest' : ''} ${pastDay ? 'opacity-50' : ''}`}
             >
-              {/* Número del día */}
               <div className={`text-xs font-medium mb-2 ${
-                !day.isCurrentMonth ? 'text-gray-400' : 'text-gray-700'
-              } ${isTodayDate ? 'text-blue-600 font-bold' : ''}`}>
+                !day.isCurrentMonth ? 'text-on-surface-variant/40' : 'text-on-surface-variant'
+              } ${isTodayDate ? 'text-tertiary font-bold' : ''}`}>
                 {day.date.getDate()}
               </div>
               
-              {/* Eventos del día */}
               <div className="flex-1 flex flex-col space-y-1">
-                {/* Exámenes */}
                 {events.exams.map(exam => (
                   <div
                     key={exam.id}
-                    className={`rounded border px-2 py-1 text-xs font-medium mb-1 flex items-center gap-1 ${getExamColor(exam.date)}`}
+                    className={`rounded-lg border px-2 py-1 text-xs font-medium mb-1 flex items-center gap-1 ${getExamColor(exam.date)}`}
                     title={formatExamLabel(exam.category as ExamCategory, exam.modality as ExamModality) + (exam.number ? ` ${exam.number}` : '')}
                   >
-                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
+                    <span className="material-symbols-outlined text-[12px]">assignment</span>
                     <span>{formatExamShortLabel(exam.category as ExamCategory, exam.number)}</span>
                   </div>
                 ))}
                 
-                {/* Sesiones */}
                 {events.sessions.length === 0 && events.exams.length === 0 ? (
                   <div className="flex-1 flex items-center justify-center">
-                    <p className="text-xs text-gray-400 opacity-50">—</p>
+                    <p className="text-xs text-on-surface-variant/30">—</p>
                   </div>
                 ) : (
                   events.sessions.map(session => (
@@ -662,7 +566,6 @@ export function UnifiedCalendar({
         })}
       </div>
 
-      {/* Complete Session Dialog */}
       <CompleteSessionDialog
         isOpen={showCompleteDialog}
         session={sessionToComplete}

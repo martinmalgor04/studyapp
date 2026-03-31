@@ -7,8 +7,8 @@ export default async function ProfilePage() {
   
   return (
     <div className="mx-auto max-w-4xl">
-      <h1 className="text-3xl font-bold text-gray-900">Mi Perfil</h1>
-      <p className="mt-2 text-gray-600">Administrá tu información personal y configuración de cuenta</p>
+      <h1 className="font-headline text-3xl text-on-surface">Mi Perfil</h1>
+      <p className="mt-2 text-on-surface-variant">Administrá tu información personal y configuración de cuenta</p>
       
       <div className="mt-8">
         <ProfileClient 

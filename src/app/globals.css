@@ -4,26 +4,73 @@
 
 @layer base {
   :root {
-    --foreground-rgb: 0, 0, 0;
-    --background-start-rgb: 214, 219, 220;
-    --background-end-rgb: 255, 255, 255;
+    /* Surfaces */
+    --color-background: #fbf9f6;
+    --color-surface: #fbf9f6;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #f5f3f0;
+    --color-surface-container: #eeeeea;
+    --color-surface-container-high: #e8e8e3;
+    --color-surface-container-highest: #e2e3dd;
+    --color-surface-variant: #e2e3dd;
+    --color-surface-dim: #d9dbd4;
+
+    /* Primary */
+    --color-primary: #5f5e5e;
+    --color-primary-dim: #535252;
+    --color-primary-container: #e4e2e1;
+    --color-on-primary: #faf7f6;
+    --color-on-primary-container: #525151;
+
+    /* Secondary */
+    --color-secondary: #546357;
+    --color-secondary-dim: #48574c;
+    --color-secondary-container: #d7e7d8;
+    --color-on-secondary: #edfdee;
+    --color-on-secondary-container: #47554a;
+
+    /* Tertiary */
+    --color-tertiary: #4e5d91;
+    --color-tertiary-dim: #425184;
+    --color-tertiary-container: #b2c1fd;
+    --color-on-tertiary: #faf8ff;
+    --color-on-tertiary-container: #2c3c6e;
+
+    /* Error */
+    --color-error: #9e422c;
+    --color-error-dim: #5c1202;
+    --color-error-container: #fe8b70;
+    --color-on-error: #fff7f6;
+    --color-on-error-container: #742410;
+
+    /* Text */
+    --color-on-surface: #30332f;
+    --color-on-surface-variant: #5d605b;
+    --color-on-background: #30332f;
+
+    /* Borders */
+    --color-outline: #797b77;
+    --color-outline-variant: #b1b3ad;
+
+    /* Inverse */
+    --color-inverse-surface: #0e0e0d;
+    --color-inverse-primary: #ffffff;
+    --color-inverse-on-surface: #9e9d9a;
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --foreground-rgb: 255, 255, 255;
-      --background-start-rgb: 0, 0, 0;
-      --background-end-rgb: 0, 0, 0;
-    }
+  body {
+    @apply bg-background text-on-surface font-body antialiased;
+  }
+
+  ::selection {
+    @apply bg-tertiary-container text-on-tertiary-container;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-headline;
   }
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
 }

@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { updateSessionStatus, deleteSession, completeSessionWithRating, startSession, createPartialSession, markSessionIncomplete } from '@/lib/actions/sessions';
 import { CompleteSessionDialog } from './complete-session-dialog';
 import { StudyModeDialog } from './study-mode-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 const safeConfirm = (message: string): boolean => {
   if (typeof window !== 'undefined') return window.confirm(message);
@@ -34,19 +36,19 @@ interface SessionCardProps {
 }
 
 const PRIORITY_CONFIG = {
-  CRITICAL: { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-300', label: '🔴 CRÍTICO' },
-  URGENT: { bg: 'bg-orange-100', text: 'text-orange-800', border: 'border-orange-300', label: '🟠 URGENTE' },
-  IMPORTANT: { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-300', label: '🟡 IMPORTANTE' },
-  NORMAL: { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-300', label: '🔵 NORMAL' },
-  LOW: { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-300', label: '⚪ BAJA' },
+  CRITICAL: { border: 'border-error/30', label: 'CRÍTICO', variant: 'error' as const },
+  URGENT: { border: 'border-primary/30', label: 'URGENTE', variant: 'default' as const },
+  IMPORTANT: { border: 'border-outline-variant/40', label: 'IMPORTANTE', variant: 'warning' as const },
+  NORMAL: { border: 'border-tertiary/30', label: 'NORMAL', variant: 'outline' as const },
+  LOW: { border: 'border-outline-variant/20', label: 'BAJA', variant: 'outline' as const },
 };
 
 const STATUS_CONFIG = {
-  PENDING: { bg: 'bg-blue-100', text: 'text-blue-800', label: '⏰ Pendiente' },
-  COMPLETED: { bg: 'bg-green-100', text: 'text-green-800', label: '✅ Completada' },
-  INCOMPLETE: { bg: 'bg-purple-100', text: 'text-purple-800', label: '⏸️ Parcial' },
-  RESCHEDULED: { bg: 'bg-orange-100', text: 'text-orange-800', label: '🔄 Reagendada' },
-  ABANDONED: { bg: 'bg-red-100', text: 'text-red-800', label: '❌ Abandonada' },
+  PENDING: { label: 'Pendiente', variant: 'outline' as const },
+  COMPLETED: { label: 'Completada', variant: 'success' as const },
+  INCOMPLETE: { label: 'Parcial', variant: 'default' as const },
+  RESCHEDULED: { label: 'Reagendada', variant: 'warning' as const },
+  ABANDONED: { label: 'Abandonada', variant: 'error' as const },
 };
 
 export function SessionCard({ session, onStatusChange, onReschedule }: SessionCardProps) {
@@ -134,18 +136,18 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
   };
 
   return (
-    <div className={`rounded-lg border-2 ${priorityStyle.border} bg-white p-4 shadow-sm`}>
-      {/* Header: Badges de prioridad, estado y conflicto */}
+    <div className={`rounded-xl border-2 ${priorityStyle.border} bg-surface-container-lowest p-4 shadow-card`}>
+      {/* Header: Badges */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className={`rounded-full px-3 py-1 text-xs font-medium ${priorityStyle.bg} ${priorityStyle.text}`}>
+        <Badge variant={priorityStyle.variant}>
           {priorityStyle.label}
-        </span>
-        <span className={`rounded-full px-3 py-1 text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}>
+        </Badge>
+        <Badge variant={statusStyle.variant}>
           {statusStyle.label}
-        </span>
+        </Badge>
         {session.adjusted_for_conflict && (
-          <span
-            className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 border border-amber-300"
+          <Badge
+            variant="warning"
             title={
               session.original_scheduled_at
                 ? `Reubicada por conflicto de calendario. Horario original: ${new Date(session.original_scheduled_at).toLocaleString('es-AR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`
@@ -153,98 +155,102 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
             }
             aria-label="Sesión reubicada por conflicto de calendario"
           >
-            ⚠️ Reubicada
-          </span>
+            <span className="material-symbols-outlined text-[12px]">warning</span>
+            Reubicada
+          </Badge>
         )}
       </div>
 
-      {/* Content: Info de la sesión */}
+      {/* Content */}
       <div className="space-y-2">
         <div className="flex items-start justify-between">
           <div>
-            <p className="flex items-center gap-1 text-xs text-gray-500">
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
+            <p className="flex items-center gap-1 text-xs text-on-surface-variant">
+              <span className="material-symbols-outlined text-[14px]">menu_book</span>
               <span>{session.subject?.name ?? 'Sin materia'}</span>
             </p>
-            <h3 className="flex items-center gap-1 text-sm font-semibold text-gray-900 mt-1">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+            <h3 className="flex items-center gap-1 text-sm font-semibold text-on-surface mt-1">
+              <span className="material-symbols-outlined text-[16px]">sticky_note_2</span>
               <span>{session.topic?.name ?? 'Sin tema'} - R{session.number ?? 1}</span>
             </h3>
           </div>
         </div>
         
-        <div className="flex items-center gap-4 text-xs text-gray-600">
+        <div className="flex items-center gap-4 text-xs text-on-surface-variant">
           <span className="flex items-center gap-1">
-            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+            <span className="material-symbols-outlined text-[14px]">calendar_month</span>
             {dateStr} - {timeStr}
           </span>
           <span className="flex items-center gap-1">
-            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <span className="material-symbols-outlined text-[14px]">schedule</span>
             {duration} min
           </span>
         </div>
       </div>
 
-      {/* Actions: Botones */}
+      {/* Actions */}
       {status === 'PENDING' && (
         <div className="mt-4 flex gap-2">
-          <button
+          <Button
+            size="sm"
             onClick={handleStartStudy}
             disabled={loading}
             aria-label={`Iniciar modo estudio para ${session.topic?.name ?? 'sesión'}`}
-            className="flex-1 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="flex-1"
           >
+            <span className="material-symbols-outlined text-[14px]">play_arrow</span>
             Estudiar
-          </button>
-          <button
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
             onClick={handleComplete}
             disabled={loading}
             aria-label={`Marcar como completada: ${session.topic?.name ?? 'sesión'}`}
-            className="flex-1 rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
+            className="flex-1"
           >
-            ✓ Completar
-          </button>
-          <button
+            <span className="material-symbols-outlined text-[14px]">check_circle</span>
+            Completar
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
             onClick={() => onReschedule(session)}
             disabled={loading}
             aria-label={`Reagendar sesión: ${session.topic?.name ?? 'sesión'}`}
-            className="flex-1 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="flex-1"
           >
-            🔄 Reagendar
-          </button>
-          <button
+            <span className="material-symbols-outlined text-[14px]">event_repeat</span>
+            Reagendar
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
             onClick={handleDelete}
             disabled={loading}
             aria-label={`Eliminar sesión: ${session.topic?.name ?? 'sesión'}`}
-            className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
           >
-            🗑️
-          </button>
+            <span className="material-symbols-outlined text-[14px]">delete</span>
+          </Button>
         </div>
       )}
 
       {status === 'COMPLETED' && (
         <div className="mt-4 flex gap-2">
-          <button
+          <Button
+            size="sm"
+            variant="outline"
             onClick={handleIncomplete}
             disabled={loading}
             aria-label={`Marcar como incompleta: ${session.topic?.name ?? 'sesión'}`}
-            className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="flex-1"
           >
-            ↩️ Marcar Incompleta
-          </button>
+            <span className="material-symbols-outlined text-[14px]">undo</span>
+            Marcar Incompleta
+          </Button>
         </div>
       )}
 
-      {/* Complete Session Dialog */}
       <CompleteSessionDialog
         isOpen={showCompleteDialog}
         session={session}
@@ -252,7 +258,6 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
         onClose={() => setShowCompleteDialog(false)}
       />
 
-      {/* Study Mode Dialog */}
       <StudyModeDialog
         isOpen={showStudyMode}
         session={session}

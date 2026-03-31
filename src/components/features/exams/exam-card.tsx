@@ -1,4 +1,5 @@
 import { deleteExam } from '@/lib/actions/exams';
+import { Badge } from '@/components/ui/badge';
 import {
   type ExamCategory,
   type ExamModality,
@@ -53,7 +54,7 @@ export function ExamCard({ exam, onEdit, onDelete }: ExamCardProps) {
   const daysRemaining = getDaysRemaining(exam.date);
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+    <div className="rounded-xl border border-outline-variant/10 bg-surface-container-lowest p-6 shadow-card transition-shadow hover:shadow-subtle">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2">
@@ -64,45 +65,48 @@ export function ExamCard({ exam, onEdit, onDelete }: ExamCardProps) {
               {exam.number && ` ${exam.number}`}
             </span>
             {daysRemaining >= 0 && daysRemaining <= 30 && (
-              <span
-                className={`text-xs font-medium ${
+              <Badge
+                variant={
                   daysRemaining <= 7
-                    ? 'text-red-600'
+                    ? 'error'
                     : daysRemaining <= 14
-                      ? 'text-orange-600'
-                      : 'text-blue-600'
-                }`}
+                      ? 'warning'
+                      : 'outline'
+                }
               >
                 {daysRemaining === 0
-                  ? '¡HOY!'
+                  ? 'HOY'
                   : daysRemaining === 1
                     ? 'Mañana'
                     : `En ${daysRemaining} días`}
-              </span>
+              </Badge>
             )}
           </div>
 
-          <p className="mt-3 text-sm font-semibold text-gray-900">
-            📅 {formatDate(exam.date)}
+          <p className="mt-3 text-sm font-semibold text-on-surface flex items-center gap-1">
+            <span className="material-symbols-outlined text-[16px] text-on-surface-variant">calendar_month</span>
+            {formatDate(exam.date)}
           </p>
 
           {exam.description && (
-            <p className="mt-2 text-sm text-gray-600">{exam.description}</p>
+            <p className="mt-2 text-sm text-on-surface-variant">{exam.description}</p>
           )}
         </div>
 
         <div className="flex gap-2">
           <button
             onClick={() => onEdit(exam.id)}
-            className="rounded-md bg-blue-50 px-3 py-1 text-sm text-blue-600 hover:bg-blue-100"
+            className="rounded-lg p-1 text-tertiary hover:bg-tertiary-container/30"
+            title="Editar"
           >
-            Editar
+            <span className="material-symbols-outlined text-[20px]">edit</span>
           </button>
           <button
             onClick={handleDelete}
-            className="rounded-md bg-red-50 px-3 py-1 text-sm text-red-600 hover:bg-red-100"
+            className="rounded-lg p-1 text-error hover:bg-error-container/30"
+            title="Eliminar"
           >
-            Eliminar
+            <span className="material-symbols-outlined text-[20px]">delete</span>
           </button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { ExamForm } from './exam-form';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { ExamCategory, ExamModality } from '@/lib/validations/exams';
 
 interface ExamDialogProps {
@@ -18,23 +19,17 @@ interface ExamDialogProps {
 }
 
 export function ExamDialog({ isOpen, onClose, subjectId, exam }: ExamDialogProps) {
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-screen items-center justify-center p-4">
-        {/* Backdrop */}
-        <div className="fixed inset-0 bg-black bg-opacity-30 transition-opacity" onClick={onClose} />
-
-        {/* Dialog */}
-        <div className="relative z-50 w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-          <h2 className="mb-4 text-xl font-bold text-gray-900">
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>
             {exam ? 'Editar Examen' : 'Nuevo Examen'}
-          </h2>
+          </DialogTitle>
+        </DialogHeader>
 
-          <ExamForm subjectId={subjectId} exam={exam} onSuccess={onClose} onCancel={onClose} />
-        </div>
-      </div>
-    </div>
+        <ExamForm subjectId={subjectId} exam={exam} onSuccess={onClose} onCancel={onClose} />
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { Button } from '@/components/ui/button';
 
 interface PomodoroTimerProps {
-  studyMinutes?: number; // Default 25
-  breakMinutes?: number; // Default 5
+  studyMinutes?: number;
+  breakMinutes?: number;
   onStudyComplete?: () => void;
   onSessionEnd?: (totalMinutes: number) => void;
 }
@@ -15,10 +16,10 @@ export function PomodoroTimer({
   onStudyComplete,
   onSessionEnd
 }: PomodoroTimerProps) {
-  const [timeLeft, setTimeLeft] = useState(studyMinutes * 60); // Segundos
+  const [timeLeft, setTimeLeft] = useState(studyMinutes * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [isBreak, setIsBreak] = useState(false);
-  const [totalStudyTime, setTotalStudyTime] = useState(0); // Minutos acumulados
+  const [totalStudyTime, setTotalStudyTime] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const totalTime = isBreak ? breakMinutes * 60 : studyMinutes * 60;
@@ -29,7 +30,6 @@ export function PomodoroTimer({
       intervalRef.current = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
-            // Terminó el ciclo
             clearInterval(intervalRef.current!);
             handleCycleComplete();
             return 0;
@@ -49,18 +49,15 @@ export function PomodoroTimer({
 
   const handleCycleComplete = () => {
     if (!isBreak) {
-      // Terminó estudio, empezar descanso
       setTotalStudyTime(prev => prev + studyMinutes);
       setIsBreak(true);
       setTimeLeft(breakMinutes * 60);
       setIsRunning(false);
       if (onStudyComplete) onStudyComplete();
-      // Sonido o notificación
       if (typeof window !== 'undefined' && 'Notification' in window) {
         new Notification('StudyApp', { body: '¡Descanso de 5 minutos!' });
       }
     } else {
-      // Terminó descanso, volver a estudio
       setIsBreak(false);
       setTimeLeft(studyMinutes * 60);
       setIsRunning(false);
@@ -99,7 +96,7 @@ export function PomodoroTimer({
             stroke="currentColor"
             strokeWidth="16"
             fill="none"
-            className="text-gray-200"
+            className="text-surface-container"
           />
           <circle
             cx="128"
@@ -110,15 +107,15 @@ export function PomodoroTimer({
             fill="none"
             strokeDasharray={`${2 * Math.PI * 112}`}
             strokeDashoffset={`${2 * Math.PI * 112 * (1 - progress / 100)}`}
-            className={`transition-all duration-1000 ${isBreak ? 'text-green-500' : 'text-blue-600'}`}
+            className={`transition-all duration-1000 ${isBreak ? 'text-secondary' : 'text-tertiary'}`}
             strokeLinecap="round"
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <p className="text-6xl font-bold text-gray-900">
+          <p className="font-headline text-6xl text-on-surface">
             {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
           </p>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-on-surface-variant">
             {isBreak ? 'Descanso' : 'Estudiando'}
           </p>
         </div>
@@ -126,33 +123,37 @@ export function PomodoroTimer({
 
       {/* Controls */}
       <div className="mt-8 flex gap-4">
-        <button
+        <Button
           onClick={togglePlay}
           aria-label={isRunning ? 'Pausar temporizador' : 'Iniciar temporizador'}
-          className="rounded-full bg-blue-600 px-8 py-3 text-sm font-medium text-white hover:bg-blue-700 shadow-md"
+          className="rounded-full px-8"
         >
+          <span className="material-symbols-outlined text-[18px]">
+            {isRunning ? 'pause' : 'play_arrow'}
+          </span>
           {isRunning ? 'Pausar' : 'Iniciar'}
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="outline"
           onClick={reset}
           aria-label="Reiniciar temporizador"
-          className="rounded-full border border-gray-300 bg-white px-8 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="rounded-full px-8"
         >
+          <span className="material-symbols-outlined text-[18px]">restart_alt</span>
           Reiniciar
-        </button>
+        </Button>
       </div>
 
       {/* Stats */}
-      <div className="mt-6 text-center text-sm text-gray-600">
-        <p>Tiempo total de estudio: <span className="font-semibold">{totalStudyTime} minutos</span></p>
+      <div className="mt-6 text-center text-sm text-on-surface-variant">
+        <p>Tiempo total de estudio: <span className="font-semibold font-headline">{totalStudyTime} minutos</span></p>
       </div>
 
-      {/* End Session Early */}
       {totalStudyTime > 0 && (
         <button
           onClick={handleEndSession}
           aria-label={`Finalizar sesión anticipadamente (${totalStudyTime} minutos estudiados)`}
-          className="mt-4 text-sm text-blue-600 hover:text-blue-700"
+          className="mt-4 text-sm text-tertiary hover:text-tertiary-dim"
         >
           Terminé antes →
         </button>

@@ -8,6 +8,8 @@ import { ExamDialog } from '@/components/features/exams/exam-dialog';
 import { TopicList } from '@/components/features/topics/topic-list';
 import { TopicDialog } from '@/components/features/topics/topic-dialog';
 import { UnifiedCalendar } from '@/components/shared/calendar/unified-calendar';
+import { MotivationalQuote } from '@/components/shared/motivational-quote';
+import { Button } from '@/components/ui/button';
 
 interface SubjectRow {
   id: string;
@@ -69,7 +71,6 @@ export function SubjectDetailClient({
   const [editingExam, setEditingExam] = useState<ExamRow | null>(null);
   const [editingTopic, setEditingTopic] = useState<TopicRow | null>(null);
 
-  // Sincronizar estados cuando el RSC re-renderiza con datos frescos (post router.refresh())
   useEffect(() => {
     setExams(initialExams);
   }, [initialExams]);
@@ -130,26 +131,24 @@ export function SubjectDetailClient({
       <div className="mb-6">
         <Link
           href="/dashboard/subjects"
-          className="mb-4 inline-flex items-center text-sm text-blue-600 hover:underline"
+          className="mb-4 inline-flex items-center gap-1 text-sm text-on-surface-variant hover:text-on-surface transition-colors"
         >
-          ← Volver a Materias
+          <span className="material-symbols-rounded text-[18px]">arrow_back</span>
+          Volver a Materias
         </Link>
-        <h1 className="text-3xl font-bold text-gray-900">{subject.name as string}</h1>
+        <h1 className="font-headline text-3xl text-on-surface">{subject.name as string}</h1>
         {subject.description && (
-          <p className="mt-2 text-sm text-gray-600">{subject.description as string}</p>
+          <p className="mt-2 text-sm text-on-surface-variant">{subject.description as string}</p>
         )}
       </div>
 
       {/* Sección de Exámenes */}
       <div className="mb-8">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-900">Exámenes</h2>
-          <button
-            onClick={handleNewExam}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
+          <h2 className="font-headline text-xl text-on-surface">Exámenes</h2>
+          <Button onClick={handleNewExam} size="sm">
             + Nuevo Examen
-          </button>
+          </Button>
         </div>
 
         <ExamList exams={exams} onEdit={handleEditExam} onDelete={handleDeleteExam} />
@@ -157,7 +156,7 @@ export function SubjectDetailClient({
 
       {/* Sección de Calendario */}
       <div className="mb-8">
-        <h2 className="mb-4 text-xl font-semibold text-gray-900">Calendario</h2>
+        <h2 className="font-headline text-xl text-on-surface mb-4">Calendario</h2>
         <UnifiedCalendar
           defaultView="month"
           sessions={sessions}
@@ -169,13 +168,10 @@ export function SubjectDetailClient({
       {/* Sección de Temas */}
       <div>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-900">Temas</h2>
-          <button
-            onClick={handleNewTopic}
-            className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
-          >
+          <h2 className="font-headline text-xl text-on-surface">Temas</h2>
+          <Button onClick={handleNewTopic} variant="secondary" size="sm">
             + Nuevo Tema
-          </button>
+          </Button>
         </div>
 
         <TopicList topics={topics} onEdit={handleEditTopic} onDelete={handleDeleteTopic} />
@@ -195,6 +191,8 @@ export function SubjectDetailClient({
         exams={exams}
         topic={editingTopic ?? undefined}
       />
+
+      <MotivationalQuote />
     </div>
   );
 }

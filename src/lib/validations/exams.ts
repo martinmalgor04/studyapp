@@ -30,10 +30,10 @@ export const MODALITY_LABELS: Record<ExamModality, string> = {
 };
 
 export const CATEGORY_COLORS: Record<ExamCategory, string> = {
-  PARCIAL: 'bg-blue-100 text-blue-800',
-  RECUPERATORIO: 'bg-yellow-100 text-yellow-800',
-  FINAL: 'bg-purple-100 text-purple-800',
-  TP: 'bg-gray-100 text-gray-800',
+  PARCIAL: 'bg-tertiary-container/30 text-on-tertiary-container',
+  RECUPERATORIO: 'bg-primary-container/40 text-on-primary-container',
+  FINAL: 'bg-tertiary-container/50 text-tertiary',
+  TP: 'bg-surface-container text-on-surface-variant',
 };
 
 export function formatExamLabel(category: ExamCategory, modality: ExamModality): string {

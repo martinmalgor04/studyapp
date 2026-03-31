@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getNotifications, markAllNotificationsAsRead } from '@/lib/actions/notifications';
 import { NotificationItem } from './notification-item';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function NotificationBell() {
   const [notifications, setNotifications] = useState<Array<{ id: string; type: string; title: string; message: string; read: boolean; created_at: string }>>([]);
@@ -22,7 +23,6 @@ export function NotificationBell() {
   useEffect(() => {
     loadNotifications();
     
-    // Recargar cada 60 segundos
     const interval = setInterval(loadNotifications, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -40,28 +40,17 @@ export function NotificationBell() {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
+        className="relative p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-full transition-colors"
         aria-label={unreadCount > 0 ? `Notificaciones (${unreadCount} sin leer)` : 'Notificaciones'}
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <svg
-          className="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-          />
-        </svg>
+        <span className="material-symbols-outlined text-[24px]" aria-hidden="true">
+          notifications
+        </span>
         {unreadCount > 0 && (
           <span
-            className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white"
+            className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-error text-xs font-bold text-on-error"
             aria-hidden="true"
           >
             {unreadCount > 9 ? '9+' : unreadCount}
@@ -71,43 +60,42 @@ export function NotificationBell() {
 
       {isOpen && (
         <>
-          {/* Backdrop */}
           <div
             className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
           />
 
-          {/* Dropdown */}
           <div
-            className="absolute right-0 z-50 mt-2 w-96 rounded-lg border border-gray-200 bg-white shadow-xl"
+            className="absolute right-0 z-50 mt-2 w-96 rounded-xl border border-outline-variant/10 bg-surface-container-lowest shadow-subtle"
             role="dialog"
             aria-label="Panel de notificaciones"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-gray-200 p-4">
-              <h3 className="font-semibold text-gray-900">Notificaciones</h3>
+            <div className="flex items-center justify-between border-b border-outline-variant/10 p-4">
+              <h3 className="font-semibold text-on-surface">Notificaciones</h3>
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllAsRead}
-                  className="text-xs text-blue-600 hover:text-blue-700"
+                  className="text-xs text-tertiary hover:text-tertiary-dim"
                 >
                   Marcar todas como leídas
                 </button>
               )}
             </div>
 
-            {/* List */}
             <div className="max-h-96 overflow-y-auto">
               {loading ? (
-                <div className="p-8 text-center text-gray-500">
-                  <p>Cargando...</p>
+                <div className="space-y-3 p-4">
+                  {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-16 rounded-lg" />
+                  ))}
                 </div>
               ) : notifications.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
-                  <p>No hay notificaciones</p>
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <span className="material-symbols-outlined text-3xl text-on-surface-variant/40 mb-2">notifications_off</span>
+                  <p className="text-sm text-on-surface-variant">No hay notificaciones</p>
                 </div>
               ) : (
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-outline-variant/10">
                   {notifications.map((notification) => (
                     <div key={notification.id} className="p-2">
                       <NotificationItem
@@ -120,13 +108,12 @@ export function NotificationBell() {
               )}
             </div>
 
-            {/* Footer */}
             {notifications.length > 0 && (
-              <div className="border-t border-gray-200 p-3 text-center">
+              <div className="border-t border-outline-variant/10 p-3 text-center">
                 <Link
                   href="/dashboard/notifications"
                   onClick={() => setIsOpen(false)}
-                  className="text-sm text-blue-600 hover:text-blue-700"
+                  className="text-sm text-tertiary hover:text-tertiary-dim"
                 >
                   Ver todas las notificaciones
                 </Link>

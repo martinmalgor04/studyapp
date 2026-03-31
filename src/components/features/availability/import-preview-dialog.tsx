@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { TimeSlot } from '@/lib/services/availability-importer.service';
+import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 interface ImportPreviewDialogProps {
   slots: TimeSlot[];
@@ -42,7 +44,6 @@ export function ImportPreviewDialog({
     setLoading(false);
   };
 
-  // Agrupar slots por día de semana
   const slotsByDay = slots.reduce((acc, slot) => {
     if (!acc[slot.day_of_week]) {
       acc[slot.day_of_week] = [];
@@ -52,31 +53,30 @@ export function ImportPreviewDialog({
   }, {} as Record<number, TimeSlot[]>);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="max-w-3xl w-full bg-white rounded-lg shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
+    <Dialog open={true} onOpenChange={(open) => { if (!open) onCancel(); }}>
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col p-0">
         {/* Header */}
-        <div className="p-6 border-b">
-          <h2 className="text-2xl font-bold text-gray-900">
+        <div className="p-6 border-b border-outline-variant/20">
+          <h2 className="font-headline text-xl text-on-surface">
             Horarios detectados en tu Google Calendar
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-on-surface-variant">
             Encontramos {slots.length} horarios libres. Revisá y confirmá para importarlos.
           </p>
 
-          {/* Stats Cards */}
           {stats && (
             <div className="grid grid-cols-3 gap-4 mt-4">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <div className="text-2xl font-bold text-blue-900">{stats.total}</div>
-                <div className="text-xs text-blue-700">Slots detectados</div>
+              <div className="bg-tertiary-container/30 p-4 rounded-xl">
+                <div className="text-2xl font-bold text-on-tertiary-container">{stats.total}</div>
+                <div className="text-xs text-on-tertiary-container/80">Slots detectados</div>
               </div>
-              <div className="bg-green-50 p-4 rounded-lg">
-                <div className="text-2xl font-bold text-green-900">{stats.valid}</div>
-                <div className="text-xs text-green-700">Válidos (≥30min)</div>
+              <div className="bg-secondary-container/30 p-4 rounded-xl">
+                <div className="text-2xl font-bold text-on-secondary-container">{stats.valid}</div>
+                <div className="text-xs text-on-secondary-container/80">Válidos (&ge;30min)</div>
               </div>
-              <div className="bg-amber-50 p-4 rounded-lg">
-                <div className="text-2xl font-bold text-amber-900">{stats.discarded}</div>
-                <div className="text-xs text-amber-700">Descartados (&lt;30min)</div>
+              <div className="bg-primary-container/30 p-4 rounded-xl">
+                <div className="text-2xl font-bold text-on-primary-container">{stats.discarded}</div>
+                <div className="text-xs text-on-primary-container/80">Descartados (&lt;30min)</div>
               </div>
             </div>
           )}
@@ -84,16 +84,15 @@ export function ImportPreviewDialog({
 
         {/* Preview */}
         <div className="flex-1 overflow-y-auto p-6">
-          {/* Comparación: Actual vs Importado */}
           {existingSlots && existingSlots.length > 0 && (
             <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="border rounded-lg p-3 bg-gray-50">
-                <h4 className="text-sm font-semibold text-gray-700 mb-2">Horarios Actuales</h4>
-                <p className="text-xs text-gray-600">{existingSlots.length} slots configurados</p>
+              <div className="border border-outline-variant/20 rounded-xl p-3 bg-surface-container-low">
+                <h4 className="text-sm font-headline text-on-surface-variant mb-2">Horarios Actuales</h4>
+                <p className="text-xs text-on-surface-variant/80">{existingSlots.length} slots configurados</p>
               </div>
-              <div className="border rounded-lg p-3 bg-blue-50">
-                <h4 className="text-sm font-semibold text-blue-700 mb-2">Horarios Nuevos</h4>
-                <p className="text-xs text-blue-600">{slots.length} slots detectados</p>
+              <div className="border border-tertiary/20 rounded-xl p-3 bg-tertiary-container/20">
+                <h4 className="text-sm font-headline text-on-tertiary-container mb-2">Horarios Nuevos</h4>
+                <p className="text-xs text-on-tertiary-container/80">{slots.length} slots detectados</p>
               </div>
             </div>
           )}
@@ -102,21 +101,21 @@ export function ImportPreviewDialog({
             {Object.entries(slotsByDay)
               .sort(([dayA], [dayB]) => Number(dayA) - Number(dayB))
               .map(([dayOfWeek, daySlots]) => (
-                <div key={dayOfWeek} className="border rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-900 mb-3">
+                <div key={dayOfWeek} className="border border-outline-variant/20 rounded-xl p-4">
+                  <h3 className="font-headline text-on-surface mb-3">
                     {DAY_NAMES[Number(dayOfWeek)]}
                   </h3>
                   <div className="space-y-2">
                     {daySlots.map((slot, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center gap-3 py-2 px-3 bg-blue-50 rounded-md"
+                        className="flex items-center gap-3 py-2 px-3 bg-tertiary-container/20 rounded-lg"
                       >
                         <div className="flex-1">
-                          <span className="text-sm font-medium text-blue-900">
+                          <span className="text-sm font-medium text-on-tertiary-container">
                             {slot.start_time} - {slot.end_time}
                           </span>
-                          <span className="ml-2 text-xs text-blue-700">
+                          <span className="ml-2 text-xs text-on-tertiary-container/80">
                             ({calculateDuration(slot.start_time, slot.end_time)} min)
                           </span>
                         </div>
@@ -128,10 +127,9 @@ export function ImportPreviewDialog({
           </div>
         </div>
 
-        {/* Strategy Selection (solo para usuarios existentes) */}
         {showStrategyOption && (
-          <div className="px-6 py-4 border-t border-b bg-gray-50">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+          <div className="px-6 py-4 border-t border-outline-variant/20 bg-surface-container-low">
+            <label className="block text-sm font-headline text-on-surface mb-3">
               ¿Cómo querés importar estos horarios?
             </label>
             <div className="space-y-2">
@@ -142,13 +140,13 @@ export function ImportPreviewDialog({
                   value="REPLACE"
                   checked={strategy === 'REPLACE'}
                   onChange={() => setStrategy('REPLACE')}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 text-tertiary focus:ring-tertiary"
                 />
                 <div>
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-sm font-medium text-on-surface">
                     Reemplazar mis horarios actuales
                   </span>
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-on-surface-variant">
                     Elimina tus horarios existentes y usa solo los detectados
                   </p>
                 </div>
@@ -160,13 +158,13 @@ export function ImportPreviewDialog({
                   value="MERGE"
                   checked={strategy === 'MERGE'}
                   onChange={() => setStrategy('MERGE')}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 text-tertiary focus:ring-tertiary"
                 />
                 <div>
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-sm font-medium text-on-surface">
                     Combinar con mis horarios actuales
                   </span>
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-on-surface-variant">
                     Mantiene tus horarios existentes y agrega los nuevos
                   </p>
                 </div>
@@ -175,24 +173,15 @@ export function ImportPreviewDialog({
           </div>
         )}
 
-        {/* Actions */}
-        <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
-          <button
-            onClick={onCancel}
-            disabled={loading}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
-          >
+        <DialogFooter className="p-6 border-t border-outline-variant/20 bg-surface-container-low">
+          <Button variant="ghost" onClick={onCancel} disabled={loading}>
             Cancelar
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={loading}
-            className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
-          >
+          </Button>
+          <Button onClick={handleConfirm} disabled={loading}>
             {loading ? 'Importando...' : 'Confirmar e Importar'}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
