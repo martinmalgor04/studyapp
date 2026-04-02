@@ -15,6 +15,11 @@ interface SubjectRow {
   description: string | null;
   created_at: string;
   progress_percentage?: number;
+  year?: number | null;
+  semester?: string | null;
+  status?: string;
+  professors?: string[] | null;
+  schedule?: unknown;
 }
 
 interface SubjectsPageClientProps {
@@ -89,8 +94,7 @@ export function SubjectsPageClient({ initialSubjects }: SubjectsPageClientProps)
   };
 
   const handleNewSubject = () => {
-    setEditingSubject(null);
-    setIsDialogOpen(true);
+    router.push('/dashboard/subjects/new');
   };
 
   return (

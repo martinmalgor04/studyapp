@@ -11,6 +11,8 @@ export const scheduleItemSchema = z.object({
   endTime: z.string().regex(/^\d{2}:\d{2}$/, 'Formato: HH:MM'),
 });
 
+const emptyToUndefined = z.literal('').transform(() => undefined);
+
 export const createSubjectSchema = z.object({
   name: z
     .string()
@@ -18,8 +20,8 @@ export const createSubjectSchema = z.object({
     .max(100, 'El nombre no puede exceder 100 caracteres'),
   description: z.string().max(500, 'La descripción no puede exceder 500 caracteres').optional(),
   year: z.number().int().min(2000).max(2100).optional(),
-  semester: semesterTypeSchema.optional(),
-  status: subjectStatusSchema.optional(),
+  semester: z.union([semesterTypeSchema, emptyToUndefined]).optional(),
+  status: z.union([subjectStatusSchema, emptyToUndefined]).optional(),
   professors: z.array(z.string().max(100)).optional(),
   schedule: z.array(scheduleItemSchema).optional(),
 });
@@ -33,8 +35,8 @@ export const updateSubjectSchema = z.object({
   description: z.string().max(500, 'La descripción no puede exceder 500 caracteres').optional(),
   isActive: z.boolean().optional(),
   year: z.number().int().min(2000).max(2100).optional(),
-  semester: semesterTypeSchema.optional(),
-  status: subjectStatusSchema.optional(),
+  semester: z.union([semesterTypeSchema, emptyToUndefined]).optional(),
+  status: z.union([subjectStatusSchema, emptyToUndefined]).optional(),
   professors: z.array(z.string().max(100)).optional(),
   schedule: z.array(scheduleItemSchema).optional(),
 });
