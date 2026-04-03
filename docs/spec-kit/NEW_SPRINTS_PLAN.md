@@ -876,6 +876,26 @@
 
 ---
 
+### [7i] Paridad PDF/IA — Wizard «Nueva materia» (dashboard)
+**Estimación:** 2h
+**Dependencias:** 7g (misma UX que onboarding; reutiliza `PdfUploadStep` + extracción)
+**Archivos principales:** `src/app/(dashboard)/dashboard/subjects/new/new-subject-client.tsx`, `src/components/shared/pdf-upload/`, `src/lib/actions/onboarding-wizard.ts` (o acción de completado equivalente)
+
+**Qué hacer:**
+1. En el wizard de **crear materia desde el dashboard** (`/dashboard/subjects/new`), para rutas **Estudio libre** y **Cursando**, incluir el paso opcional **«Programa (PDF)»** **antes** del paso de plan manual / cursada — **mismo orden y comportamiento** que en `/onboarding`.
+2. Reutilizar `PdfUploadStep` y el mismo pipeline de datos (`pdfExtraction` → metadata/topics para los pasos siguientes) que ya usa onboarding.
+3. Permitir **omitir** el paso (PDF opcional) sin bloquear el flujo.
+4. Verificar que `completeSubjectWizard` (o la acción usada en dashboard) recibe `pdfMetadata` / extracción igual que onboarding.
+
+**Criterio de aceptación:**
+- Usuario ve el paso PDF en «Nueva materia» cuando elige libre o cursada (paridad con onboarding).
+- Subir PDF o saltar el paso funciona; datos precargan los pasos siguientes cuando aplica.
+- Sin regresiones en onboarding.
+
+> **Nota:** La integración en código puede adelantarse al resto del sprint; esta tarea formaliza paridad UX + QA.
+
+---
+
 ## Sprint 8 — Dark Mode
 
 ### [8a] Theme System
@@ -936,11 +956,11 @@
 |--------|-------|-------------------|
 | Sprint 5: Rediseño Visual | ~40h | 2 semanas |
 | Sprint 6: Onboarding Inteligente | ~50h | 2.5 semanas |
-| Sprint 7: Procesamiento IA PDFs | ~42h | 2 semanas |
+| Sprint 7: Procesamiento IA PDFs | ~44h | ~2 semanas |
 | Sprint 8: Dark Mode | ~8h | 0.5 semanas |
 | Sprint 9: Gamificación | ~26h | 1.5 semanas |
 | Sprint 10: Analytics + Tasks | ~40h | 2 semanas |
-| **TOTAL** | **~206h** | **~10.5 semanas** |
+| **TOTAL** | **~208h** | **~10.5 semanas** |
 
 ---
 

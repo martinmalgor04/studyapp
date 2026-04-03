@@ -121,7 +121,7 @@ Implementá [6a] Wizard Framework & Gestión de Pasos: componente Wizard reutili
 | 6i | Página Creación Materia (Dashboard) | 4h | Requiere: 6a-6h |
 | 6j | Session Card — Pre-clase + Tips | 3h | Requiere: 6g |
 
-### Sprint 7 — Procesamiento IA de PDFs (~42h)
+### Sprint 7 — Procesamiento IA de PDFs (~44h)
 
 | Sub-sprint | Tarea | Tiempo | Dependencias |
 |-----------|-------|--------|-------------|
@@ -133,6 +133,7 @@ Implementá [6a] Wizard Framework & Gestión de Pasos: componente Wizard reutili
 | 7f | Server Action — Procesar PDF | 5h | Requiere: 7a-7d |
 | 7g | Integración Onboarding + IA | 6h | Requiere: 7e + 7f |
 | 7h | Metadata de Materia desde IA | 3h | Requiere: 7c + 7g |
+| 7i | Paridad PDF/IA — Wizard Nueva materia (dashboard) | 2h | Requiere: 7g |
 
 ### Sprint 8 — Dark Mode (~8h)
 

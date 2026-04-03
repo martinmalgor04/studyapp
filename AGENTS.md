@@ -80,14 +80,14 @@ La arquitectura debe ser:
 - **Escalable**: Preparada para crecer sin reescribir
 - **Consistente**: Patrones uniformes en todo el proyecto
 
-### 4. Local-first, Production-ready
+### 4. Local-first (app), Cloud-first (datos)
 
-**Desarrollo 100% local, pero siempre listo para producción.**
+**Next.js en local; base de datos y auth en Supabase Cloud.**
 
-- Desarrollo: Supabase local + Next.js local
-- Producción: Supabase Cloud + Vercel
-- El código debe funcionar igual en ambos entornos
-- NO hardcodear URLs o configuraciones específicas de entorno
+- Desarrollo: **Supabase Cloud** + Next.js en `localhost`
+- Producción: **Supabase Cloud** + Vercel
+- Las migraciones SQL viven en `supabase/migrations/` (repo); el entorno de ejecución de la DB es siempre el proyecto Cloud
+- NO hardcodear URLs ni credenciales; usar variables de entorno (`NEXT_PUBLIC_SUPABASE_*` apuntando a `https://<ref>.supabase.co`)
 
 ---
 
@@ -119,18 +119,13 @@ La arquitectura debe ser:
 - **TailwindCSS** para estilos
 
 ### Base de Datos & Auth
-- **Supabase** (PostgreSQL + Auth + Realtime)
+- **Supabase Cloud** (PostgreSQL + Auth + Realtime) en desarrollo y producción
 - **Row Level Security (RLS)** para seguridad
-- Desarrollo: Supabase CLI local
-- Producción: Supabase Cloud
-
-### Contenedores (Local)
-- **Docker Desktop** (Estándar)
-- Supabase CLI usa Docker nativo
+- Credenciales: Dashboard de Supabase → Settings → API (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
 
 ### Producción
 - **Vercel** para frontend/backend
-- **Supabase Cloud** para DB/Auth
+- **Supabase Cloud** para DB/Auth (mismo proyecto que en dev, salvo que configures otro proyecto de staging)
 
 ### Herramientas
 - **pnpm** como package manager
@@ -194,8 +189,8 @@ StudyApp/
 │   └── middleware.ts                 # Next.js middleware (auth)
 │
 ├── supabase/
-│   ├── config.toml                   # Configuración local
-│   ├── migrations/                   # SQL migrations
+│   ├── config.toml                   # Config Supabase CLI (migrations en repo)
+│   ├── migrations/                   # SQL migrations (fuente de verdad; aplicadas a Cloud)
 │   │   └── 20240126000001_initial_schema.sql
 │   ├── functions/                    # Edge Functions (opcional)
 │   └── seed.sql                      # Datos iniciales
@@ -476,11 +471,8 @@ export class SessionGeneratorService {
 # Instalar dependencias
 pnpm install
 
-# Iniciar Supabase local (requiere Docker Desktop)
-pnpm supabase:start
-
-# Copiar keys a .env.local (ver output del comando anterior)
-# NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+# En Supabase Dashboard → Settings → API: copiar Project URL y anon key a .env.local
+# NEXT_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
 # NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
 
 # Iniciar Next.js
@@ -494,20 +486,14 @@ pnpm dev
 | `pnpm dev` | Iniciar servidor de desarrollo |
 | `pnpm build` | Build de producción |
 | `pnpm lint` | Ejecutar ESLint |
-| `pnpm supabase:start` | Iniciar Supabase local |
-| `pnpm supabase:stop` | Detener Supabase local |
-| `pnpm supabase:status` | Ver estado de servicios |
-| `pnpm supabase:reset` | Resetear DB (aplica migrations + seed) |
-| `pnpm db:types` | Generar tipos TypeScript desde schema |
+| `pnpm db:types` | Generar tipos TypeScript desde el schema del proyecto (Supabase CLI + proyecto linkeado) |
 
-### URLs Locales
+### URLs
 
 | Servicio | URL |
 |----------|-----|
-| Next.js | http://localhost:3000 |
-| Supabase API | http://localhost:54321 |
-| Supabase Studio | http://localhost:54323 |
-| PostgreSQL | postgresql://postgres:postgres@localhost:54322/postgres |
+| Next.js (dev) | http://localhost:3000 |
+| Supabase (Dashboard / API) | Proyecto en [supabase.com/dashboard](https://supabase.com/dashboard) (`https://<ref>.supabase.co`) |
 
 ---
 
@@ -516,26 +502,27 @@ pnpm dev
 ### .env.local (NO commitear)
 
 ```env
-# Supabase Local
-NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<tu-anon-key>
-
-# Supabase Cloud (para producción)
-# NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
-# NEXT_PUBLIC_SUPABASE_ANON_KEY=<tu-anon-key>
+# Supabase Cloud (desarrollo y producción: mismo formato; valores desde Dashboard → API)
+NEXT_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
 
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-### Configuración de Docker
+### IA — Extracción de PDFs (programas)
 
-Supabase CLI usa Docker Desktop por defecto. Asegurate de tenerlo instalado y corriendo.
+Extracción vía [`src/lib/services/ai/factory.ts`](src/lib/services/ai/factory.ts). Elegís proveedor con `AI_PROVIDER` (no es configurable por usuario final).
 
-```bash
-# Verificar instalación
-docker info
-```
+| Variable | Uso |
+|----------|-----|
+| `AI_PROVIDER` | `openai` (default) o `google` (Gemini vía Google AI Studio). `anthropic` existe en código pero no está implementado. |
+| `AI_API_KEY` | **Obligatoria** para extracción. OpenAI: key `sk-...`. Google: key de [Google AI Studio](https://aistudio.google.com/apikey) (no confundir con OAuth de Google Calendar). |
+| `AI_MODEL` | Opcional. OpenAI default `gpt-4o-mini`; Google default `gemini-2.0-flash`. Debe soportar entrada multimodal (PDF/imagen). |
+| `AI_TIMEOUT_MS` | Opcional (default 60000). |
+| `AI_MAX_TOKENS` | Opcional (default 4096). |
+
+En Vercel: mismas variables para el entorno de deploy. La key nunca debe usar prefijo `NEXT_PUBLIC_`.
 
 ---
 
@@ -688,7 +675,7 @@ src/
 | Database Schema | `docs/spec-kit/06-database-schema.md` | Schema completo |
 | Design Patterns | `docs/spec-kit/08-design-patterns.md` | SOLID, GRASP, GOF aplicados |
 | Roadmap | `docs/spec-kit/09-roadmap.md` | Plan de implementación |
-| Supabase Setup | `docs/DOCKER_SETUP.md` | Guía de configuración local con Docker |
+| Supabase / Docker (referencia) | `docs/DOCKER_SETUP.md` | Historial / setups opcionales; el flujo por defecto del equipo es Supabase Cloud |
 
 ---
 
@@ -702,7 +689,7 @@ Antes de implementar una feature, verificar:
 - [ ] ¿Sigue la estructura de carpetas definida?
 - [ ] ¿Tiene RLS configurado si es tabla nueva?
 - [ ] ¿El código es testeable (servicios separados)?
-- [ ] ¿Funciona igual en local y producción?
+- [ ] ¿Funciona contra Supabase Cloud con las mismas variables que en Vercel (salvo URLs de app)?
 
 ---
 
