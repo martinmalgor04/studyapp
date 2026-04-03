@@ -24,6 +24,11 @@ export const createSubjectSchema = z.object({
   status: z.union([subjectStatusSchema, emptyToUndefined]).optional(),
   professors: z.array(z.string().max(100)).optional(),
   schedule: z.array(scheduleItemSchema).optional(),
+  total_hours: z.number().positive().optional(),
+  weekly_hours: z.number().positive().optional(),
+  bibliography: z.array(z.string().max(500)).max(50).optional(),
+  evaluation_criteria: z.string().max(8000).optional(),
+  ai_extraction_id: z.string().uuid().optional(),
 });
 
 export const updateSubjectSchema = z.object({
@@ -39,6 +44,11 @@ export const updateSubjectSchema = z.object({
   status: z.union([subjectStatusSchema, emptyToUndefined]).optional(),
   professors: z.array(z.string().max(100)).optional(),
   schedule: z.array(scheduleItemSchema).optional(),
+  total_hours: z.number().positive().optional(),
+  weekly_hours: z.number().positive().optional(),
+  bibliography: z.array(z.string().max(500)).max(50).optional(),
+  evaluation_criteria: z.string().max(8000).optional(),
+  ai_extraction_id: z.string().uuid().optional(),
 });
 
 export type SemesterType = z.infer<typeof semesterTypeSchema>;
