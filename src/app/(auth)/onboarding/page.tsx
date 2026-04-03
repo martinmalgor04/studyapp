@@ -5,8 +5,8 @@ export default function OnboardingPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white">
-          <p className="text-gray-500">Cargando...</p>
+        <div className="min-h-screen flex items-center justify-center bg-surface-container-low">
+          <p className="text-on-surface-variant">Cargando...</p>
         </div>
       }
     >
