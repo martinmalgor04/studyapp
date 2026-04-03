@@ -15,6 +15,10 @@ interface SubjectRow {
   id: string;
   name: string;
   description?: string | null;
+  total_hours?: number | null;
+  weekly_hours?: number | null;
+  bibliography?: unknown;
+  evaluation_criteria?: string | null;
   [key: string]: unknown;
 }
 
@@ -125,6 +129,15 @@ export function SubjectDetailClient({
     setIsTopicDialogOpen(true);
   };
 
+  const biblio = Array.isArray(subject.bibliography)
+    ? (subject.bibliography as string[])
+    : [];
+  const showProgramInfo =
+    subject.total_hours != null ||
+    subject.weekly_hours != null ||
+    biblio.length > 0 ||
+    (typeof subject.evaluation_criteria === 'string' && subject.evaluation_criteria.trim().length > 0);
+
   return (
     <div>
       {/* Header */}
@@ -141,6 +154,53 @@ export function SubjectDetailClient({
           <p className="mt-2 text-sm text-on-surface-variant">{subject.description as string}</p>
         )}
       </div>
+
+      {showProgramInfo && (
+        <section className="mb-8 rounded-2xl border border-outline-variant/15 bg-surface p-6 shadow-sm">
+          <h2 className="font-headline text-lg text-on-surface mb-4 flex items-center gap-2">
+            <span className="material-symbols-outlined text-[22px] text-tertiary">menu_book</span>
+            Información del programa
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {subject.total_hours != null && (
+              <div>
+                <p className="text-xs font-label font-bold uppercase tracking-widest text-on-surface-variant/60">
+                  Horas totales (cátedra)
+                </p>
+                <p className="mt-1 text-sm text-on-surface">{subject.total_hours}</p>
+              </div>
+            )}
+            {subject.weekly_hours != null && (
+              <div>
+                <p className="text-xs font-label font-bold uppercase tracking-widest text-on-surface-variant/60">
+                  Horas semanales
+                </p>
+                <p className="mt-1 text-sm text-on-surface">{subject.weekly_hours}</p>
+              </div>
+            )}
+          </div>
+          {biblio.length > 0 && (
+            <div className="mt-4">
+              <p className="text-xs font-label font-bold uppercase tracking-widest text-on-surface-variant/60 mb-2">
+                Bibliografía
+              </p>
+              <ul className="list-inside list-disc space-y-1 text-sm text-on-surface">
+                {biblio.map((line, idx) => (
+                  <li key={`${idx}-${line.slice(0, 32)}`}>{line}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {typeof subject.evaluation_criteria === 'string' && subject.evaluation_criteria.trim().length > 0 && (
+            <div className="mt-4">
+              <p className="text-xs font-label font-bold uppercase tracking-widest text-on-surface-variant/60 mb-2">
+                Criterios de evaluación
+              </p>
+              <p className="text-sm text-on-surface whitespace-pre-wrap">{subject.evaluation_criteria}</p>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Sección de Exámenes */}
       <div className="mb-8">
