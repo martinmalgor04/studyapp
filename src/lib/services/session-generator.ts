@@ -7,6 +7,7 @@ import {
   resolveSessionTime,
   setDateToLocalArgentinaHour,
   type StudyHoursRange,
+  type OccupiedRange,
 } from './slot-resolver';
 
 const SPACED_REPETITION_INTERVALS = [1, 3, 7, 14]; // días
@@ -52,6 +53,7 @@ export interface SessionToCreate {
   priority: Priority;
   status: 'PENDING';
   attempts: number;
+  session_type: 'REVIEW' | 'PRE_CLASS';
   adjusted_for_conflict?: boolean;
   original_scheduled_at?: string | null;
 }
@@ -65,6 +67,7 @@ export interface GenerateSessionsOptions {
   conflictChecker?: ConflictChecker;
   availabilitySlots?: AvailabilitySlotRow[];
   studyHours?: StudyHoursRange;
+  occupiedRanges?: OccupiedRange[];
 }
 
 function determineMode(exam: Exam | null, source: string): 'PARCIAL' | 'FREE_STUDY' {
@@ -75,27 +78,24 @@ function determineMode(exam: Exam | null, source: string): 'PARCIAL' | 'FREE_STU
 }
 
 /**
- * Resuelve la hora de una sesión usando availability_slots + study hours.
- * Si no hay slots, aplica fallback al startHour del rango de estudio.
+ * Converts a UTC Date to local Argentina minutes-of-day (UTC-3).
+ * E.g. a Date at 15:30 UTC → 12:30 ARG → 750 minutes.
  */
+export function dateToLocalArgentinaMinutes(date: Date): number {
+  const utcTotalMinutes = date.getUTCHours() * 60 + date.getUTCMinutes();
+  return utcTotalMinutes - 180; // UTC-3
+}
+
 function resolveHour(
   candidateDate: Date,
   durationMinutes: number,
   options?: GenerateSessionsOptions,
 ): { date: Date; adjusted: boolean; originalDate: Date | null } {
   const studyHours = options?.studyHours ?? DEFAULT_STUDY_HOURS;
-  const slots = options?.availabilitySlots;
+  const slots = options?.availabilitySlots ?? [];
+  const occupied = options?.occupiedRanges ?? [];
 
-  if (slots && slots.length > 0) {
-    return resolveSessionTime(candidateDate, durationMinutes, slots, studyHours);
-  }
-
-  // Fallback: sin availability configurado, usar startHour del rango
-  return {
-    date: setDateToLocalArgentinaHour(candidateDate, studyHours.startHour),
-    adjusted: false,
-    originalDate: null,
-  };
+  return resolveSessionTime(candidateDate, durationMinutes, slots, studyHours, occupied);
 }
 
 async function generateParcialSessions(
@@ -118,6 +118,7 @@ async function generateParcialSessions(
   }
 
   const baseDuration = topic.hours * DIFFICULTY_MULTIPLIERS[topic.difficulty];
+  const accumulatedOccupied: OccupiedRange[] = [...(options?.occupiedRanges ?? [])];
 
   for (let i = 0; i < SPACED_REPETITION_INTERVALS.length; i++) {
     const intervalDays = SPACED_REPETITION_INTERVALS[i];
@@ -133,11 +134,12 @@ async function generateParcialSessions(
 
     const duration = Math.max(15, Math.round(baseDuration * DURATION_FACTORS[i]));
 
-    // Resolver hora según availability + study hours
-    const slotResult = resolveHour(scheduledDate, duration, options);
+    const slotResult = resolveHour(scheduledDate, duration, {
+      ...options,
+      occupiedRanges: accumulatedOccupied,
+    });
     scheduledDate = slotResult.date;
 
-    // Verificar conflictos con Google Calendar (post slot-resolve)
     let conflictResult = null;
     if (options?.conflictChecker) {
       conflictResult = await options.conflictChecker(scheduledDate, duration);
@@ -147,6 +149,11 @@ async function generateParcialSessions(
         logger.debug(`[SessionGenerator] Session ${sessionNumber} adjusted to avoid conflict: ${scheduledDate.toISOString()}`);
       }
     }
+
+    accumulatedOccupied.push({
+      startMinutes: dateToLocalArgentinaMinutes(scheduledDate),
+      endMinutes: dateToLocalArgentinaMinutes(scheduledDate) + duration,
+    });
 
     const daysToSession = daysBetween(today, scheduledDate);
 
@@ -172,6 +179,7 @@ async function generateParcialSessions(
       priority,
       status: 'PENDING',
       attempts: 0,
+      session_type: 'REVIEW',
       adjusted_for_conflict: adjusted,
       original_scheduled_at: originalAt?.toISOString() || null,
     });
@@ -198,6 +206,7 @@ async function generateFreeStudySessions(
   }
 
   const baseDuration = topic.hours * DIFFICULTY_MULTIPLIERS[topic.difficulty];
+  const accumulatedOccupied: OccupiedRange[] = [...(options?.occupiedRanges ?? [])];
 
   for (let i = 0; i < SPACED_REPETITION_INTERVALS.length; i++) {
     const intervalDays = SPACED_REPETITION_INTERVALS[i];
@@ -212,7 +221,10 @@ async function generateFreeStudySessions(
 
     const duration = Math.max(15, Math.round(baseDuration * DURATION_FACTORS[i]));
 
-    const slotResult = resolveHour(scheduledDate, duration, options);
+    const slotResult = resolveHour(scheduledDate, duration, {
+      ...options,
+      occupiedRanges: accumulatedOccupied,
+    });
     scheduledDate = slotResult.date;
 
     let conflictResult = null;
@@ -224,6 +236,11 @@ async function generateFreeStudySessions(
         logger.debug(`[SessionGenerator] Session ${sessionNumber} adjusted to avoid conflict: ${scheduledDate.toISOString()}`);
       }
     }
+
+    accumulatedOccupied.push({
+      startMinutes: dateToLocalArgentinaMinutes(scheduledDate),
+      endMinutes: dateToLocalArgentinaMinutes(scheduledDate) + duration,
+    });
 
     const daysToSession = daysBetween(today, scheduledDate);
 
@@ -249,6 +266,7 @@ async function generateFreeStudySessions(
       priority,
       status: 'PENDING',
       attempts: 0,
+      session_type: 'REVIEW',
       adjusted_for_conflict: adjusted,
       original_scheduled_at: originalAt?.toISOString() || null,
     });

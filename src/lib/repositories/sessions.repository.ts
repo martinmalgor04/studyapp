@@ -512,6 +512,34 @@ export async function findExamByIdForGeneration(
   return data;
 }
 
+export interface ExistingSessionSlot {
+  scheduled_at: string;
+  duration: number;
+}
+
+export async function findPendingSessionSlots(
+  userId: string,
+  startDate: string,
+  endDate: string,
+): Promise<ExistingSessionSlot[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('sessions')
+    .select('scheduled_at, duration')
+    .eq('user_id', userId)
+    .in('status', ['PENDING', 'RESCHEDULED'])
+    .gte('scheduled_at', startDate)
+    .lte('scheduled_at', endDate);
+
+  if (error) {
+    logger.error('Error fetching pending session slots:', error);
+    return [];
+  }
+
+  return (data ?? []) as ExistingSessionSlot[];
+}
+
 export async function insertSessions(
   sessions: SessionInsert[],
 ): Promise<{ error: string | null }> {

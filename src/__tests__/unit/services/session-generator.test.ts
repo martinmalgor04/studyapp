@@ -171,14 +171,18 @@ describe('UC-006: Session Generator', () => {
         });
       });
 
-      it('should set default time to 09:00 Argentina (12:00 UTC) when no availability provided', async () => {
+      it('should start first session at 09:00 Argentina (12:00 UTC); later sessions follow slot gaps (occupiedRanges)', async () => {
         const sessions = await generateSessionsForTopic(baseTopic, parcialExam, 'user-1');
 
-        sessions.forEach((session) => {
-          const date = new Date(session.scheduled_at);
-          expect(date.getUTCHours()).toBe(12);
-          expect(date.getUTCMinutes()).toBe(0);
-        });
+        const first = new Date(sessions[0].scheduled_at);
+        expect(first.getUTCHours()).toBe(12);
+        expect(first.getUTCMinutes()).toBe(0);
+
+        for (let i = 1; i < sessions.length; i++) {
+          const prev = new Date(sessions[i - 1].scheduled_at);
+          const curr = new Date(sessions[i].scheduled_at);
+          expect(curr.getTime()).toBeGreaterThan(prev.getTime());
+        }
       });
     });
 
@@ -192,42 +196,33 @@ describe('UC-006: Session Generator', () => {
       });
 
       it('should calculate sessions FORWARD from today', async () => {
-        // Set system time
-        vi.setSystemTime(new Date('2026-01-27'));
-        
+        const anchorUtc = new Date(Date.UTC(2026, 0, 27, 0, 0, 0, 0));
+        vi.setSystemTime(anchorUtc);
+
         const examDate = new Date('2026-03-15');
         const exam = { ...finalExam, date: examDate.toISOString() };
         const topic = { ...baseTopic, exam_id: exam.id, source: 'FREE_STUDY' };
         const sessions = await generateSessionsForTopic(topic, exam, 'user-1');
 
-        const today = new Date('2026-01-27');
-        today.setHours(9, 0, 0, 0);
-
-        // Verify sessions are scheduled after today
         sessions.forEach((session) => {
           const sessionDate = new Date(session.scheduled_at);
-          expect(sessionDate.getTime()).toBeGreaterThanOrEqual(today.getTime());
+          expect(sessionDate.getTime()).toBeGreaterThanOrEqual(anchorUtc.getTime());
         });
 
-        // Verify they're in order (R1 earliest, R4 latest)
         for (let i = 1; i < sessions.length; i++) {
           const prevDate = new Date(sessions[i - 1].scheduled_at);
           const currDate = new Date(sessions[i].scheduled_at);
           expect(currDate.getTime()).toBeGreaterThan(prevDate.getTime());
         }
 
-        // Verify intervals are approximately [1, 3, 7, 14] days FROM today
         const intervals = [1, 3, 7, 14];
         sessions.forEach((session, idx) => {
           const sessionDate = new Date(session.scheduled_at);
-          const expectedDate = new Date(today);
-          expectedDate.setDate(expectedDate.getDate() + intervals[idx]);
-          
-          // Allow 1 day tolerance
-          const diffDays = Math.abs(
-            (sessionDate.getTime() - expectedDate.getTime()) / (1000 * 60 * 60 * 24)
+          const expectedDay = new Date(anchorUtc);
+          expectedDay.setUTCDate(expectedDay.getUTCDate() + intervals[idx]);
+          expect(sessionDate.toISOString().slice(0, 10)).toBe(
+            expectedDay.toISOString().slice(0, 10)
           );
-          expect(diffDays).toBeLessThanOrEqual(1);
         });
       });
 

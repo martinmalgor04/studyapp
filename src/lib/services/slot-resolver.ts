@@ -11,6 +11,11 @@ export interface SlotResolverResult {
   originalDate: Date | null;
 }
 
+export interface OccupiedRange {
+  startMinutes: number;
+  endMinutes: number;
+}
+
 interface ClippedSlot {
   startMinutes: number;
   endMinutes: number;
@@ -53,13 +58,44 @@ function clipSlotsToStudyHours(
   return clipped;
 }
 
+function getAvailableGaps(
+  slot: ClippedSlot,
+  occupied: OccupiedRange[],
+): ClippedSlot[] {
+  const relevant = occupied
+    .filter((o) => o.startMinutes < slot.endMinutes && o.endMinutes > slot.startMinutes)
+    .sort((a, b) => a.startMinutes - b.startMinutes);
+
+  const gaps: ClippedSlot[] = [];
+  let cursor = slot.startMinutes;
+
+  for (const occ of relevant) {
+    const occStart = Math.max(occ.startMinutes, slot.startMinutes);
+    const occEnd = Math.min(occ.endMinutes, slot.endMinutes);
+    if (cursor < occStart) {
+      gaps.push({ startMinutes: cursor, endMinutes: occStart });
+    }
+    cursor = Math.max(cursor, occEnd);
+  }
+
+  if (cursor < slot.endMinutes) {
+    gaps.push({ startMinutes: cursor, endMinutes: slot.endMinutes });
+  }
+
+  return gaps;
+}
+
 function findFittingSlot(
   clippedSlots: ClippedSlot[],
   durationMinutes: number,
-): ClippedSlot | null {
+  occupiedRanges: OccupiedRange[],
+): { startMinutes: number } | null {
   for (const slot of clippedSlots) {
-    if (slot.startMinutes + durationMinutes <= slot.endMinutes) {
-      return slot;
+    const gaps = getAvailableGaps(slot, occupiedRanges);
+    for (const gap of gaps) {
+      if (gap.startMinutes + durationMinutes <= gap.endMinutes) {
+        return { startMinutes: gap.startMinutes };
+      }
     }
   }
   return null;
@@ -82,8 +118,10 @@ export function resolveSessionTime(
   durationMinutes: number,
   availabilitySlots: AvailabilitySlotRow[],
   studyHours: StudyHoursRange,
+  occupiedRanges?: OccupiedRange[],
 ): SlotResolverResult {
   const MAX_OFFSET_DAYS = 3;
+  const occupied = occupiedRanges ?? [];
 
   for (let offset = 0; offset <= MAX_OFFSET_DAYS; offset++) {
     const targetDate = offset === 0 ? candidateDate : addDays(candidateDate, offset);
@@ -96,8 +134,20 @@ export function resolveSessionTime(
       (s) => s.is_enabled && s.day_of_week === dayOfWeek,
     );
 
-    const clipped = clipSlotsToStudyHours(slotsForDay, studyHours);
-    const fitting = findFittingSlot(clipped, durationMinutes);
+    let clipped: ClippedSlot[];
+
+    if (slotsForDay.length > 0) {
+      clipped = clipSlotsToStudyHours(slotsForDay, studyHours);
+    } else {
+      clipped = [
+        {
+          startMinutes: parseTimeToMinutes(studyHours.startHour),
+          endMinutes: parseTimeToMinutes(studyHours.endHour),
+        },
+      ];
+    }
+
+    const fitting = findFittingSlot(clipped, durationMinutes, occupied);
 
     if (fitting) {
       const localHour = minutesToLocalHour(fitting.startMinutes);
@@ -111,7 +161,7 @@ export function resolveSessionTime(
     }
   }
 
-  // Fallback: schedule at study start hour on the original candidate date.
+  // Fallback: no gap found in any day within offset range.
   const fallbackDate = setDateToLocalArgentinaHour(candidateDate, studyHours.startHour);
   return {
     date: fallbackDate,

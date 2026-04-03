@@ -13,6 +13,7 @@ import {
 } from '@/lib/repositories/notifications.repository';
 import type { NotificationFilters } from '@/lib/repositories/notifications.repository';
 import {
+  findUserSettings,
   findUserSettingsOrCreate,
   updateUserSettingsById,
 } from '@/lib/repositories/user-settings.repository';
@@ -110,6 +111,7 @@ export async function updateUserSettings(settings: {
   daily_summary_time?: string;
   study_start_hour?: string;
   study_end_hour?: string;
+  theme_preference?: 'light' | 'dark' | 'system';
 }) {
   const supabase = await createClient();
 
@@ -119,6 +121,41 @@ export async function updateUserSettings(settings: {
   }
 
   const result = await updateUserSettingsById(user.id, settings);
+  if (result.error) {
+    return { error: result.error };
+  }
+
+  revalidatePath('/dashboard/settings');
+  return { success: true };
+}
+
+/**
+ * Obtiene la preferencia de tema del usuario (light | dark | system)
+ */
+export async function getThemePreference(): Promise<string> {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return 'system';
+  }
+
+  const settings = await findUserSettings(user.id);
+  return settings?.theme_preference ?? 'system';
+}
+
+/**
+ * Actualiza la preferencia de tema del usuario
+ */
+export async function updateThemePreference(theme: 'light' | 'dark' | 'system') {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: 'No autenticado' };
+  }
+
+  const result = await updateUserSettingsById(user.id, { theme_preference: theme });
   if (result.error) {
     return { error: result.error };
   }

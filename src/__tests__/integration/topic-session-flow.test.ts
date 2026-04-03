@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock de Supabase
 const mockSupabaseClient = {
   from: vi.fn(),
   auth: { getUser: vi.fn() },
@@ -10,7 +9,17 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(() => mockSupabaseClient),
 }));
 
-// Mock repositories used by generateSessions action
+vi.mock('@/lib/repositories/sessions.repository', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/repositories/sessions.repository')>();
+  return {
+    ...actual,
+    findTopicWithFullInfo: vi.fn(),
+    findExamByIdForGeneration: vi.fn(),
+    insertSessions: vi.fn(),
+    findPendingSessionSlots: vi.fn(),
+  };
+});
+
 vi.mock('@/lib/repositories/availability.repository', async (importOriginal) => {
   const original = await importOriginal<typeof import('@/lib/repositories/availability.repository')>();
   return {
@@ -27,7 +36,6 @@ vi.mock('@/lib/repositories/user-settings.repository', async (importOriginal) =>
   };
 });
 
-// Mock de session generator
 vi.mock('@/lib/services/session-generator', () => ({
   generateSessionsForTopic: vi.fn(() => [
     {
@@ -41,6 +49,7 @@ vi.mock('@/lib/services/session-generator', () => ({
       priority: 'NORMAL',
       status: 'PENDING',
       attempts: 0,
+      session_type: 'REVIEW',
     },
     {
       user_id: 'user-1',
@@ -53,19 +62,24 @@ vi.mock('@/lib/services/session-generator', () => ({
       priority: 'NORMAL',
       status: 'PENDING',
       attempts: 0,
+      session_type: 'REVIEW',
     },
   ]),
 }));
 
-// Importar después de los mocks
 import { generateSessions } from '@/lib/actions/sessions';
 import { generateSessionsForTopic } from '@/lib/services/session-generator';
+import {
+  findTopicWithFullInfo,
+  findExamByIdForGeneration,
+  insertSessions,
+  findPendingSessionSlots,
+} from '@/lib/repositories/sessions.repository';
 
 describe('Integration: Topic → Session Generation Flow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
-    // Setup mock de getUser
+
     mockSupabaseClient.auth.getUser.mockResolvedValue({
       data: { user: { id: 'user-1' } },
       error: null,
@@ -74,13 +88,12 @@ describe('Integration: Topic → Session Generation Flow', () => {
 
   describe('generateSessions action', () => {
     it('should fetch topic, generate sessions, and insert them', async () => {
-      // Mock de topic query
       const mockTopic = {
         id: 'topic-1',
         subject_id: 'subject-1',
         exam_id: 'exam-1',
         name: 'Test Topic',
-        difficulty: 'MEDIUM',
+        difficulty: 'MEDIUM' as const,
         hours: 60,
         source: 'CLASS',
         source_date: '2026-01-27',
@@ -94,49 +107,16 @@ describe('Integration: Topic → Session Generation Flow', () => {
         date: '2026-02-28',
       };
 
-      // Setup chain para topics.select()
-      const topicSelectChain = {
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockTopic, error: null }),
-      };
+      vi.mocked(findTopicWithFullInfo).mockResolvedValue(mockTopic);
+      vi.mocked(findExamByIdForGeneration).mockResolvedValue(mockExam);
+      vi.mocked(findPendingSessionSlots).mockResolvedValue([]);
+      vi.mocked(insertSessions).mockResolvedValue({ error: null });
 
-      // Setup chain para exams.select()
-      const examSelectChain = {
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockExam, error: null }),
-      };
-
-      // Setup chain para sessions.insert()
-      const insertChain = {
-        insert: vi.fn().mockResolvedValue({ data: null, error: null }),
-      };
-
-      // Mock de from() que retorna diferentes chains según la tabla
-      mockSupabaseClient.from.mockImplementation((table: string) => {
-        if (table === 'topics') {
-          return {
-            select: vi.fn().mockReturnValue(topicSelectChain),
-          };
-        }
-        if (table === 'exams') {
-          return {
-            select: vi.fn().mockReturnValue(examSelectChain),
-          };
-        }
-        if (table === 'sessions') {
-          return insertChain;
-        }
-        return {};
-      });
-
-      // Ejecutar
       const result = await generateSessions('topic-1');
 
-      // Verificaciones
       expect(result.success).toBe(true);
       expect(result.count).toBe(2);
 
-      // Verificar que se llamó al generator con options de availability
       expect(generateSessionsForTopic).toHaveBeenCalledWith(
         mockTopic,
         mockExam,
@@ -147,8 +127,7 @@ describe('Integration: Topic → Session Generation Flow', () => {
         })
       );
 
-      // Verificar que se insertaron las sesiones
-      expect(insertChain.insert).toHaveBeenCalledWith(
+      expect(insertSessions).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
             topic_id: 'topic-1',
@@ -163,22 +142,7 @@ describe('Integration: Topic → Session Generation Flow', () => {
     });
 
     it('should return error if topic not found', async () => {
-      const topicSelectChain = {
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: null,
-          error: { message: 'Topic not found' },
-        }),
-      };
-
-      mockSupabaseClient.from.mockImplementation((table: string) => {
-        if (table === 'topics') {
-          return {
-            select: vi.fn().mockReturnValue(topicSelectChain),
-          };
-        }
-        return {};
-      });
+      vi.mocked(findTopicWithFullInfo).mockResolvedValue(null);
 
       const result = await generateSessions('non-existent-id');
 
@@ -187,33 +151,19 @@ describe('Integration: Topic → Session Generation Flow', () => {
     });
 
     it('should return error if source_date is null for CLASS source', async () => {
-      // CLASS mode requiere source_date para calcular intervalos desde la clase.
-      // FREE_STUDY ya no requiere source_date (usa today como referencia).
       const mockTopic = {
         id: 'topic-1',
         subject_id: 'subject-1',
         exam_id: null,
         name: 'Test Topic',
-        difficulty: 'MEDIUM',
+        difficulty: 'MEDIUM' as const,
         hours: 60,
-        source: 'CLASS', // CLASS sin source_date → debe dar error
+        source: 'CLASS',
         source_date: null,
         subject: { user_id: 'user-1' },
       };
 
-      const topicSelectChain = {
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockTopic, error: null }),
-      };
-
-      mockSupabaseClient.from.mockImplementation((table: string) => {
-        if (table === 'topics') {
-          return {
-            select: vi.fn().mockReturnValue(topicSelectChain),
-          };
-        }
-        return {};
-      });
+      vi.mocked(findTopicWithFullInfo).mockResolvedValue(mockTopic);
 
       const result = await generateSessions('topic-1');
 
@@ -227,33 +177,16 @@ describe('Integration: Topic → Session Generation Flow', () => {
         subject_id: 'subject-1',
         exam_id: null,
         name: 'Test Topic',
-        difficulty: 'MEDIUM',
+        difficulty: 'MEDIUM' as const,
         hours: 60,
         source: 'FREE_STUDY',
         source_date: '2026-01-27',
         subject: { user_id: 'user-1' },
       };
 
-      const topicSelectChain = {
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockTopic, error: null }),
-      };
-
-      const insertChain = {
-        insert: vi.fn().mockResolvedValue({ data: null, error: null }),
-      };
-
-      mockSupabaseClient.from.mockImplementation((table: string) => {
-        if (table === 'topics') {
-          return {
-            select: vi.fn().mockReturnValue(topicSelectChain),
-          };
-        }
-        if (table === 'sessions') {
-          return insertChain;
-        }
-        return {};
-      });
+      vi.mocked(findTopicWithFullInfo).mockResolvedValue(mockTopic);
+      vi.mocked(findPendingSessionSlots).mockResolvedValue([]);
+      vi.mocked(insertSessions).mockResolvedValue({ error: null });
 
       const result = await generateSessions('topic-1');
 

@@ -2,7 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { generateSessionsForTopic } from '@/lib/services/session-generator';
+import { generateSessionsForTopic, dateToLocalArgentinaMinutes } from '@/lib/services/session-generator';
+import type { OccupiedRange } from '@/lib/services/slot-resolver';
 import { logger } from '@/lib/utils/logger';
 import { findAvailabilityByUserId } from '@/lib/repositories/availability.repository';
 import { findUserSettings } from '@/lib/repositories/user-settings.repository';
@@ -27,6 +28,7 @@ import {
   insertSessions,
   findOverduePendingSessions,
   findSessionForPartial,
+  findPendingSessionSlots,
 } from '@/lib/repositories/sessions.repository';
 
 export async function getUpcomingSessions(days = 7) {
@@ -433,9 +435,29 @@ export async function generateSessions(topicId: string) {
       endHour: userSettings?.study_end_hour?.substring(0, 5) ?? '23:00',
     };
 
+    const now = new Date();
+    const rangeEnd = new Date(now);
+    rangeEnd.setUTCDate(rangeEnd.getUTCDate() + 30);
+
+    const existingSlots = await findPendingSessionSlots(
+      user.id,
+      now.toISOString(),
+      rangeEnd.toISOString(),
+    );
+
+    const occupiedRanges: OccupiedRange[] = existingSlots.map((s) => {
+      const date = new Date(s.scheduled_at);
+      const startMin = dateToLocalArgentinaMinutes(date);
+      return {
+        startMinutes: startMin,
+        endMinutes: startMin + s.duration,
+      };
+    });
+
     const sessionsToCreate = await generateSessionsForTopic(topic, exam, user.id, {
       availabilitySlots,
       studyHours,
+      occupiedRanges,
     });
 
     const { error: insertError } = await insertSessions(sessionsToCreate);
