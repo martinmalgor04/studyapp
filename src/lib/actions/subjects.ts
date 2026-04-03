@@ -48,7 +48,20 @@ export async function createSubject(input: CreateSubjectInput): Promise<{ error?
     return { error: 'No autenticado' };
   }
 
-  const { name, description, year, semester, status, professors, schedule } = validationResult.data;
+  const {
+    name,
+    description,
+    year,
+    semester,
+    status,
+    professors,
+    schedule,
+    total_hours,
+    weekly_hours,
+    bibliography,
+    evaluation_criteria,
+    ai_extraction_id,
+  } = validationResult.data;
 
   const result = await insertSubject({
     name,
@@ -59,6 +72,11 @@ export async function createSubject(input: CreateSubjectInput): Promise<{ error?
     professors: professors ?? null,
     schedule: schedule as Parameters<typeof insertSubject>[0]['schedule'],
     user_id: user.id,
+    total_hours: total_hours ?? null,
+    weekly_hours: weekly_hours ?? null,
+    bibliography: bibliography ?? null,
+    evaluation_criteria: evaluation_criteria ?? null,
+    ai_extraction_id: ai_extraction_id ?? null,
   });
 
   if (result.error) {
@@ -79,7 +97,20 @@ export async function updateSubject(id: string, input: UpdateSubjectInput) {
     return setSubjectLibre(id);
   }
 
-  const { name, description, year, semester, status, professors, schedule } = validationResult.data;
+  const {
+    name,
+    description,
+    year,
+    semester,
+    status,
+    professors,
+    schedule,
+    total_hours,
+    weekly_hours,
+    bibliography,
+    evaluation_criteria,
+    ai_extraction_id,
+  } = validationResult.data;
 
   const result = await updateSubjectById(id, {
     ...(name !== undefined && { name }),
@@ -89,6 +120,11 @@ export async function updateSubject(id: string, input: UpdateSubjectInput) {
     ...(status !== undefined && { status }),
     ...(professors !== undefined && { professors }),
     ...(schedule !== undefined && { schedule: schedule as Parameters<typeof updateSubjectById>[1]['schedule'] }),
+    ...(total_hours !== undefined && { total_hours }),
+    ...(weekly_hours !== undefined && { weekly_hours }),
+    ...(bibliography !== undefined && { bibliography }),
+    ...(evaluation_criteria !== undefined && { evaluation_criteria }),
+    ...(ai_extraction_id !== undefined && { ai_extraction_id }),
   });
 
   if (result.error) {
