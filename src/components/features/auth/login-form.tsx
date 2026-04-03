@@ -41,8 +41,8 @@ export function LoginForm() {
   return (
     <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
       {error && (
-        <div className="rounded-md bg-red-50 p-4">
-          <p className="text-sm text-red-800">{error}</p>
+        <div className="rounded-md bg-error-container/20 p-4">
+          <p className="text-sm text-error">{error}</p>
         </div>
       )}
 
@@ -57,7 +57,7 @@ export function LoginForm() {
             type="email"
             autoComplete="email"
             required
-            className="relative block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+            className="relative block w-full appearance-none rounded-md border border-outline-variant bg-surface-container-lowest px-3 py-2 text-on-surface placeholder:text-on-surface-variant/50 focus:z-10 focus:border-tertiary focus:outline-none focus:ring-tertiary/30 sm:text-sm"
             placeholder="Email"
             value={email}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.currentTarget.value)}
@@ -73,7 +73,7 @@ export function LoginForm() {
             type="password"
             autoComplete="current-password"
             required
-            className="relative block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+            className="relative block w-full appearance-none rounded-md border border-outline-variant bg-surface-container-lowest px-3 py-2 text-on-surface placeholder:text-on-surface-variant/50 focus:z-10 focus:border-tertiary focus:outline-none focus:ring-tertiary/30 sm:text-sm"
             placeholder="Contraseña"
             value={password}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.currentTarget.value)}
@@ -85,7 +85,7 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="group relative flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+          className="group relative flex w-full justify-center rounded-md border border-transparent bg-tertiary px-4 py-2 text-sm font-medium text-on-tertiary hover:bg-tertiary-dim focus:outline-none focus:ring-2 focus:ring-tertiary/30 focus:ring-offset-2 disabled:opacity-50"
         >
           {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
         </button>
@@ -93,18 +93,18 @@ export function LoginForm() {
 
       <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-300" />
+          <div className="w-full border-t border-outline-variant" />
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="bg-gray-50 px-2 text-gray-500">O continuar con</span>
+          <span className="bg-surface-container-low px-2 text-on-surface-variant">O continuar con</span>
         </div>
       </div>
 
       <GoogleAuthButton label="Continuar con Google" />
 
       <div className="text-center text-sm">
-        <span className="text-gray-600">¿No tienes cuenta? </span>
-        <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500">
+        <span className="text-on-surface-variant">¿No tienes cuenta? </span>
+        <Link href="/register" className="font-medium text-tertiary hover:text-tertiary-dim">
           Regístrate
         </Link>
       </div>

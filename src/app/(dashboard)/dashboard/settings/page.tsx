@@ -6,12 +6,20 @@ import { getUserSettings, updateUserSettings } from '@/lib/actions/notifications
 import { connectGoogleCalendar, disconnectGoogleCalendar, isGoogleCalendarConnected, syncSessionsToGoogleCalendar } from '@/lib/actions/google-calendar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useTheme } from '@/components/providers/theme-provider';
 import type { Database } from '@/types/database.types';
 
 type UserSettingsRow = Database['public']['Tables']['user_settings']['Row'] | null;
 
+const THEME_OPTIONS = [
+  { value: 'light' as const, label: 'Claro', icon: 'light_mode' },
+  { value: 'dark' as const, label: 'Oscuro', icon: 'dark_mode' },
+  { value: 'system' as const, label: 'Sistema', icon: 'desktop_windows' },
+];
+
 export default function SettingsPage() {
   const searchParams = useSearchParams();
+  const { theme: currentTheme, setTheme } = useTheme();
   const [settings, setSettings] = useState<UserSettingsRow>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -152,6 +160,37 @@ export default function SettingsPage() {
       )}
 
       <div className="space-y-4">
+        {/* Apariencia */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-tertiary-container/30 flex-shrink-0">
+                <span className="material-symbols-outlined text-[24px] text-tertiary">dark_mode</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="mb-1 text-base font-semibold text-on-surface">Apariencia</h3>
+                <p className="mb-3 text-sm text-on-surface-variant">Elegí el tema de la aplicación</p>
+                <div className="flex gap-2">
+                  {THEME_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setTheme(opt.value)}
+                      className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                        currentTheme === opt.value
+                          ? 'bg-primary text-on-primary'
+                          : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-[16px]">{opt.icon}</span>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* In-App Notifications */}
         <Card>
           <CardContent className="pt-6">

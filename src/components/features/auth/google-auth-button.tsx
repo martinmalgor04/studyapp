@@ -55,15 +55,15 @@ export function GoogleAuthButton({ label = 'Continuar con Google', className = '
   return (
     <div className={className}>
       {error && (
-        <div className="mb-3 rounded-md bg-red-50 p-2 text-center">
-          <p className="text-xs text-red-800">{error}</p>
+        <div className="mb-3 rounded-md bg-error-container/20 p-2 text-center">
+          <p className="text-xs text-error">{error}</p>
         </div>
       )}
       <button
         type="button"
         onClick={handleGoogleAuth}
         disabled={loading}
-        className="flex w-full items-center justify-center gap-3 rounded-md border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-3 rounded-md border border-outline-variant bg-surface-container-lowest px-4 py-2.5 text-sm font-medium text-on-surface-variant shadow-sm hover:bg-surface-container-low disabled:opacity-50"
       >
         <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden>
           <path

@@ -6,6 +6,7 @@ import { CompleteSessionDialog } from './complete-session-dialog';
 import { StudyModeDialog } from './study-mode-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils/cn';
 
 const safeConfirm = (message: string): boolean => {
   if (typeof window !== 'undefined') return window.confirm(message);
@@ -14,6 +15,14 @@ const safeConfirm = (message: string): boolean => {
 
 type Priority = 'CRITICAL' | 'URGENT' | 'IMPORTANT' | 'NORMAL' | 'LOW';
 type SessionStatus = 'PENDING' | 'COMPLETED' | 'INCOMPLETE' | 'RESCHEDULED' | 'ABANDONED';
+type SessionType = 'REVIEW' | 'PRE_CLASS';
+
+const REVIEW_TIPS: Record<number, string> = {
+  1: 'Enfocate en lectura activa del material',
+  2: 'Hacé un resumen de los puntos clave',
+  3: 'Practicá con ejercicios y casos',
+  4: 'Intentá recordar sin mirar apuntes (evocación)',
+};
 
 interface Session {
   id: string;
@@ -27,6 +36,7 @@ interface Session {
   priority?: Priority | string | null;
   status: SessionStatus | string;
   number?: number;
+  session_type?: SessionType | string | null;
 }
 
 interface SessionCardProps {
@@ -59,6 +69,8 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
   const priority = (session.priority as Priority) || 'NORMAL';
   const status = (session.status as SessionStatus) || 'PENDING';
   const duration = session.duration ?? session.duration_minutes ?? 30;
+  const sessionType: SessionType = session.session_type === 'PRE_CLASS' ? 'PRE_CLASS' : 'REVIEW';
+  const isPreClass = sessionType === 'PRE_CLASS';
 
   const priorityStyle = PRIORITY_CONFIG[priority];
   const statusStyle = STATUS_CONFIG[status];
@@ -66,6 +78,15 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
   const sessionDate = new Date(session.scheduled_at);
   const dateStr = sessionDate.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: 'short' });
   const timeStr = sessionDate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+
+  const topicName = session.topic?.name ?? 'Sin tema';
+  const sessionTitle = isPreClass
+    ? `Pre-Clase: ${topicName}`
+    : `${topicName} - R${session.number ?? 1}`;
+  const sessionIcon = isPreClass ? 'auto_stories' : 'sticky_note_2';
+  const contextualTip = isPreClass
+    ? 'Preparación previa a la clase'
+    : REVIEW_TIPS[session.number ?? 0] ?? null;
 
   const handleCompleteWithRating = async (sessionId: string, rating: 'EASY' | 'NORMAL' | 'HARD') => {
     setLoading(true);
@@ -139,6 +160,15 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
     <div className={`rounded-xl border-2 ${priorityStyle.border} bg-surface-container-lowest p-4 shadow-card`}>
       {/* Header: Badges */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
+        {isPreClass && (
+          <span className={cn(
+            'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5',
+            'bg-tertiary-container/30 text-tertiary text-[10px] font-bold uppercase tracking-wider'
+          )}>
+            <span className="material-symbols-outlined text-[12px]">auto_stories</span>
+            Pre-Clase
+          </span>
+        )}
         <Badge variant={priorityStyle.variant}>
           {priorityStyle.label}
         </Badge>
@@ -170,9 +200,12 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
               <span>{session.subject?.name ?? 'Sin materia'}</span>
             </p>
             <h3 className="flex items-center gap-1 text-sm font-semibold text-on-surface mt-1">
-              <span className="material-symbols-outlined text-[16px]">sticky_note_2</span>
-              <span>{session.topic?.name ?? 'Sin tema'} - R{session.number ?? 1}</span>
+              <span className="material-symbols-outlined text-[16px]">{sessionIcon}</span>
+              <span>{sessionTitle}</span>
             </h3>
+            {contextualTip && (
+              <p className="text-xs text-on-surface-variant/60 italic mt-1">{contextualTip}</p>
+            )}
           </div>
         </div>
         

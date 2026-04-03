@@ -9,7 +9,7 @@ const badgeVariants = cva(
         default: "bg-primary-container text-on-primary-container",
         secondary: "bg-secondary-container text-on-secondary-container",
         success: "bg-secondary-container text-on-secondary-container",
-        warning: "bg-[#fff3cd] text-[#856404]",
+        warning: "bg-warning-container text-on-warning-container",
         error: "bg-error-container text-on-error-container",
         outline: "border border-outline-variant text-on-surface-variant",
       },

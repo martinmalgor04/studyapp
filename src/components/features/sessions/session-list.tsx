@@ -13,6 +13,7 @@ interface SessionWithTopicSubject {
   status: string;
   number?: number;
   topic_id?: string;
+  session_type?: 'REVIEW' | 'PRE_CLASS' | string | null;
 }
 
 interface SessionListProps {

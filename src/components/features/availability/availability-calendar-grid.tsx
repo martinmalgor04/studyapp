@@ -56,19 +56,19 @@ export function AvailabilityCalendarGrid({ slots, onSlotsChange }: AvailabilityC
   });
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
+    <div className="rounded-lg border border-outline-variant bg-surface-container-lowest p-4">
       {/* Grid Compacto: 7 Columnas (días) */}
       <div className="grid grid-cols-7 gap-3">
         {[1, 2, 3, 4, 5, 6, 0].map((dayIndex) => (
-          <div key={dayIndex} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <div key={dayIndex} className="rounded-lg border border-outline-variant bg-surface-container-low p-4">
             {/* Header del día */}
-            <div className="mb-3 text-center border-b border-gray-300 pb-2">
-              <h3 className="text-sm font-semibold text-gray-900">
+            <div className="mb-3 text-center border-b border-outline-variant pb-2">
+              <h3 className="text-sm font-semibold text-on-surface">
                 {WEEKDAYS[dayIndex === 0 ? 6 : dayIndex - 1]}
               </h3>
               <button
                 onClick={() => handleAddSlot(dayIndex)}
-                className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                className="mt-2 text-xs text-tertiary hover:text-tertiary-dim font-medium"
               >
                 + Agregar
               </button>
@@ -77,7 +77,7 @@ export function AvailabilityCalendarGrid({ slots, onSlotsChange }: AvailabilityC
             {/* Bloques de disponibilidad */}
             <div className="space-y-2 min-h-[100px]">
               {slotsByDay[dayIndex]?.length === 0 ? (
-                <p className="text-xs text-gray-400 text-center italic py-4">Sin horarios</p>
+                <p className="text-xs text-on-surface-variant text-center italic py-4">Sin horarios</p>
               ) : (
                 slotsByDay[dayIndex]?.map((slot, slotIndex) => {
                   const globalIndex = slots.findIndex(
@@ -90,10 +90,10 @@ export function AvailabilityCalendarGrid({ slots, onSlotsChange }: AvailabilityC
                     <div
                       key={slotIndex}
                       onClick={() => handleEditSlot(slot, globalIndex)}
-                      className="rounded-md bg-green-100 border border-green-400 p-2 cursor-pointer hover:bg-green-200 hover:shadow-sm transition-all group"
+                      className="rounded-md bg-secondary-container/30 border border-secondary p-2 cursor-pointer hover:bg-secondary-container/50 hover:shadow-sm transition-all group"
                     >
                       <div className="flex items-center justify-between">
-                        <div className="text-xs font-medium text-green-800">
+                        <div className="text-xs font-medium text-on-secondary-container">
                           {slot.start_time} - {slot.end_time}
                         </div>
                         <button
@@ -101,7 +101,7 @@ export function AvailabilityCalendarGrid({ slots, onSlotsChange }: AvailabilityC
                             e.stopPropagation();
                             handleDeleteSlot(globalIndex);
                           }}
-                          className="text-green-700 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="text-on-secondary-container hover:text-error opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

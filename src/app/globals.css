@@ -52,10 +52,79 @@
     --color-outline: #797b77;
     --color-outline-variant: #b1b3ad;
 
+    /* Warning */
+    --color-warning: #8b6914;
+    --color-warning-dim: #6e5310;
+    --color-warning-container: #f5dfa0;
+    --color-on-warning: #fffaf0;
+    --color-on-warning-container: #5c4510;
+
     /* Inverse */
     --color-inverse-surface: #0e0e0d;
     --color-inverse-primary: #ffffff;
     --color-inverse-on-surface: #9e9d9a;
+  }
+
+  .dark {
+    /* Surfaces - tonos oscuros cálidos */
+    --color-background: #1c1b1b;
+    --color-surface: #1c1b1b;
+    --color-surface-container-lowest: #0f0e0e;
+    --color-surface-container-low: #252424;
+    --color-surface-container: #2a2929;
+    --color-surface-container-high: #353434;
+    --color-surface-container-highest: #403f3f;
+    --color-surface-variant: #4a4948;
+    --color-surface-dim: #141313;
+
+    /* Primary (warm gray - lightened for dark bg) */
+    --color-primary: #c9c7c6;
+    --color-primary-dim: #b0aeae;
+    --color-primary-container: #4a4847;
+    --color-on-primary: #1c1b1b;
+    --color-on-primary-container: #e4e2e1;
+
+    /* Secondary (sage green - lightened) */
+    --color-secondary: #a3b8a6;
+    --color-secondary-dim: #8fa893;
+    --color-secondary-container: #2d3d2e;
+    --color-on-secondary: #1c1b1b;
+    --color-on-secondary-container: #c8d8c9;
+
+    /* Tertiary (muted indigo - lightened) */
+    --color-tertiary: #b2c1fd;
+    --color-tertiary-dim: #8b9ad0;
+    --color-tertiary-container: #2e3d6e;
+    --color-on-tertiary: #1c1b1b;
+    --color-on-tertiary-container: #d2e1ff;
+
+    /* Error (warm red - lightened) */
+    --color-error: #ffb4a1;
+    --color-error-dim: #cc8070;
+    --color-error-container: #5c1202;
+    --color-on-error: #3b0a00;
+    --color-on-error-container: #ffdad3;
+
+    /* Warning (amber) */
+    --color-warning: #dbb44a;
+    --color-warning-dim: #b8963e;
+    --color-warning-container: #4a3810;
+    --color-on-warning: #1a1400;
+    --color-on-warning-container: #f5dfa0;
+
+    /* Text */
+    --color-on-surface: #e6e2df;
+    --color-on-surface-variant: #c9c5c1;
+    --color-on-background: #e6e2df;
+
+    /* Borders */
+    --color-outline: #938f8b;
+    --color-outline-variant: #4a4846;
+
+    /* Inverse */
+    --color-inverse-surface: #e6e2df;
+    --color-inverse-primary: #5f5e5e;
+    --color-inverse-on-surface: #30332f;
   }
 
   body {

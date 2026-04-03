@@ -104,12 +104,12 @@ export function WeeklyScheduler({ initialSlots, onSave }: WeeklySchedulerProps) 
     <div className="space-y-6">
       {/* Feedback Messages */}
       {success && (
-        <div className="rounded-md bg-green-50 p-4 text-sm text-green-800">
+        <div className="rounded-md bg-secondary-container/30 p-4 text-sm text-on-secondary-container">
           Disponibilidad guardada correctamente
         </div>
       )}
       {error && (
-        <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">
+        <div className="rounded-md bg-error-container/20 p-4 text-sm text-error">
           {error}
         </div>
       )}
@@ -117,25 +117,25 @@ export function WeeklyScheduler({ initialSlots, onSave }: WeeklySchedulerProps) 
       {/* Days List */}
       <div className="space-y-4">
         {[1, 2, 3, 4, 5, 6, 0].map((dayIndex) => ( // Lunes a Domingo
-          <div key={dayIndex} className="rounded-lg border border-gray-200 bg-white p-4">
+          <div key={dayIndex} className="rounded-lg border border-outline-variant bg-surface-container-lowest p-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-medium text-gray-900 flex items-center gap-2">
+              <h3 className="font-medium text-on-surface flex items-center gap-2">
                 {DAYS[dayIndex]}
-                <span className="text-xs font-normal text-gray-500">
+                <span className="text-xs font-normal text-on-surface-variant">
                   ({slotsByDay[dayIndex].length} franjas)
                 </span>
               </h3>
               <div className="flex gap-2">
                 <button
                   onClick={() => copyToAllDays(dayIndex)}
-                  className="text-xs text-blue-600 hover:text-blue-700"
+                  className="text-xs text-tertiary hover:text-tertiary-dim"
                   title="Copiar a todos los días"
                 >
                   Copiar a todos
                 </button>
                 <button
                   onClick={() => addSlot(dayIndex)}
-                  className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded hover:bg-blue-100"
+                  className="text-xs bg-tertiary-container/30 text-tertiary px-2 py-1 rounded hover:bg-tertiary-container/50"
                 >
                   + Agregar Horario
                 </button>
@@ -143,27 +143,27 @@ export function WeeklyScheduler({ initialSlots, onSave }: WeeklySchedulerProps) 
             </div>
 
             {slotsByDay[dayIndex].length === 0 ? (
-              <p className="text-sm text-gray-400 italic">No disponible (Día libre)</p>
+              <p className="text-sm text-on-surface-variant italic">No disponible (Día libre)</p>
             ) : (
               <div className="space-y-2">
                 {slotsByDay[dayIndex].map((slot, slotIndex) => (
-                  <div key={slotIndex} className="flex items-center gap-3 bg-gray-50 p-2 rounded-md">
+                  <div key={slotIndex} className="flex items-center gap-3 bg-surface-container-low p-2 rounded-md">
                     <input
                       type="time"
                       value={slot.start_time}
                       onChange={(e) => updateSlot(dayIndex, slotIndex, 'start_time', e.target.value)}
-                      className="rounded border border-gray-300 px-2 py-1 text-sm"
+                      className="rounded border border-outline-variant px-2 py-1 text-sm bg-surface-container-lowest text-on-surface"
                     />
-                    <span className="text-gray-400">→</span>
+                    <span className="text-on-surface-variant">→</span>
                     <input
                       type="time"
                       value={slot.end_time}
                       onChange={(e) => updateSlot(dayIndex, slotIndex, 'end_time', e.target.value)}
-                      className="rounded border border-gray-300 px-2 py-1 text-sm"
+                      className="rounded border border-outline-variant px-2 py-1 text-sm bg-surface-container-lowest text-on-surface"
                     />
                     <button
                       onClick={() => removeSlot(dayIndex, slotIndex)}
-                      className="ml-auto text-gray-400 hover:text-red-500"
+                      className="ml-auto text-on-surface-variant hover:text-error"
                       title="Eliminar franja"
                     >
                       ✕
@@ -181,7 +181,7 @@ export function WeeklyScheduler({ initialSlots, onSave }: WeeklySchedulerProps) 
         <button
           onClick={handleSave}
           disabled={saving}
-          className="rounded-md bg-blue-600 px-6 py-2.5 text-sm font-medium text-white shadow-lg hover:bg-blue-700 disabled:opacity-50 transition-all"
+          className="rounded-md bg-tertiary px-6 py-2.5 text-sm font-medium text-on-tertiary shadow-lg hover:bg-tertiary-dim disabled:opacity-50 transition-all"
         >
           {saving ? 'Guardando...' : 'Guardar Disponibilidad'}
         </button>

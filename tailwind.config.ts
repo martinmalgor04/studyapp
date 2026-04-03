@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: "class",
   content: [
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
@@ -8,65 +9,56 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Surfaces
-        background: "#fbf9f6",
-        surface: "#fbf9f6",
-        "surface-container-lowest": "#ffffff",
-        "surface-container-low": "#f5f3f0",
-        "surface-container": "#eeeeea",
-        "surface-container-high": "#e8e8e3",
-        "surface-container-highest": "#e2e3dd",
-        "surface-variant": "#e2e3dd",
-        "surface-dim": "#d9dbd4",
+        background: "var(--color-background)",
+        surface: "var(--color-surface)",
+        "surface-container-lowest": "var(--color-surface-container-lowest)",
+        "surface-container-low": "var(--color-surface-container-low)",
+        "surface-container": "var(--color-surface-container)",
+        "surface-container-high": "var(--color-surface-container-high)",
+        "surface-container-highest": "var(--color-surface-container-highest)",
+        "surface-variant": "var(--color-surface-variant)",
+        "surface-dim": "var(--color-surface-dim)",
 
-        // Primary (warm gray)
-        primary: "#5f5e5e",
-        "primary-dim": "#535252",
-        "primary-container": "#e4e2e1",
-        "on-primary": "#faf7f6",
-        "on-primary-container": "#525151",
+        primary: "var(--color-primary)",
+        "primary-dim": "var(--color-primary-dim)",
+        "primary-container": "var(--color-primary-container)",
+        "on-primary": "var(--color-on-primary)",
+        "on-primary-container": "var(--color-on-primary-container)",
 
-        // Secondary (sage green)
-        secondary: "#546357",
-        "secondary-dim": "#48574c",
-        "secondary-container": "#d7e7d8",
-        "on-secondary": "#edfdee",
-        "on-secondary-container": "#47554a",
+        secondary: "var(--color-secondary)",
+        "secondary-dim": "var(--color-secondary-dim)",
+        "secondary-container": "var(--color-secondary-container)",
+        "on-secondary": "var(--color-on-secondary)",
+        "on-secondary-container": "var(--color-on-secondary-container)",
 
-        // Tertiary (muted indigo)
-        tertiary: "#4e5d91",
-        "tertiary-dim": "#425184",
-        "tertiary-container": "#b2c1fd",
-        "on-tertiary": "#faf8ff",
-        "on-tertiary-container": "#2c3c6e",
+        tertiary: "var(--color-tertiary)",
+        "tertiary-dim": "var(--color-tertiary-dim)",
+        "tertiary-container": "var(--color-tertiary-container)",
+        "on-tertiary": "var(--color-on-tertiary)",
+        "on-tertiary-container": "var(--color-on-tertiary-container)",
 
-        // Warning (warm amber)
-        warning: "#8b6914",
-        "warning-dim": "#6e5310",
-        "warning-container": "#f5dfa0",
-        "on-warning": "#fffaf0",
-        "on-warning-container": "#5c4510",
+        warning: "var(--color-warning)",
+        "warning-dim": "var(--color-warning-dim)",
+        "warning-container": "var(--color-warning-container)",
+        "on-warning": "var(--color-on-warning)",
+        "on-warning-container": "var(--color-on-warning-container)",
 
-        // Error (warm red)
-        error: "#9e422c",
-        "error-dim": "#5c1202",
-        "error-container": "#fe8b70",
-        "on-error": "#fff7f6",
-        "on-error-container": "#742410",
+        error: "var(--color-error)",
+        "error-dim": "var(--color-error-dim)",
+        "error-container": "var(--color-error-container)",
+        "on-error": "var(--color-on-error)",
+        "on-error-container": "var(--color-on-error-container)",
 
-        // Text
-        "on-surface": "#30332f",
-        "on-surface-variant": "#5d605b",
-        "on-background": "#30332f",
+        "on-surface": "var(--color-on-surface)",
+        "on-surface-variant": "var(--color-on-surface-variant)",
+        "on-background": "var(--color-on-background)",
 
-        // Borders
-        outline: "#797b77",
-        "outline-variant": "#b1b3ad",
+        outline: "var(--color-outline)",
+        "outline-variant": "var(--color-outline-variant)",
 
-        // Inverse
-        "inverse-surface": "#0e0e0d",
-        "inverse-primary": "#ffffff",
-        "inverse-on-surface": "#9e9d9a",
+        "inverse-surface": "var(--color-inverse-surface)",
+        "inverse-primary": "var(--color-inverse-primary)",
+        "inverse-on-surface": "var(--color-inverse-on-surface)",
       },
 
       fontFamily: {
@@ -85,6 +77,21 @@ const config: Config = {
       boxShadow: {
         subtle: "0 4px 20px -4px rgba(0,0,0,0.05)",
         card: "0 1px 3px rgba(0,0,0,0.04)",
+      },
+
+      keyframes: {
+        "slide-in-right": {
+          "0%": { opacity: "0", transform: "translateX(24px)" },
+          "100%": { opacity: "1", transform: "translateX(0)" },
+        },
+        "slide-in-left": {
+          "0%": { opacity: "0", transform: "translateX(-24px)" },
+          "100%": { opacity: "1", transform: "translateX(0)" },
+        },
+      },
+      animation: {
+        "slide-in-right": "slide-in-right 300ms ease-out",
+        "slide-in-left": "slide-in-left 300ms ease-out",
       },
     },
   },
