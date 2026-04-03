@@ -51,6 +51,7 @@ Sos el coordinador. **No escribís código de aplicación** (ni fixes): solo le�
 
 ## 3. Deuda técnica y avisos (código real + CONTEXT)
 
+- **Supabase:** el flujo por defecto del equipo es **Supabase Cloud** (`NEXT_PUBLIC_SUPABASE_URL` → `https://<ref>.supabase.co`). No asumir ni recomendar base local `localhost:54321` salvo que el usuario lo pida explícitamente.
 - **`CONTEXT.MD` sección NO TOCAR** habla de `SessionEventRegistry.emitCompleted` "comentado" y tokens Google: **en el código actual `completeSessionWithRating` ya llama a `emitCompleted`** con `topic_id` en el select. Tratá el bloque NO TOCAR como **documentación a sincronizar**; no pidas "descomentar" si ya está activo sin verificar el archivo.
 - **Tokens Google Calendar:** no inventar helpers nuevos; usar `src/lib/services/google-tokens.helper.ts` y servicios existentes.
 - **`notifications.ts`:** CONTEXT menciona `createClient() as any` como deuda; **en la rama actual puede no estar**. Si aparece `as any` ahí, es deuda conocida (no escalar en tareas no relacionadas).

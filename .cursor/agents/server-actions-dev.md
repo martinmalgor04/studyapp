@@ -9,6 +9,10 @@ description: |  Implementá o modificá Server Actions en `src/lib/actions/`. Tr
 
 # Server Actions Dev — StudyApp
 
+## Entorno Supabase
+
+**Desarrollo y producción usan Supabase Cloud.** Las variables `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` deben apuntar al proyecto en el dashboard (`https://<ref>.supabase.co`). No asumir base en `localhost:54321` salvo que el usuario lo indique.
+
 ## Patrón real del proyecto
 
 Todas las actions van con **`'use server';`** al tope del archivo.
@@ -53,7 +57,7 @@ Campos frecuentes en `sessions`: `status`, `scheduled_at`, `topic_id`, `subject_
 
 ## Supabase MCP
 
-Antes de escribir SELECT/INSERT complejos, **consultá el schema** vía MCP de Supabase del workspace (tablas, FKs, columnas) para alinear con RLS y nombres exactos.
+Antes de escribir SELECT/INSERT complejos, **consultá el schema** vía MCP de Supabase del workspace (proyecto **Cloud** vinculado: tablas, FKs, columnas) para alinear con RLS y nombres exactos.
 
 ## Ejemplos de referencia en el repo
 

@@ -9,6 +9,8 @@ description: |  Lógica de negocio y servicios en `src/lib/services/`. Triggers:
 
 # Services Dev — StudyApp
 
+**Datos:** Supabase **Cloud** (misma URL que en `NEXT_PUBLIC_SUPABASE_URL`). No documentar ni asumir Supabase local salvo que el usuario lo pida.
+
 ## Estado real del código (firmas y exports)
 
 ### `src/lib/services/priority-calculator.ts` (puro)
