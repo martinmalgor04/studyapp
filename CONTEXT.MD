@@ -5,7 +5,7 @@
 
 ## 🗓 Última actualización
 **Fecha:** 2026-04-04  
-**Actualizado por:** Cierre sesión — Sprint 8 Dark Mode completo [8a–8b], commit `728a32e` (8b); [8a] Theme System ya estaba hecho antes de esta sesión
+**Actualizado por:** Cierre sesión — Sprint 6 **[6g]** migración `session_type` + pre-clase en wizard cursada (`onboarding-wizard` + `pre-class-generator`), commit `dd853e3`
 
 ---
 
@@ -22,7 +22,7 @@
 | Sprint 3 — Tracking + Reschedule + Week View | ✅ | 100% |
 | Sprint 4 — Free Study + Google Calendar | ✅ | 100% |
 | Sprint 5 — **Rediseño Visual The Curator** | ✅ | 100% |
-| Sprint 6 — **Onboarding Inteligente** | 🔄 | ~75% |
+| Sprint 6 — **Onboarding Inteligente** | 🔄 | ~85% |
 | Sprint 7 — **Procesamiento IA de PDFs** | ⏳ | 0% |
 | Sprint 8 — **Dark Mode** | ✅ | 100% |
 | Sprint 9 — Gamificación (ex Sprint 5) | ⏳ | 0% |
@@ -34,45 +34,47 @@
 
 ## 🔧 Última sesión de trabajo
 
-**Trabajé en:** Sprint 8 — **Dark Mode** al 100%. [8a] **Theme System** ya estaba hecho en Notion/código antes de esta sesión. [8b] **Aplicar a toda la app** en esta entrega: scrim/overlay, `color-scheme`, estilos de foco, pantallas auth, landing, settings (general + availability), `Dialog`, componentes compartidos; docs `09-roadmap` y `NEW_SPRINTS_PLAN`.
+**Trabajé en:** Sprint 6 — **[6g]** migración **`session_type`** en DB + integración de **pre-clase** en el flujo **cursada** del onboarding wizard (`generatePreClassSessions` / insert / alineación con GCal según implementación en actions).
 
-**Archivos tocados (commit `728a32e`):**
-- `docs/spec-kit/09-roadmap.md`, `docs/spec-kit/NEW_SPRINTS_PLAN.md`
-- `src/app/globals.css`, `src/app/page.tsx`
-- `src/app/(dashboard)/dashboard/settings/page.tsx`, `src/app/(dashboard)/dashboard/settings/availability/page.tsx`
-- `tailwind.config.ts`
-- `src/components/ui/dialog.tsx`
-- `src/components/features/auth/login-form.tsx`, `register-form.tsx`, `google-auth-button.tsx`
-- `src/components/features/availability/weekly-scheduler.tsx`
-- `src/components/shared/pdf-upload/pdf-upload.tsx`
+**Archivos tocados (commit `dd853e3`):**
+- `supabase/migrations/20260404120000_add_session_type.sql`
+- `src/lib/actions/onboarding-wizard.ts`
+- `src/lib/services/pre-class-generator.ts`
+- `src/types/database.types.ts`
+- `docs/spec-kit/09-roadmap.md`
+- `CONTEXT.MD`
 
-**Commit:** `728a32e`
+**Commit:** `dd853e3`
 
-**Quedó a medias:** nada
+**Quedó a medias:** nada en 6g.
 
-**Notas:** Sprint 8 cerrado (2/2 sub-sprints); cierre operativo de dark mode en flujos y docs de planificación.
+**Notas:** Aplicá la migración en **Supabase Cloud** si el proyecto remoto aún no la tiene (ver `09-roadmap` — próximo paso operativo). Siguiente foco: **[6h]** `topic-distributor` en wizard cursada.
 
 ---
 
 ## ✅ Próxima tarea
 
-### [6g] + [6h] — Integrar pre-clase y distribución de temas (Sprint 6)
+### [6h] — Distribución de temas (`topic-distributor`) en wizard cursada (Sprint 6)
 
-**Hecho en código (ya no es 6a):** `src/components/shared/wizard/`, `subject-wizard/*`, `onboarding-client.tsx`, `dashboard/subjects/new/new-subject-client.tsx`, `lib/actions/onboarding-wizard.ts` — flujos LIBRE y CURSANDO + PDF opcional. **[6j]** parcial: `session-card.tsx` ya distingue `PRE_CLASS` y muestra tip.
+| Campo | Valor |
+|--------|--------|
+| **Archivo principal** | `src/lib/services/topic-distributor.ts`, `src/lib/actions/onboarding-wizard.ts` |
+| **Estimación** | 6h |
+| **Prioridad** | Alta (cierra el flujo cursada antes de pulidos) |
+| **Estado backend** | Servicio existe; falta **cablear** al completar wizard (asignar temas ↔ fechas de clase). |
+| **Estado UI** | Depende de cómo se persistan fechas/temas; revisar wizard y panel de temas. |
 
-**Pendiente (por eso Notion ≠ CONTEXT):**
-- **[6g]** `pre-class-generator.ts` existe pero **no se llama** desde actions/onboarding; tipos TS incluyen `session_type` — **no hay migración en `supabase/migrations/`** que agregue enum/columna (revisar paridad con Supabase Cloud y añadir migración idempotente si falta en repo).
-- **[6h]** `topic-distributor.ts` existe pero **sin imports** en el flujo; no asigna temas a fechas de clase al completar el wizard cursada.
+**Contexto:** [6g] ya dejó `session_type` + pre-clases generadas en el flujo cursada. [6j] en `session-card` ya contempla `PRE_CLASS` cuando hay datos.
 
 **Prompt sugerido:**
 
 ```text
-/ship 6g
+/ship 6h
 
-Integrar generatePreClassSessions tras alta cursada/onboarding según NEW_SPRINTS_PLAN; migración session_type si aplica; tests/build.
+Cablear topic-distributor al flujo cursada/onboarding: al completar el wizard, distribuir temas según fechas de clase (NEW_SPRINTS_PLAN + patrones existentes en actions). Tests/build; no duplicar lógica si ya hay helpers.
 ```
 
-**Uso:** `/ship 6g` (luego `/ship 6h` para cablear `distributeTopics`).
+**Uso:** `/ship 6h`
 
 ---
 
@@ -121,10 +123,10 @@ Integrar generatePreClassSessions tras alta cursada/onboarding según NEW_SPRINT
 | ~~6d~~ | ~~Panel temas manual~~ | ~~6h~~ | ✅ |
 | ~~6e~~ | ~~Flujo Estudio Libre~~ | ~~4h~~ | ✅ |
 | ~~6f~~ | ~~Cursada + Parciales~~ | ~~6h~~ | ✅ |
-| **6g** | **Migración `session_type` + pre-clase en flujo** | **8h** | 🔄 servicio sin integrar; migración en repo por verificar |
+| ~~6g~~ | ~~Migración `session_type` + pre-clase en flujo cursada~~ | ~~8h~~ | ✅ (`dd853e3`) |
 | **6h** | **Distribución temas (`topic-distributor`)** | **6h** | 🔄 sin cablear al wizard |
 | ~~6i~~ | ~~Página nueva materia (dashboard)~~ | ~~4h~~ | ✅ |
-| 6j | Session Card pre-clase + tips | 3h | 🟡 UI lista; datos cuando 6g genere `PRE_CLASS` |
+| 6j | Session Card pre-clase + tips | 3h | 🟡 UI lista; validar con datos reales post-6g / tras migración en Cloud |
 
 ### Sprint 7 — Procesamiento IA de PDFs (~44h)
 
