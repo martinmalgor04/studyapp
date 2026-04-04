@@ -154,7 +154,7 @@ export default function AvailabilityPage() {
 
       {viewMode === 'calendar' && error && (
         <div className="mb-4 rounded-md bg-error-container/20 p-4">
-          <p className="text-sm text-error">{error}</p>
+          <p className="text-sm text-on-error-container">{error}</p>
         </div>
       )}
 

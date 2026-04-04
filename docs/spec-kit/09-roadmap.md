@@ -305,7 +305,7 @@ e2e/
 | Unit tests (CRUD Actions) | Quality assurance | 4h | ⏳ | — |
 | Optimistic updates | Mejor UX | 5h | ⏳ | — |
 | Offline support (PWA) | Funciona sin red | 10h | ⏳ | — |
-| Dark mode | Accesibilidad | 6h | ⏳ | — |
+| Dark mode | Accesibilidad | 6h | ✅ | Sprint 8 ([8a] tokens + toggle, [8b] pasada UI) |
 | Accessibility audit | WCAG compliance | 8h | ⏳ | — |
 
 ### Low Priority

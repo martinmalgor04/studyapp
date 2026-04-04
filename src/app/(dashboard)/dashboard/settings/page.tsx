@@ -207,7 +207,7 @@ export default function SettingsPage() {
                   type="checkbox"
                   checked={settings?.in_app_notifications || false}
                   onChange={(e) => handleToggle('in_app_notifications', e.target.checked)}
-                  className="h-5 w-5 rounded border-outline-variant/30 text-secondary accent-secondary focus:ring-2 focus:ring-secondary/30 focus:ring-offset-2"
+                  className="h-5 w-5 rounded border-outline-variant/30 text-secondary accent-secondary focus:ring-2 focus:ring-secondary/30 focus:ring-offset-2 focus:ring-offset-background"
                 />
               </label>
             </div>
@@ -235,7 +235,7 @@ export default function SettingsPage() {
                   type="checkbox"
                   checked={settings?.email_notifications || false}
                   onChange={(e) => handleToggle('email_notifications', e.target.checked)}
-                  className="h-5 w-5 rounded border-outline-variant/30 text-secondary accent-secondary focus:ring-2 focus:ring-secondary/30 focus:ring-offset-2"
+                  className="h-5 w-5 rounded border-outline-variant/30 text-secondary accent-secondary focus:ring-2 focus:ring-secondary/30 focus:ring-offset-2 focus:ring-offset-background"
                 />
               </label>
             </div>
@@ -263,7 +263,7 @@ export default function SettingsPage() {
                   type="checkbox"
                   checked={settings?.telegram_notifications || false}
                   onChange={(e) => handleToggle('telegram_notifications', e.target.checked)}
-                  className="h-5 w-5 rounded border-outline-variant/30 text-secondary accent-secondary focus:ring-2 focus:ring-secondary/30 focus:ring-offset-2"
+                  className="h-5 w-5 rounded border-outline-variant/30 text-secondary accent-secondary focus:ring-2 focus:ring-secondary/30 focus:ring-offset-2 focus:ring-offset-background"
                 />
               </label>
             </div>

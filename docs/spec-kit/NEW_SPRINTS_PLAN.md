@@ -909,7 +909,7 @@
 4. Respetar preferencia del sistema (`prefers-color-scheme`)
 5. Persistir preferencia en `user_settings`
 
-### [8b] Dark Mode — Aplicar a toda la app
+### [8b] Dark Mode — Aplicar a toda la app ✅
 **Estimación:** 4h
 **Dependencias:** 8a
 
@@ -918,6 +918,8 @@
 2. Ajustar colores que no funcionen en dark
 3. Imágenes/iconos que necesiten variante dark
 4. Testing completo en dark mode
+
+**Estado:** Revisión sistemática: la UI ya usaba tokens semánticos en su mayoría; se añadieron `color-scheme`, token `scrim` para overlays, `ring-offset-background` en focos, texto `on-error-container` en banners de error y ajustes puntuales (landing/auth).
 
 ---
 

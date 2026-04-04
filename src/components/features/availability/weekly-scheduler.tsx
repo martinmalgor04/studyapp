@@ -109,7 +109,7 @@ export function WeeklyScheduler({ initialSlots, onSave }: WeeklySchedulerProps) 
         </div>
       )}
       {error && (
-        <div className="rounded-md bg-error-container/20 p-4 text-sm text-error">
+        <div className="rounded-md bg-error-container/20 p-4 text-sm text-on-error-container">
           {error}
         </div>
       )}

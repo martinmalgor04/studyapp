@@ -205,7 +205,7 @@ export function PdfUpload({
           'group relative flex cursor-pointer flex-col items-center justify-center',
           'rounded-xl border-2 border-dashed px-6 py-10',
           'transition-all duration-200',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tertiary/40 focus-visible:ring-offset-2',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tertiary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
           isDragging
             ? 'border-tertiary bg-tertiary/5'
             : 'border-outline-variant/30 bg-surface-container-lowest hover:border-outline-variant/50 hover:bg-surface-container-low/50',

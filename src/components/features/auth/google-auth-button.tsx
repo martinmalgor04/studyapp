@@ -56,7 +56,7 @@ export function GoogleAuthButton({ label = 'Continuar con Google', className = '
     <div className={className}>
       {error && (
         <div className="mb-3 rounded-md bg-error-container/20 p-2 text-center">
-          <p className="text-xs text-error">{error}</p>
+          <p className="text-xs text-on-error-container">{error}</p>
         </div>
       )}
       <button

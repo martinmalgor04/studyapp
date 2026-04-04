@@ -59,6 +59,8 @@ const config: Config = {
         "inverse-surface": "var(--color-inverse-surface)",
         "inverse-primary": "var(--color-inverse-primary)",
         "inverse-on-surface": "var(--color-inverse-on-surface)",
+
+        scrim: "var(--color-scrim)",
       },
 
       fontFamily: {

@@ -11,9 +11,9 @@ export default async function HomePage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-background p-8">
       <div className="max-w-4xl text-center">
-        <h1 className="mb-4 text-5xl font-bold">StudyApp</h1>
+        <h1 className="mb-4 text-5xl font-bold text-on-surface">StudyApp</h1>
         <p className="mb-8 text-xl text-on-surface-variant">
           Sistema de estudio automatizado basado en Spaced Repetition
         </p>
@@ -26,13 +26,13 @@ export default async function HomePage() {
           </Link>
           <Link
             href="/register"
-            className="rounded-md border border-outline-variant px-6 py-3 hover:bg-surface-container-low"
+            className="rounded-md border border-outline-variant px-6 py-3 text-on-surface hover:bg-surface-container-low"
           >
             Crear Cuenta
           </Link>
         </div>
         <div className="mt-12 rounded-lg bg-tertiary-container/30 p-6">
-          <h2 className="mb-2 text-lg font-semibold">Features</h2>
+          <h2 className="mb-2 text-lg font-semibold text-on-surface">Features</h2>
           <ul className="space-y-2 text-sm text-on-surface-variant">
             <li>✓ Generación automática de repasos con Spaced Repetition</li>
             <li>✓ Priorización inteligente según dificultad y fechas de exámenes</li>

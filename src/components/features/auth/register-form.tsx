@@ -48,7 +48,7 @@ export function RegisterForm() {
     <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
       {error && (
         <div className="rounded-md bg-error-container/20 p-4">
-          <p className="text-sm text-error">{error}</p>
+          <p className="text-sm text-on-error-container">{error}</p>
         </div>
       )}
 
@@ -107,7 +107,7 @@ export function RegisterForm() {
         <button
           type="submit"
           disabled={loading}
-          className="group relative flex w-full justify-center rounded-md border border-transparent bg-tertiary px-4 py-2 text-sm font-medium text-on-tertiary hover:bg-tertiary-dim focus:outline-none focus:ring-2 focus:ring-tertiary/30 focus:ring-offset-2 disabled:opacity-50"
+          className="group relative flex w-full justify-center rounded-md border border-transparent bg-tertiary px-4 py-2 text-sm font-medium text-on-tertiary hover:bg-tertiary-dim focus:outline-none focus:ring-2 focus:ring-tertiary/30 focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50"
         >
           {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
         </button>
@@ -118,7 +118,7 @@ export function RegisterForm() {
           <div className="w-full border-t border-outline-variant" />
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="bg-surface-container-low px-2 text-on-surface-variant">O continuar con</span>
+          <span className="bg-surface px-2 text-on-surface-variant">O continuar con</span>
         </div>
       </div>
 
