@@ -4,8 +4,8 @@
 ---
 
 ## 🗓 Última actualización
-**Fecha:** 2026-03-31  
-**Actualizado por:** Cierre sesión — Sprint 5 rediseño visual (The Curator) completo [5a–5f], commit `e934425`
+**Fecha:** 2026-04-04  
+**Actualizado por:** Cierre sesión — Sprint 8 Dark Mode completo [8a–8b], commit `728a32e` (8b); [8a] Theme System ya estaba hecho antes de esta sesión
 
 ---
 
@@ -24,7 +24,7 @@
 | Sprint 5 — **Rediseño Visual The Curator** | ✅ | 100% |
 | Sprint 6 — **Onboarding Inteligente** | ⏳ | 0% |
 | Sprint 7 — **Procesamiento IA de PDFs** | ⏳ | 0% |
-| Sprint 8 — **Dark Mode** | ⏳ | 0% |
+| Sprint 8 — **Dark Mode** | ✅ | 100% |
 | Sprint 9 — Gamificación (ex Sprint 5) | ⏳ | 0% |
 | Sprint 10 — Analytics + Tasks (ex Sprint 6) | ⏳ | 0% |
 
@@ -34,23 +34,23 @@
 
 ## 🔧 Última sesión de trabajo
 
-**Trabajé en:** Sprint 5 completo — [5a] Design System & Tokens, [5b] Tipografía & Componentes Base UI, [5c] Layout & Navegación (Sidebar Only), [5d] Rediseño Componentes de Features, [5e] Forms & Dialogs Redesign, [5f] Pages Polish & Motivational Elements (rediseño visual **The Curator**).
+**Trabajé en:** Sprint 8 — **Dark Mode** al 100%. [8a] **Theme System** ya estaba hecho en Notion/código antes de esta sesión. [8b] **Aplicar a toda la app** en esta entrega: scrim/overlay, `color-scheme`, estilos de foco, pantallas auth, landing, settings (general + availability), `Dialog`, componentes compartidos; docs `09-roadmap` y `NEW_SPRINTS_PLAN`.
 
-**Archivos tocados (consolidado):**
-- `tailwind.config.ts` (nuevo) — `tailwind.config.js` (eliminado)
-- `src/lib/utils/cn.ts` (nuevo)
-- `src/components/ui/` — 9 componentes nuevos: `button`, `input`, `textarea`, `select`, `badge`, `card`, `dialog`, `tabs`, `skeleton`
-- `src/components/layout/sidebar.tsx` (nuevo), `src/components/layout/mobile-nav.tsx` (nuevo)
-- `src/components/shared/motivational-quote.tsx` (nuevo)
-- `src/app/globals.css`, `src/app/layout.tsx`, `src/app/(dashboard)/layout.tsx`
-- 31 componentes en `src/components/features/` actualizados; todas las páginas auth y dashboard
-- `docs/design/DESIGN_SYSTEM.md` (nuevo), `docs/spec-kit/NEW_SPRINTS_PLAN.md` (nuevo)
+**Archivos tocados (commit `728a32e`):**
+- `docs/spec-kit/09-roadmap.md`, `docs/spec-kit/NEW_SPRINTS_PLAN.md`
+- `src/app/globals.css`, `src/app/page.tsx`
+- `src/app/(dashboard)/dashboard/settings/page.tsx`, `src/app/(dashboard)/dashboard/settings/availability/page.tsx`
+- `tailwind.config.ts`
+- `src/components/ui/dialog.tsx`
+- `src/components/features/auth/login-form.tsx`, `register-form.tsx`, `google-auth-button.tsx`
+- `src/components/features/availability/weekly-scheduler.tsx`
+- `src/components/shared/pdf-upload/pdf-upload.tsx`
 
-**Commit:** `e934425`  
+**Commit:** `728a32e`
 
-**Quedó a medias:** nada  
+**Quedó a medias:** nada
 
-**Notas:** Sprint 5 cerrado al 100% (6/6 sub-sprints). Base de diseño, layout, features, formularios y pulido de páginas alineados al design system; documentación en `DESIGN_SYSTEM.md` y plan de sprints en `NEW_SPRINTS_PLAN.md`.
+**Notas:** Sprint 8 cerrado (2/2 sub-sprints); cierre operativo de dark mode en flujos y docs de planificación.
 
 ---
 
@@ -106,11 +106,20 @@ Implementá [6a] Wizard Framework & Gestión de Pasos: componente Wizard reutili
 
 **Nota:** Sprint 5 al 100%; commit de cierre `e934425`.
 
+### Sprint 8 — ✅ Completo (Dark Mode)
+
+| Sub-sprint | Tarea | Tiempo | Estado |
+|-----------|-------|--------|--------|
+| ~~8a~~ | ~~Theme System~~ | ~~4h~~ | ✅ Hecho (previo a esta sesión; ya alineado Notion/código) |
+| ~~8b~~ | ~~Aplicar a toda la app~~ | ~~4h~~ | ✅ Hecho (`728a32e`) |
+
+**Nota:** Sprint 8 al 100%; [8b] cubre scrim, `color-scheme`, focos, auth, landing, settings, dialog, PDF upload UI y actualización de roadmap/plan en docs.
+
 ### Sprint 6 — Onboarding Inteligente (~50h)
 
 | Sub-sprint | Tarea | Tiempo | Dependencias |
 |-----------|-------|--------|-------------|
-| **6a** | **Wizard Framework & Gestión de Pasos** | **4h** | **Sprint 5 completo ← próxima tarea** |
+| **6a** | **Wizard Framework & Gestión de Pasos** | **4h** | **Sprints 5 y 8 completos ← próxima tarea** |
 | 6b | Paso 2 — Crear Materia | 4h | Requiere: 6a |
 | 6c | Horario de Cursada (grilla) | 5h | Requiere: 6b |
 | 6d | Panel Ingreso Manual de Temas | 6h | Requiere: 6b |
@@ -134,13 +143,6 @@ Implementá [6a] Wizard Framework & Gestión de Pasos: componente Wizard reutili
 | 7g | Integración Onboarding + IA | 6h | Requiere: 7e + 7f |
 | 7h | Metadata de Materia desde IA | 3h | Requiere: 7c + 7g |
 | 7i | Paridad PDF/IA — Wizard Nueva materia (dashboard) | 2h | Requiere: 7g |
-
-### Sprint 8 — Dark Mode (~8h)
-
-| Sub-sprint | Tarea | Tiempo | Dependencias |
-|-----------|-------|--------|-------------|
-| 8a | Theme System | 4h | Sprint 5 tokens |
-| 8b | Aplicar a toda la app | 4h | Requiere: 8a |
 
 ### Sprint 9 — Gamificación (ex Sprint 5, ~26h)
 
