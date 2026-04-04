@@ -1,5 +1,7 @@
 # 9. Implementation Roadmap
 
+> **Numeración de sprints (2026):** El plan operativo actual (Sprints 5–10, onboarding = Sprint 6, gamificación = 9, analytics/tasks = 10) está en [`CONTEXT.MD`](../../CONTEXT.MD) y [`NEW_SPRINTS_PLAN.md`](./NEW_SPRINTS_PLAN.md). En **§9.4** más abajo, los encabezados *Sprint 5 (Gamificación)* y *Sprint 6 (Analytics & Tasks)* son la **nomenclatura histórica v1.5**; equivalen a **Sprint 9** y **Sprint 10** del plan nuevo. No confundir con **Sprint 6 = Onboarding inteligente**.
+
 ## 9.1 Release Overview
 
 ```
@@ -607,7 +609,7 @@ El MVP se considera exitoso si:
 
 ---
 
-### Estado por Sprint (Actualizado 2026-03-23)
+### Estado por Sprint (Actualizado 2026-04-04)
 
 | Sprint | Estado | Completitud | Notas |
 |--------|--------|-------------|-------|
@@ -616,22 +618,24 @@ El MVP se considera exitoso si:
 | Sprint 3 | ✅ | 100% | Tracking, Reschedule, Week view |
 | Sprint 4 | ✅ | 100% | Free Study + Google Calendar + emitCompleted activado |
 | **Refactoring Arquitectural** | ✅ | **100%** | **4 capas: Repositories + Services puros + Actions + RSC** |
-| Sprint 5 | ⏳ | 0% | Gamificación pendiente |
-| Sprint 6 | ⏳ | 0% | Analytics + Tasks pendiente |
+| Sprint 5 (The Curator) | ✅ | 100% | Rediseño visual; ver `NEW_SPRINTS_PLAN` |
+| Sprint 6 (Onboarding) | 🔄 | ~85% | Wizard + flujos; ✅ [6g] `handleCursadaPath`: fechas clase secuenciales + pre-clases (`generatePreClassSessions` + insert + GCal); UI puede mostrar `warning`; **[6h]** distribución |
+| Sprint 7 (IA PDFs) | ⏳ | 0% | Plan en `NEW_SPRINTS_PLAN` |
+| Sprint 8 (Dark Mode) | ✅ | 100% | Theme + app |
+| Sprint 9 (Gamificación, ex §9.4 “Sprint 5”) | ⏳ | 0% | |
+| Sprint 10 (Analytics + Tasks, ex §9.4 “Sprint 6”) | ⏳ | 0% | Incluye E2E UC-008/009 y Telegram en backlog |
 
-**Bloqueadores Sprint 5:**
-- Ninguno (gamificación puede arrancar sobre la nueva arquitectura)
-- Considerar resolver Telegram Notifications primero (alta demanda de usuario)
+**Notas:** Numeración nueva: ver caja al inicio del §9 y `CONTEXT.MD`. Telegram / E2E viven en **Sprint 10** del plan actual.
 
 ---
 
 ## Summary
 
-**Estado actual (2026-03-30):** Sprint 1 ✅, Sprint 2 ✅, Sprint 3 ✅, Sprint 4 ✅ (100%), **Refactoring Arquitectural ✅**  
+**Estado actual (2026-04-04):** Sprint 1–4 ✅, **Refactoring Arquitectural ✅**, **Sprint 5 The Curator ✅**, Sprint 6 onboarding 🔄 (~85%), Sprint 8 ✅  
 **Pulido (2026-03-19):** ✅ 0 `as any` (TypeScript strict), ✅ CI/CD GitHub Actions, ✅ Error boundaries, ✅ Security headers, ✅ Logger centralizado, ✅ Google token helper deduplicado, ✅ Aria-labels en nav/notificaciones/sesiones/pomodoro  
 **Refactoring (2026-03-23):** ✅ Capa de Repositories, ✅ Services puros (sin Supabase), ✅ Actions adelgazadas, ✅ RSC para pages, ✅ Helper `getAuthenticatedUser()`
 
-**Próximo paso:** Sprint 5 - Gamificación. La base arquitectural está lista y probada.
+**Próximo paso (plan nuevo):** Aplicar migración `20260404120000_add_session_type.sql` en Supabase Cloud si aún no está; opcional: UI para `warning` del wizard; luego **[6h]** `topic-distributor` en wizard cursada (`CONTEXT.MD`).
 
 **MVP + v1.0 (parcial):** ✅ COMPLETADO al 90%. Arquitectura de 4 capas ✅ COMPLETADA al 100%.
 

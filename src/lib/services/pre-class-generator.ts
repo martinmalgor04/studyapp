@@ -33,6 +33,44 @@ export interface ClassScheduleBlock {
   endTime: string;   // HH:MM
 }
 
+/**
+ * Días UTC en [rangeStart, rangeEnd) (igual que topic-distributor) que caen en un día
+ * de clase según `schedule`; hasta `count` fechas a medianoche UTC, en orden cronológico.
+ */
+export function getSequentialClassDatesForTopics(
+  schedule: ClassScheduleBlock[],
+  count: number,
+  rangeStart: Date,
+  rangeEnd: Date,
+): Date[] {
+  const allowedDays = new Set<number>();
+  for (const block of schedule) {
+    const d = DAY_MAP[block.day];
+    if (d !== undefined) {
+      allowedDays.add(d);
+    }
+  }
+
+  if (allowedDays.size === 0 || count <= 0) {
+    return [];
+  }
+
+  const results: Date[] = [];
+  const cursor = new Date(rangeStart);
+  cursor.setUTCHours(0, 0, 0, 0);
+  const limit = new Date(rangeEnd);
+  limit.setUTCHours(0, 0, 0, 0);
+
+  while (cursor < limit && results.length < count) {
+    if (allowedDays.has(cursor.getUTCDay())) {
+      results.push(new Date(cursor));
+    }
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  return results;
+}
+
 export interface TopicWithClassDate {
   id: string;
   subject_id: string;
@@ -121,7 +159,13 @@ function resolveHour(
   const slots = options?.availabilitySlots;
 
   if (slots && slots.length > 0) {
-    return resolveSessionTime(candidateDate, durationMinutes, slots, studyHours);
+    return resolveSessionTime(
+      candidateDate,
+      durationMinutes,
+      slots,
+      studyHours,
+      options?.occupiedRanges,
+    );
   }
 
   return {

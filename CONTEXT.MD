@@ -22,7 +22,7 @@
 | Sprint 3 — Tracking + Reschedule + Week View | ✅ | 100% |
 | Sprint 4 — Free Study + Google Calendar | ✅ | 100% |
 | Sprint 5 — **Rediseño Visual The Curator** | ✅ | 100% |
-| Sprint 6 — **Onboarding Inteligente** | ⏳ | 0% |
+| Sprint 6 — **Onboarding Inteligente** | 🔄 | ~75% |
 | Sprint 7 — **Procesamiento IA de PDFs** | ⏳ | 0% |
 | Sprint 8 — **Dark Mode** | ✅ | 100% |
 | Sprint 9 — Gamificación (ex Sprint 5) | ⏳ | 0% |
@@ -56,27 +56,23 @@
 
 ## ✅ Próxima tarea
 
-### [6a] Wizard Framework & Gestión de Pasos — Sprint 6 (Onboarding Inteligente)
-**Archivos principales:** `src/components/shared/wizard/`, `src/app/(auth)/onboarding/onboarding-client.tsx`  
-**Estimación:** 4h  
-**Prioridad:** Alta (entrada Sprint 6 — framework para onboarding y creación de materias)  
-**Estado backend:** pendiente · **Estado UI:** pendiente
+### [6g] + [6h] — Integrar pre-clase y distribución de temas (Sprint 6)
 
-**Qué hacer:**
-- Crear `Wizard` reutilizable: `steps`, `onComplete`, `initialStep`, indicador de progreso, navegación back/next, validación por paso
-- Definir tipo `WizardStep` (id, title, component, validate opcional, etc.)
-- Integrar en `onboarding-client.tsx` manteniendo la lógica actual del paso de disponibilidad
-- Ver spec completa en `docs/spec-kit/NEW_SPRINTS_PLAN.md` → [6a]
+**Hecho en código (ya no es 6a):** `src/components/shared/wizard/`, `subject-wizard/*`, `onboarding-client.tsx`, `dashboard/subjects/new/new-subject-client.tsx`, `lib/actions/onboarding-wizard.ts` — flujos LIBRE y CURSANDO + PDF opcional. **[6j]** parcial: `session-card.tsx` ya distingue `PRE_CLASS` y muestra tip.
 
-**Prompt sugerido para Cursor:**
+**Pendiente (por eso Notion ≠ CONTEXT):**
+- **[6g]** `pre-class-generator.ts` existe pero **no se llama** desde actions/onboarding; tipos TS incluyen `session_type` — **no hay migración en `supabase/migrations/`** que agregue enum/columna (revisar paridad con Supabase Cloud y añadir migración idempotente si falta en repo).
+- **[6h]** `topic-distributor.ts` existe pero **sin imports** en el flujo; no asigna temas a fechas de clase al completar el wizard cursada.
+
+**Prompt sugerido:**
 
 ```text
-/ship 6a
+/ship 6g
 
-Implementá [6a] Wizard Framework & Gestión de Pasos: componente Wizard reutilizable en src/components/shared/wizard/, tipos WizardStep, integración en onboarding-client.tsx sin romper el flujo actual. Ver docs/spec-kit/NEW_SPRINTS_PLAN.md. Al final: pnpm typecheck && pnpm build.
+Integrar generatePreClassSessions tras alta cursada/onboarding según NEW_SPRINTS_PLAN; migración session_type si aplica; tests/build.
 ```
 
-**Uso:** `/ship 6a`
+**Uso:** `/ship 6g` (luego `/ship 6h` para cablear `distributeTopics`).
 
 ---
 
@@ -117,18 +113,18 @@ Implementá [6a] Wizard Framework & Gestión de Pasos: componente Wizard reutili
 
 ### Sprint 6 — Onboarding Inteligente (~50h)
 
-| Sub-sprint | Tarea | Tiempo | Dependencias |
-|-----------|-------|--------|-------------|
-| **6a** | **Wizard Framework & Gestión de Pasos** | **4h** | **Sprints 5 y 8 completos ← próxima tarea** |
-| 6b | Paso 2 — Crear Materia | 4h | Requiere: 6a |
-| 6c | Horario de Cursada (grilla) | 5h | Requiere: 6b |
-| 6d | Panel Ingreso Manual de Temas | 6h | Requiere: 6b |
-| 6e | Flujo Estudio Libre | 4h | Requiere: 6b + 6d |
-| 6f | Flujo Cursada — Setup Parciales | 6h | Requiere: 6c + 6d |
-| 6g | Migración DB + Pre-clase Generation | 8h | Requiere: 6f |
-| 6h | Distribución Inteligente Topics | 6h | Requiere: 6c + 6f + 6g |
-| 6i | Página Creación Materia (Dashboard) | 4h | Requiere: 6a-6h |
-| 6j | Session Card — Pre-clase + Tips | 3h | Requiere: 6g |
+| Sub-sprint | Tarea | Tiempo | Estado (repo) |
+|-----------|-------|--------|---------------|
+| ~~6a~~ | ~~Wizard Framework~~ | ~~4h~~ | ✅ |
+| ~~6b~~ | ~~Crear Materia~~ | ~~4h~~ | ✅ |
+| ~~6c~~ | ~~Horario de Cursada~~ | ~~5h~~ | ✅ |
+| ~~6d~~ | ~~Panel temas manual~~ | ~~6h~~ | ✅ |
+| ~~6e~~ | ~~Flujo Estudio Libre~~ | ~~4h~~ | ✅ |
+| ~~6f~~ | ~~Cursada + Parciales~~ | ~~6h~~ | ✅ |
+| **6g** | **Migración `session_type` + pre-clase en flujo** | **8h** | 🔄 servicio sin integrar; migración en repo por verificar |
+| **6h** | **Distribución temas (`topic-distributor`)** | **6h** | 🔄 sin cablear al wizard |
+| ~~6i~~ | ~~Página nueva materia (dashboard)~~ | ~~4h~~ | ✅ |
+| 6j | Session Card pre-clase + tips | 3h | 🟡 UI lista; datos cuando 6g genere `PRE_CLASS` |
 
 ### Sprint 7 — Procesamiento IA de PDFs (~44h)
 
