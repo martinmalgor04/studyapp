@@ -1,9 +1,9 @@
 import type { SessionToCreate, GenerateSessionsOptions } from './session-generator';
+import { dateToLocalArgentinaMinutes } from './session-generator';
 import type { Priority } from './priority-calculator';
-import type { AvailabilitySlotRow } from '@/lib/repositories/availability.repository';
 import {
   resolveSessionTime,
-  setDateToLocalArgentinaHour,
+  type OccupiedRange,
   type StudyHoursRange,
 } from './slot-resolver';
 import { logger } from '@/lib/utils/logger';
@@ -19,7 +19,6 @@ const DAY_MAP: Record<string, number> = {
 };
 
 const DEFAULT_PRE_CLASS_DURATION = 45;
-const DEFAULT_FALLBACK_HOUR = '10:00';
 const PRE_CLASS_PRIORITY: Priority = 'IMPORTANT';
 
 const DEFAULT_STUDY_HOURS: StudyHoursRange = {
@@ -86,6 +85,8 @@ export interface PreClassGeneratorInput {
   schedule: ClassScheduleBlock[];
   topicsWithDates: TopicWithClassDate[];
   examDates: Date[];
+  /** Instante de generación; evita pre-clases con scheduled_at en el pasado (p. ej. mismo día UTC que la clase). */
+  generatedAt?: Date;
   options?: GenerateSessionsOptions;
 }
 
@@ -122,6 +123,12 @@ function isSameDay(a: Date, b: Date): boolean {
   );
 }
 
+function utcMidnight(d: Date): Date {
+  const x = new Date(d);
+  x.setUTCHours(0, 0, 0, 0);
+  return x;
+}
+
 function isExamDay(date: Date, examDates: Date[]): boolean {
   return examDates.some((ed) => isSameDay(date, ed));
 }
@@ -150,29 +157,94 @@ function findPreClassDate(classDate: Date, examDates: Date[]): Date | null {
   return null;
 }
 
+/**
+ * Día UTC de preparación: idealmente el día anterior a la clase (sin caer en parcial).
+ * Si ese día es anterior al día UTC de `generatedAt`, se usa el mismo día UTC que la clase
+ * y la hora queda acotada por `generatedAt` y el inicio del bloque de cursada.
+ */
+export function findPreClassSchedulingDate(
+  classDate: Date,
+  examDates: Date[],
+  generatedAt: Date,
+): Date | null {
+  const ideal = findPreClassDate(classDate, examDates);
+  if (!ideal) return null;
+
+  const idealMid = utcMidnight(ideal);
+  const genMid = utcMidnight(generatedAt);
+
+  if (idealMid.getTime() >= genMid.getTime()) {
+    return idealMid;
+  }
+
+  return utcMidnight(classDate);
+}
+
+function getClassBlockStartMinutes(classDate: Date, schedule: ClassScheduleBlock[]): number | null {
+  const dayOfWeek = classDate.getUTCDay();
+
+  for (const block of schedule) {
+    const blockDay = DAY_MAP[block.day];
+    if (blockDay === undefined) continue;
+
+    if (blockDay === dayOfWeek) {
+      return parseTimeToMinutes(block.startTime);
+    }
+  }
+
+  return null;
+}
+
+function buildPreClassOccupiedRanges(params: {
+  schedulingDate: Date;
+  classDate: Date;
+  generatedAt: Date;
+  duration: number;
+  schedule: ClassScheduleBlock[];
+}): OccupiedRange[] {
+  const { schedulingDate, classDate, generatedAt, duration, schedule } = params;
+  const extra: OccupiedRange[] = [];
+
+  if (isSameDay(schedulingDate, generatedAt)) {
+    const m = dateToLocalArgentinaMinutes(generatedAt);
+    if (m > 0) {
+      extra.push({ startMinutes: 0, endMinutes: m });
+    }
+  }
+
+  if (isSameDay(schedulingDate, classDate)) {
+    const classStart = getClassBlockStartMinutes(classDate, schedule);
+    if (classStart !== null) {
+      const latestStart = classStart - duration;
+      if (latestStart >= 0) {
+        extra.push({ startMinutes: latestStart + 1, endMinutes: 24 * 60 });
+      }
+    }
+  }
+
+  return extra;
+}
+
 function resolveHour(
   candidateDate: Date,
   durationMinutes: number,
   options?: GenerateSessionsOptions,
+  occupiedExtra?: OccupiedRange[],
 ): { date: Date; adjusted: boolean; originalDate: Date | null } {
   const studyHours = options?.studyHours ?? DEFAULT_STUDY_HOURS;
-  const slots = options?.availabilitySlots;
+  const slots = options?.availabilitySlots ?? [];
+  const occupied: OccupiedRange[] = [
+    ...(options?.occupiedRanges ?? []),
+    ...(occupiedExtra ?? []),
+  ];
 
-  if (slots && slots.length > 0) {
-    return resolveSessionTime(
-      candidateDate,
-      durationMinutes,
-      slots,
-      studyHours,
-      options?.occupiedRanges,
-    );
-  }
-
-  return {
-    date: setDateToLocalArgentinaHour(candidateDate, DEFAULT_FALLBACK_HOUR),
-    adjusted: false,
-    originalDate: null,
-  };
+  return resolveSessionTime(
+    candidateDate,
+    durationMinutes,
+    slots,
+    studyHours,
+    occupied,
+  );
 }
 
 /**
@@ -183,12 +255,17 @@ export function generatePreClassSessions(
   input: PreClassGeneratorInput,
 ): SessionToCreate[] {
   const { userId, subjectId, schedule, topicsWithDates, examDates, options } = input;
+  const generatedAt = input.generatedAt ?? new Date();
   const sessions: SessionToCreate[] = [];
 
   for (const topic of topicsWithDates) {
-    const preClassDate = findPreClassDate(topic.classDate, examDates);
+    const schedulingDate = findPreClassSchedulingDate(
+      topic.classDate,
+      examDates,
+      generatedAt,
+    );
 
-    if (!preClassDate) {
+    if (!schedulingDate) {
       logger.warn(
         `[PreClassGenerator] No se encontró fecha para pre-clase de "${topic.name}" (clase: ${topic.classDate.toISOString()})`,
       );
@@ -201,7 +278,51 @@ export function generatePreClassSessions(
         ? Math.min(60, Math.round(classDuration * 0.3))
         : DEFAULT_PRE_CLASS_DURATION;
 
-    const slotResult = resolveHour(preClassDate, duration, options);
+    const classStart = getClassBlockStartMinutes(topic.classDate, schedule);
+    if (isSameDay(schedulingDate, topic.classDate) && classStart !== null) {
+      const latestStart = classStart - duration;
+      if (latestStart < 0) {
+        logger.warn(
+          `[PreClassGenerator] Sin hueco antes del inicio de cursada para pre-clase de "${topic.name}" (clase: ${topic.classDate.toISOString()})`,
+        );
+        continue;
+      }
+    }
+
+    const occupiedExtra = buildPreClassOccupiedRanges({
+      schedulingDate,
+      classDate: topic.classDate,
+      generatedAt,
+      duration,
+      schedule,
+    });
+
+    const slotResult = resolveHour(schedulingDate, duration, options, occupiedExtra);
+
+    const mustStayOnClassUtcDay = isSameDay(schedulingDate, topic.classDate);
+    if (mustStayOnClassUtcDay && !isSameDay(slotResult.date, topic.classDate)) {
+      logger.warn(
+        `[PreClassGenerator] No hubo slot el mismo día UTC que la clase para "${topic.name}"; se omite pre-clase.`,
+      );
+      continue;
+    }
+
+    if (slotResult.date.getTime() < generatedAt.getTime()) {
+      logger.warn(
+        `[PreClassGenerator] Slot anterior a generatedAt para "${topic.name}"; se omite pre-clase.`,
+      );
+      continue;
+    }
+
+    if (isSameDay(slotResult.date, topic.classDate) && classStart !== null) {
+      const endMin = dateToLocalArgentinaMinutes(slotResult.date) + duration;
+      if (endMin > classStart) {
+        logger.warn(
+          `[PreClassGenerator] Pre-clase solaparía inicio de cursada para "${topic.name}"; se omite.`,
+        );
+        continue;
+      }
+    }
 
     sessions.push({
       user_id: userId,

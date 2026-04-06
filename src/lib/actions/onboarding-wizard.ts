@@ -414,6 +414,7 @@ async function handleCursadaPath(
           schedule: cursada.schedule,
           topicsWithDates,
           examDates,
+          generatedAt: now,
           options: { availabilitySlots, studyHours, occupiedRanges },
         });
 
