@@ -5,7 +5,7 @@
 
 ## 🗓 Última actualización
 **Fecha:** 2026-04-06  
-**Actualizado por:** **Sprint 9 completo** (9a–9e): gamificación en `SessionEventRegistry`, repos, dashboard `GamificationSummary`; próximo **Sprint 10 [10a]** (commit pendiente confirmación usuario).
+**Actualizado por:** **Sprint 9 completo** (9a–9e), commit `406f09a`; próximo **Sprint 10 [10a]**.
 
 ---
 
@@ -38,9 +38,9 @@
 
 **Archivos principales:** `src/lib/services/gamification/*`, `src/lib/repositories/user-stats.repository.ts`, `subject-stats.repository.ts`, `achievements.repository.ts`, `session-events.ts`, `dashboard.ts`, `gamification-summary.tsx`, tests unit streak/points/level.
 
-**Commit:** pendiente (un solo commit sprint — confirmar en chat).
+**Commit:** `406f09a` — `feat(sprint-9): gamificación al completar sesión`
 
-**Quedó a medias:** nada en Sprint 9; Notion 9a–9e marcados Hecho con notas.
+**Quedó a medias:** nada en Sprint 9; Notion 9a–9e con hash en notas.
 
 **Notas:** Logros implementados: `FIRST_SESSION`, `STREAK_7`, `STREAK_30`, `MASTER_SUBJECT` (resto del seed queda para iteraciones). Galería de logros / badges por materia en detalle: mejora futura.
 
