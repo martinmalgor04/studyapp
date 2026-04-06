@@ -9,6 +9,7 @@ import {
   CreateSubjectStep,
   FreeStudyStep,
   CursadaParcialesStep,
+  CursadaDistributionStep,
   PdfUploadStep,
 } from '@/components/shared/subject-wizard';
 import type { WizardStep } from '@/components/shared/wizard';
@@ -26,6 +27,10 @@ interface CursadaRawData {
   schedule: ClassBlock[];
   topics: TopicInput[];
   parciales: ParcialRawData[];
+}
+
+interface CursadaDistributionRawData {
+  topicClassDates: string[];
 }
 
 function buildWizardInput(data: Record<string, unknown>): SubjectWizardInput {
@@ -53,6 +58,13 @@ function buildWizardInput(data: Record<string, unknown>): SubjectWizardInput {
   } else if (subject.studyPath === 'CURSANDO') {
     const c = data.cursada as CursadaRawData | undefined;
     if (c) {
+      const dist = data.cursadaDistribution as CursadaDistributionRawData | undefined;
+      const topicClassDates =
+        dist?.topicClassDates &&
+        dist.topicClassDates.length === c.topics.length
+          ? dist.topicClassDates
+          : undefined;
+
       input.cursada = {
         schedule: c.schedule.map(s => ({ day: s.day, startTime: s.startTime, endTime: s.endTime })),
         topics: c.topics.map(t => ({ name: t.name, difficulty: t.difficulty, hours: t.hours })),
@@ -65,6 +77,7 @@ function buildWizardInput(data: Record<string, unknown>): SubjectWizardInput {
             .map(id => c.topics.findIndex(t => t.id === id))
             .filter(i => i !== -1),
         })),
+        ...(topicClassDates ? { topicClassDates } : {}),
       };
     }
   }
@@ -117,6 +130,11 @@ export function NewSubjectClient() {
       base.push({ id: 'freeStudy', title: 'Plan de Estudio', component: FreeStudyStep });
     } else if (studyPath === 'CURSANDO') {
       base.push({ id: 'cursada', title: 'Cursada', component: CursadaParcialesStep });
+      base.push({
+        id: 'cursadaDistribution',
+        title: 'Distribución',
+        component: CursadaDistributionStep,
+      });
     }
 
     return base;

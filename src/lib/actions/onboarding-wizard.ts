@@ -56,6 +56,10 @@ export interface SubjectWizardInput {
       modality: 'THEORY' | 'PRACTICE' | 'THEORY_PRACTICE';
       topicIndices: number[];
     }>;
+    /**
+     * Opcional: misma longitud y orden que `topics`. Fecha de clase confirmada por índice (YYYY-MM-DD, UTC medianoche).
+     */
+    topicClassDates?: string[];
   };
 
   /** Metadata persistida al crear la materia (Sprint 7h) */
@@ -88,6 +92,8 @@ function formatUtcYmd(d: Date): string {
   const day = String(d.getUTCDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
+
+const STRICT_YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Medianoche UTC para strings tipo YYYY-MM-DD o ISO. */
 function parseParcialDateUtcMidnight(dateStr: string): Date {
@@ -267,13 +273,23 @@ async function handleCursadaPath(
     rangeEnd,
   );
 
+  const topicClassDates = cursada.topicClassDates;
+  const useConfirmedTopicDates =
+    topicClassDates != null && topicClassDates.length === cursada.topics.length;
+
   const topicsWithDates: TopicWithClassDate[] = [];
   let topicsCreated = 0;
 
   for (let i = 0; i < cursada.topics.length; i++) {
     const topicSpec = cursada.topics[i];
     const examId = topicExamMap.get(i);
-    const classDateUsed = classDates[i] ?? new Date(rangeStart.getTime());
+    const confirmedRaw = useConfirmedTopicDates ? topicClassDates[i] : undefined;
+    const confirmedTrimmed =
+      typeof confirmedRaw === 'string' ? confirmedRaw.trim() : '';
+    const classDateUsed =
+      confirmedTrimmed !== '' && STRICT_YMD_RE.test(confirmedTrimmed)
+        ? parseParcialDateUtcMidnight(confirmedTrimmed)
+        : (classDates[i] ?? new Date(rangeStart.getTime()));
     const sourceDateStr = formatUtcYmd(classDateUsed);
 
     const topicResult = await createTopic({

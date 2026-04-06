@@ -23,11 +23,39 @@ export interface ParcialInfo {
   date: Date;
 }
 
+/**
+ * Entrada de {@link distributeTopics}.
+ *
+ * **Armar desde el wizard:** preferí {@link buildTopicDistributorInputFromWizard}
+ * con `schedule`, `topics` (`id` + `name` + `hours` en minutos, igual que
+ * {@link TopicForDistribution}), `parciales` con fechas y `assignedTopicIds`, y
+ * `startDate` en medianoche UTC (p. ej. hoy). Si armás a mano: cada
+ * `ParcialInfo.index` debe ser 0-based en el orden **por fecha ascendente**;
+ * cada topic debe tener `parcialIndex` igual al índice del parcial que lo
+ * asigna (ver builder para huérfanos).
+ */
 export interface TopicDistributorInput {
   schedule: ScheduleBlock[];
   topics: TopicForDistribution[];
   parciales: ParcialInfo[];
   startDate: Date;
+}
+
+/** Fila de parcial proveniente del wizard (el builder ordena por `date` y asigna índices 0..n-1). */
+export interface WizardParcialRowForDistributor {
+  /** Índice esperado en el orden por fecha (documentación / validación del caller); el builder ordena por `date` y no usa este valor para persistir. */
+  index: number;
+  name: string;
+  date: string | Date;
+  assignedTopicIds: string[];
+}
+
+/** Tema del wizard con id estable (mismo orden que al persistir topics). */
+export interface WizardTopicRowForDistributor {
+  id: string;
+  name: string;
+  /** Minutos de estudio del tema (misma unidad que `TopicForDistribution.hours` en este módulo). */
+  hours: number;
 }
 
 export interface TentativeScheduleItem {
@@ -80,8 +108,39 @@ function addDays(date: Date, days: number): Date {
   return result;
 }
 
-function toDateKey(date: Date): string {
+/** Clave calendario `YYYY-MM-DD` en UTC (alineado con `findClassDates` / slots). */
+export function toDateKey(date: Date): string {
   return date.toISOString().slice(0, 10);
+}
+
+function parseWizardDateUtcMidnight(value: string | Date): Date {
+  if (value instanceof Date) {
+    return new Date(
+      Date.UTC(
+        value.getUTCFullYear(),
+        value.getUTCMonth(),
+        value.getUTCDate(),
+      ),
+    );
+  }
+  const trimmed = value.trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(trimmed);
+  if (match) {
+    return new Date(
+      Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])),
+    );
+  }
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) {
+    return new Date(0);
+  }
+  return new Date(
+    Date.UTC(
+      parsed.getUTCFullYear(),
+      parsed.getUTCMonth(),
+      parsed.getUTCDate(),
+    ),
+  );
 }
 
 function formatShort(date: Date): string {
@@ -259,6 +318,96 @@ function allocateTopics(
   }
 
   return { items, warnings, usedDateKeys };
+}
+
+// ---------------------------------------------------------------------------
+// Pure helpers (post-distribución y armado de input desde wizard)
+// ---------------------------------------------------------------------------
+
+/**
+ * A partir del calendario tentativo (`distributeTopics` → `schedule`), obtiene
+ * para cada id en `topicsInOrder` la **primera** fecha (UTC, `YYYY-MM-DD` vía
+ * {@link toDateKey}) en la que ese id figura en `topicIds` de algún ítem.
+ * Si no aparece, `null` (el caller puede hacer fallback).
+ */
+export function earliestClassDateKeysForTopics(
+  tentativeSchedule: TentativeScheduleItem[],
+  topicsInOrder: ReadonlyArray<{ id: string }>,
+): (string | null)[] {
+  const earliestKeyByTopicId = new Map<string, string>();
+
+  for (const item of tentativeSchedule) {
+    const dateKey = toDateKey(item.date);
+    const seenInSlot = new Set<string>();
+    for (const topicId of item.topicIds) {
+      if (seenInSlot.has(topicId)) continue;
+      seenInSlot.add(topicId);
+      const prev = earliestKeyByTopicId.get(topicId);
+      if (prev === undefined || dateKey < prev) {
+        earliestKeyByTopicId.set(topicId, dateKey);
+      }
+    }
+  }
+
+  return topicsInOrder.map(({ id }) => earliestKeyByTopicId.get(id) ?? null);
+}
+
+/**
+ * Arma {@link TopicDistributorInput} desde datos de wizard.
+ *
+ * - Ordena `parciales` por `date` ascendente y asigna `ParcialInfo.index` 0…n-1.
+ * - `parcialIndex` de cada topic = índice del parcial cuyo `assignedTopicIds`
+ *   lo incluye; si varios lo listan, gana el de **menor índice** (parcial más
+ *   temprano).
+ * - Si ningún parcial asigna el topic: **parcialIndex = 0** (primer parcial
+ *   por fecha), para que no quede huérfano y `distributeTopics` no lo omita
+ *   sin aviso en el filtro por `parcialIndex`.
+ */
+export function buildTopicDistributorInputFromWizard(params: {
+  schedule: ScheduleBlock[];
+  topics: WizardTopicRowForDistributor[];
+  parciales: WizardParcialRowForDistributor[];
+  startDate: Date;
+}): TopicDistributorInput {
+  const { schedule, topics, parciales, startDate } = params;
+
+  const sorted = [...parciales].sort(
+    (a, b) =>
+      parseWizardDateUtcMidnight(a.date).getTime() -
+      parseWizardDateUtcMidnight(b.date).getTime(),
+  );
+
+  const parcialInfos: ParcialInfo[] = sorted.map((p, i) => ({
+    index: i,
+    name: p.name,
+    date: parseWizardDateUtcMidnight(p.date),
+  }));
+
+  const parcialIndexByTopicId = new Map<string, number>();
+  for (let i = 0; i < sorted.length; i++) {
+    for (const topicId of sorted[i].assignedTopicIds) {
+      if (!parcialIndexByTopicId.has(topicId)) {
+        parcialIndexByTopicId.set(topicId, i);
+      }
+    }
+  }
+
+  const topicsForDistribution: TopicForDistribution[] = topics.map((t) => ({
+    id: t.id,
+    name: t.name,
+    hours: t.hours,
+    parcialIndex: parcialIndexByTopicId.get(t.id) ?? 0,
+  }));
+
+  const start = new Date(startDate);
+  start.setUTCHours(0, 0, 0, 0);
+
+  return {
+    schedule,
+    topics: topicsForDistribution,
+    parciales: parcialInfos,
+    startDate: start,
+  };
 }
 
 // ---------------------------------------------------------------------------

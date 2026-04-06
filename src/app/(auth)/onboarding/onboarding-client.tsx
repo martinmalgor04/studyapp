@@ -8,7 +8,13 @@ import type { SubjectWizardInput } from '@/lib/actions/onboarding-wizard';
 import { connectGoogleCalendar } from '@/lib/actions/google-calendar';
 import { Button } from '@/components/ui/button';
 import { Wizard } from '@/components/shared/wizard';
-import { CreateSubjectStep, FreeStudyStep, CursadaParcialesStep, PdfUploadStep } from '@/components/shared/subject-wizard';
+import {
+  CreateSubjectStep,
+  FreeStudyStep,
+  CursadaParcialesStep,
+  CursadaDistributionStep,
+  PdfUploadStep,
+} from '@/components/shared/subject-wizard';
 import type { StepProps, WizardStep } from '@/components/shared/wizard';
 import type { StudyPath, SubjectWizardData, TopicInput, ClassBlock } from '@/components/shared/subject-wizard';
 
@@ -256,6 +262,10 @@ interface CursadaRawData {
   parciales: ParcialRawData[];
 }
 
+interface CursadaDistributionRawData {
+  topicClassDates: string[];
+}
+
 function buildWizardInput(data: Record<string, unknown>): SubjectWizardInput {
   const subject = data.subject as SubjectWizardData;
 
@@ -281,6 +291,13 @@ function buildWizardInput(data: Record<string, unknown>): SubjectWizardInput {
   } else if (subject.studyPath === 'CURSANDO') {
     const c = data.cursada as CursadaRawData | undefined;
     if (c) {
+      const dist = data.cursadaDistribution as CursadaDistributionRawData | undefined;
+      const topicClassDates =
+        dist?.topicClassDates &&
+        dist.topicClassDates.length === c.topics.length
+          ? dist.topicClassDates
+          : undefined;
+
       input.cursada = {
         schedule: c.schedule.map(s => ({ day: s.day, startTime: s.startTime, endTime: s.endTime })),
         topics: c.topics.map(t => ({ name: t.name, difficulty: t.difficulty, hours: t.hours })),
@@ -293,6 +310,7 @@ function buildWizardInput(data: Record<string, unknown>): SubjectWizardInput {
             .map(id => c.topics.findIndex(t => t.id === id))
             .filter(i => i !== -1),
         })),
+        ...(topicClassDates ? { topicClassDates } : {}),
       };
     }
   }
@@ -346,6 +364,11 @@ export function OnboardingClient() {
       base.push({ id: 'freeStudy', title: 'Plan de Estudio', component: FreeStudyStep });
     } else if (studyPath === 'CURSANDO') {
       base.push({ id: 'cursada', title: 'Cursada', component: CursadaParcialesStep });
+      base.push({
+        id: 'cursadaDistribution',
+        title: 'Distribución',
+        component: CursadaDistributionStep,
+      });
     }
 
     return base;

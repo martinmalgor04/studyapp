@@ -540,7 +540,7 @@ export function CursadaParcialesStep({
           </Button>
         )}
         <Button onClick={handleFinish} size="lg">
-          Finalizar
+          Siguiente
         </Button>
       </div>
     </div>

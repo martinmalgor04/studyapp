@@ -24,3 +24,8 @@ export interface TopicInput {
   difficulty: 'EASY' | 'MEDIUM' | 'HARD';
   hours: number;
 }
+
+/** Paso de revisión: fechas de clase por tema (mismo orden que `topics` en cursada). */
+export interface CursadaDistributionData {
+  topicClassDates: string[];
+}

@@ -619,7 +619,7 @@ El MVP se considera exitoso si:
 | Sprint 4 | ✅ | 100% | Free Study + Google Calendar + emitCompleted activado |
 | **Refactoring Arquitectural** | ✅ | **100%** | **4 capas: Repositories + Services puros + Actions + RSC** |
 | Sprint 5 (The Curator) | ✅ | 100% | Rediseño visual; ver `NEW_SPRINTS_PLAN` |
-| Sprint 6 (Onboarding) | 🔄 | ~85% | Wizard + flujos; ✅ [6g] `handleCursadaPath`: fechas clase secuenciales + pre-clases (`generatePreClassSessions` + insert + GCal); UI puede mostrar `warning`; **[6h]** distribución |
+| Sprint 6 (Onboarding) | 🔄 | ~92% | Wizard + flujos; ✅ [6g] cursada/pre-clases; ✅ [6h] `topic-distributor` + paso UI `CursadaDistributionStep` (onboarding + nueva materia) + `topicClassDates` en `buildWizardInput` → `completeSubjectWizard` |
 | Sprint 7 (IA PDFs) | ⏳ | 0% | Plan en `NEW_SPRINTS_PLAN` |
 | Sprint 8 (Dark Mode) | ✅ | 100% | Theme + app |
 | Sprint 9 (Gamificación, ex §9.4 “Sprint 5”) | ⏳ | 0% | |
@@ -631,11 +631,11 @@ El MVP se considera exitoso si:
 
 ## Summary
 
-**Estado actual (2026-04-04):** Sprint 1–4 ✅, **Refactoring Arquitectural ✅**, **Sprint 5 The Curator ✅**, Sprint 6 onboarding 🔄 (~85%), Sprint 8 ✅  
+**Estado actual (2026-04-04):** Sprint 1–4 ✅, **Refactoring Arquitectural ✅**, **Sprint 5 The Curator ✅**, Sprint 6 onboarding 🔄 (~92%), Sprint 8 ✅  
 **Pulido (2026-03-19):** ✅ 0 `as any` (TypeScript strict), ✅ CI/CD GitHub Actions, ✅ Error boundaries, ✅ Security headers, ✅ Logger centralizado, ✅ Google token helper deduplicado, ✅ Aria-labels en nav/notificaciones/sesiones/pomodoro  
 **Refactoring (2026-03-23):** ✅ Capa de Repositories, ✅ Services puros (sin Supabase), ✅ Actions adelgazadas, ✅ RSC para pages, ✅ Helper `getAuthenticatedUser()`
 
-**Próximo paso (plan nuevo):** Aplicar migración `20260404120000_add_session_type.sql` en Supabase Cloud si aún no está; opcional: UI para `warning` del wizard; luego **[6h]** `topic-distributor` en wizard cursada (`CONTEXT.MD`).
+**Próximo paso (plan nuevo):** Aplicar migración `20260404120000_add_session_type.sql` en Supabase Cloud si aún no está; opcional: UI para `warning` del wizard; E2E del paso distribución cursada si aplica.
 
 **MVP + v1.0 (parcial):** ✅ COMPLETADO al 90%. Arquitectura de 4 capas ✅ COMPLETADA al 100%.
 
