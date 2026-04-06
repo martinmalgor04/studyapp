@@ -609,7 +609,7 @@ El MVP se considera exitoso si:
 
 ---
 
-### Estado por Sprint (Actualizado 2026-04-06)
+### Estado por Sprint (Actualizado 2026-04-06 — Sprint 7 ✅)
 
 | Sprint | Estado | Completitud | Notas |
 |--------|--------|-------------|-------|
@@ -620,7 +620,7 @@ El MVP se considera exitoso si:
 | **Refactoring Arquitectural** | ✅ | **100%** | **4 capas: Repositories + Services puros + Actions + RSC** |
 | Sprint 5 (The Curator) | ✅ | 100% | Rediseño visual; ver `NEW_SPRINTS_PLAN` |
 | Sprint 6 (Onboarding) | 🔄 | ~96% | Wizard + flujos; ✅ [6g]–[6h]; ✅ [6i] CTA Nueva materia + onboarding card + mensaje post-wizard; ✅ [6j] `session-card` (pre-clase + tips + `source_date`), filtro tipo en sesiones, calendario `Pre-clase` vs R0. **Próximo:** smoke manual / E2E cursada opcional. |
-| Sprint 7 (IA PDFs) | ⏳ | ~5% | Plan en `NEW_SPRINTS_PLAN`; ✅ [7i] `buildSubjectWizardInput` compartido (onboarding + Nueva materia, PDF → `pdfMetadata`). |
+| Sprint 7 (IA PDFs) | ✅ | 100% | Upload, strategy IA, extracción, UI revisión, actions, onboarding+metadata; cierre **[7i]** `buildSubjectWizardInput` (paridad Nueva materia, PDF → `pdfMetadata`). Ver `NEW_SPRINTS_PLAN`. |
 | Sprint 8 (Dark Mode) | ✅ | 100% | Theme + app |
 | Sprint 9 (Gamificación, ex §9.4 “Sprint 5”) | ⏳ | 0% | |
 | Sprint 10 (Analytics + Tasks, ex §9.4 “Sprint 6”) | ⏳ | 0% | Incluye E2E UC-008/009 y Telegram en backlog |
@@ -631,7 +631,7 @@ El MVP se considera exitoso si:
 
 ## Summary
 
-**Estado actual (2026-04-06):** Sprint 1–4 ✅, **Refactoring Arquitectural ✅**, **Sprint 5 The Curator ✅**, Sprint 6 onboarding 🔄 (~96%), Sprint 8 ✅  
+**Estado actual (2026-04-06):** Sprint 1–4 ✅, **Refactoring Arquitectural ✅**, **Sprint 5 The Curator ✅**, Sprint 6 onboarding 🔄 (~96%), **Sprint 7 IA PDFs ✅**, Sprint 8 ✅  
 **Pulido (2026-03-19):** ✅ 0 `as any` (TypeScript strict), ✅ CI/CD GitHub Actions, ✅ Error boundaries, ✅ Security headers, ✅ Logger centralizado, ✅ Google token helper deduplicado, ✅ Aria-labels en nav/notificaciones/sesiones/pomodoro  
 **Refactoring (2026-03-23):** ✅ Capa de Repositories, ✅ Services puros (sin Supabase), ✅ Actions adelgazadas, ✅ RSC para pages, ✅ Helper `getAuthenticatedUser()`
 

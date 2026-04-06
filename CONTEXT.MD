@@ -5,7 +5,7 @@
 
 ## 🗓 Última actualización
 **Fecha:** 2026-04-04  
-**Actualizado por:** Cierre sesión — Sprint 7 **[7i]** Paridad PDF/IA — Wizard «Nueva materia» (dashboard), commit `0fd8ff2`
+**Actualizado por:** Sprint 7 marcado **100%** en repo (7a–7h previos + **[7i]** `0fd8ff2`); próxima tarea **Sprint 9 [9a]**
 
 ---
 
@@ -23,7 +23,7 @@
 | Sprint 4 — Free Study + Google Calendar | ✅ | 100% |
 | Sprint 5 — **Rediseño Visual The Curator** | ✅ | 100% |
 | Sprint 6 — **Onboarding Inteligente** | ✅ | 100% |
-| Sprint 7 — **Procesamiento IA de PDFs** | ⏳ | ~5% |
+| Sprint 7 — **Procesamiento IA de PDFs** | ✅ | 100% |
 | Sprint 8 — **Dark Mode** | ✅ | 100% |
 | Sprint 9 — Gamificación (ex Sprint 5) | ⏳ | 0% |
 | Sprint 10 — Analytics + Tasks (ex Sprint 6) | ⏳ | 0% |
@@ -48,38 +48,22 @@
 
 **Quedó a medias:** nada en [7i].
 
-**Notas:** [7i] era el último sub-sprint listado en `NEW_SPRINTS_PLAN` para Sprint 7; el siguiente paso operativo es **auditar/cerrar huecos 7a–7h** (Cloud/repo) **o** arrancar **Sprint 9 — [9a] Streaks calculator** si Sprint 7 ya está cubierto en código. Ver «Próxima tarea».
+**Notas:** Sprint 7 quedó **completo en repo**: 7a–7h ya estaban implementados; [7i] (`0fd8ff2`) cerró la paridad wizard Nueva materia / onboarding. Próximo bloque planificado: **Sprint 9 — [9a]**.
 
 ---
 
 ## ✅ Próxima tarea
 
-**Decisión:** [7i] cerró el último sub-sprint nominal de Sprint 7 en el plan. Elegí una de las dos vías:
-
-### Opción A — Auditar Sprint 7 (7a–7h) vs Cloud/repo
-
-| Campo | Valor |
-|--------|--------|
-| **Alcance** | Checklist contra Supabase Cloud + Vercel: bucket `program-pdfs`, `ai_extractions`, RLS, actions de PDF/IA, UI de revisión, onboarding vs dashboard; cerrar gaps documentados. |
-| **Estimación** | 4–8h (según hallazgos) |
-| **Prioridad** | Alta si hay incoherencias en producción; si el código ya está alineado, es sobre todo verificación. |
-
-**Prompt sugerido (Opción A):**
-
-```text
-Auditar Sprint 7 StudyApp sub-sprints 7a–7h: contrastar repo con Supabase Cloud (migraciones, bucket program-pdfs, ai_extractions, RLS) y Vercel (env IA). Listar gaps y, si hay, abrir fixes mínimos. No tocar helpers de Google Calendar ni sección NO TOCAR de CONTEXT. Al cerrar, actualizar CONTEXT + 09-roadmap si aplica.
-```
-
-### Opción B — Sprint 9 [9a] Streaks calculator
+### [9a] — Streaks calculator (Sprint 9)
 
 | Campo | Valor |
 |--------|--------|
 | **Archivo principal** | Servicios/gamificación en `src/lib/services/` (streaks), stats en DB según spec; revisar `user_stats` y acciones que actualicen rachas. |
 | **Estimación** | 4h |
-| **Prioridad** | Media–Alta si Sprint 7 queda verificado OK y querés avanzar gamificación. |
-| **Dependencias** | Ninguna (plan NEW_SPRINTS_PLAN). |
+| **Prioridad** | Alta (inicio Sprint 9; sin dependencias en el plan). |
+| **Dependencias** | Ninguna (`NEW_SPRINTS_PLAN`). |
 
-**Prompt sugerido (Opción B):**
+**Prompt sugerido:**
 
 ```text
 /ship 9a
@@ -87,7 +71,7 @@ Auditar Sprint 7 StudyApp sub-sprints 7a–7h: contrastar repo con Supabase Clou
 Sprint 9 — Streaks calculator: implementar cálculo de rachas según spec-kit y patrones existentes en lib/services/; tipos estrictos; tests donde ya haya Vitest para servicios. No tocar helpers de Google Calendar.
 ```
 
-**Uso típico:** Opción A primero si no certificaste Cloud; Opción B si 7a–7h ya están cubiertos y querés desbloquear 9b+.
+**Uso:** `/ship 9a`
 
 ---
 
@@ -141,23 +125,23 @@ Sprint 9 — Streaks calculator: implementar cálculo de rachas según spec-kit 
 | ~~6i~~ | ~~Página nueva materia / CTA dashboard + copy wizard~~ | ~~4h~~ | ✅ (`3100664`) |
 | ~~6j~~ | ~~Session card pre-clase + tips + filtro tipo + calendario + repo sesiones~~ | ~~3h~~ | ✅ (`3100664`) |
 
-**Nota:** Sprint 6 al 100% en repo; Sprint 7: [7i] cerrado en `0fd8ff2`; ver **Próxima tarea** (auditoría 7a–7h o Sprint 9).
+**Nota:** Sprint 6 al 100% en repo.
 
-### Sprint 7 — Procesamiento IA de PDFs (~44h)
+### Sprint 7 — ✅ Completo (Procesamiento IA de PDFs, ~44h)
 
-| Sub-sprint | Tarea | Tiempo | Dependencias |
-|-----------|-------|--------|-------------|
-| 7a | PDF Upload Infraestructura | 4h | Sprint 6 completo |
-| 7b | Abstracción IA — Strategy Pattern | 6h | Requiere: 7a |
-| 7c | Prompt Engineering & Extracción | 8h | Requiere: 7b |
-| 7d | Agrupación Inteligente de Topics | 5h | Requiere: 7c |
-| 7e | UI Revisión de Extracción | 5h | Requiere: 7c + 7d + 6d |
-| 7f | Server Action — Procesar PDF | 5h | Requiere: 7a-7d |
-| 7g | Integración Onboarding + IA | 6h | Requiere: 7e + 7f |
-| 7h | Metadata de Materia desde IA | 3h | Requiere: 7c + 7g |
+| Sub-sprint | Tarea | Tiempo | Estado (repo) |
+|-----------|-------|--------|---------------|
+| ~~7a~~ | ~~PDF Upload Infraestructura~~ | ~~4h~~ | ✅ |
+| ~~7b~~ | ~~Abstracción IA — Strategy Pattern~~ | ~~6h~~ | ✅ |
+| ~~7c~~ | ~~Prompt Engineering & Extracción~~ | ~~8h~~ | ✅ |
+| ~~7d~~ | ~~Agrupación Inteligente de Topics~~ | ~~5h~~ | ✅ |
+| ~~7e~~ | ~~UI Revisión de Extracción~~ | ~~5h~~ | ✅ |
+| ~~7f~~ | ~~Server Action — Procesar PDF~~ | ~~5h~~ | ✅ |
+| ~~7g~~ | ~~Integración Onboarding + IA~~ | ~~6h~~ | ✅ |
+| ~~7h~~ | ~~Metadata de Materia desde IA~~ | ~~3h~~ | ✅ |
 | ~~7i~~ | ~~Paridad PDF/IA — Wizard Nueva materia (dashboard)~~ | ~~2h~~ | ✅ (`0fd8ff2`) |
 
-**Nota:** 7i listo en repo; conviene **auditar 7a–7h** en Cloud antes de dar por cerrado el sprint operativo.
+**Nota:** Sprint 7 al 100% en repo; cierre formal de sub-sprints con [7i] `0fd8ff2` (paridad `buildSubjectWizardInput` + PDF → `pdfMetadata`).
 
 ### Sprint 9 — Gamificación (ex Sprint 5, ~26h)
 
