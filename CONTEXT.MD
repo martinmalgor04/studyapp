@@ -5,7 +5,7 @@
 
 ## 🗓 Última actualización
 **Fecha:** 2026-04-06  
-**Actualizado por:** Cierre sesión — Sprint 6 **[6h]** distribución de temas (`topic-distributor`) en wizard cursada + clients onboarding/nueva materia, commit `743bf6b`
+**Actualizado por:** Cierre sesión — Sprint 6 **[6i]** + **[6j]** (nueva materia / CTA dashboard + session card pre-clase, filtros, calendario, repo), commit `3100664`
 
 ---
 
@@ -22,7 +22,7 @@
 | Sprint 3 — Tracking + Reschedule + Week View | ✅ | 100% |
 | Sprint 4 — Free Study + Google Calendar | ✅ | 100% |
 | Sprint 5 — **Rediseño Visual The Curator** | ✅ | 100% |
-| Sprint 6 — **Onboarding Inteligente** | 🔄 | ~94% |
+| Sprint 6 — **Onboarding Inteligente** | ✅ | 100% |
 | Sprint 7 — **Procesamiento IA de PDFs** | ⏳ | 0% |
 | Sprint 8 — **Dark Mode** | ✅ | 100% |
 | Sprint 9 — Gamificación (ex Sprint 5) | ⏳ | 0% |
@@ -34,49 +34,49 @@
 
 ## 🔧 Última sesión de trabajo
 
-**Trabajé en:** Sprint 6 — **[6h]** **distribución de temas** (`topic-distributor`) en el flujo **cursada** del wizard: paso UI `CursadaDistributionStep`, `topicClassDates` en `buildWizardInput` → `completeSubjectWizard`, clients de **onboarding** y **nueva materia**, tests del servicio.
+**Trabajé en:** Sprint 6 — **[6i]** página **nueva materia** (dashboard): CTA, copy del wizard alineado al flujo; **[6j]** **session card** pre-clase + tips, **filtro por tipo** de sesión, **calendario unificado** y **repositorio de sesiones** para queries consistentes.
 
-**Archivos tocados (commit `743bf6b`):**
-- `src/lib/services/topic-distributor.ts`
-- `src/__tests__/unit/services/topic-distributor.test.ts`
-- `src/components/shared/subject-wizard/cursada-distribution-step.tsx`
-- `src/lib/actions/onboarding-wizard.ts` (`topicClassDates` / `completeSubjectWizard`)
-- `src/app/(auth)/onboarding/onboarding-client.tsx`
+**Archivos tocados (commit `3100664`):**
+- `src/app/(dashboard)/dashboard/dashboard-client.tsx`
 - `src/app/(dashboard)/dashboard/subjects/new/new-subject-client.tsx`
-- `src/components/shared/subject-wizard/subject-wizard-types.ts`
+- `src/components/features/sessions/session-card.tsx`
+- `src/components/features/sessions/session-filters.tsx`
+- `src/app/(dashboard)/dashboard/sessions/sessions-client.tsx`
+- `src/components/shared/calendar/unified-calendar.tsx`
+- `src/lib/repositories/sessions.repository.ts`
 - `docs/spec-kit/09-roadmap.md`
 
-**Commit:** `743bf6b`
+**Commit:** `3100664`
 
-**Quedó a medias:** nada en 6h.
+**Quedó a medias:** nada en 6i/6j.
 
-**Notas:** [6g] + migración `session_type` en Cloud siguen siendo prerequisito operativo si el remoto no está al día. Siguiente foco: **[6j]** validar **session-card** con datos reales (PRE_CLASS + tips) tras flujo cursada completo.
+**Notas:** Sprint 6 onboarding cerrado en repo. Si en Cloud falta migración `session_type` / datos viejos, seguí el checklist operativo antes de smoke en producción.
 
 ---
 
 ## ✅ Próxima tarea
 
-### [6j] — Validar Session Card con datos reales (PRE_CLASS + tips) (Sprint 6)
+### [7a] — PDF Upload Infraestructura (Sprint 7)
 
 | Campo | Valor |
 |--------|--------|
-| **Archivo principal** | `src/components/features/sessions/session-card.tsx`, `src/lib/actions/dashboard.ts` (o facade que arma la sesión para el card) |
-| **Estimación** | 3h |
-| **Prioridad** | Media-alta (pulido de cursada; depende de migración Cloud + datos generados por [6h]/[6g]) |
-| **Estado backend** | `PRE_CLASS` y campos asociados ya en flujo si migración y wizard están aplicados; validar shape en runtime. |
-| **Estado UI** | Implementación lista; falta **smoke** con cuenta real / fixtures que reflejen pre-clase y tips. |
+| **Archivo principal** | `src/lib/actions/pdf.ts`, `src/components/shared/pdf-upload/pdf-upload.tsx`, bucket Storage `program-pdfs` + tabla `ai_extractions` (migraciones si faltan en Cloud) |
+| **Estimación** | 4h |
+| **Prioridad** | Alta (inicio Sprint 7; depende de Sprint 6 ✅) |
+| **Estado backend** | `uploadPDF` + insert en `ai_extractions` ya existen; consolidar límites, RLS, bucket y entorno Vercel/Supabase. |
+| **Estado UI** | `PdfUploadStep` / wizard consumen la action; revisar errores, tamaño máx. y UX de fallo. |
 
-**Contexto:** [6h] cableó `topic-distributor` + `topicClassDates` al completar wizard cursada. Si algo falla en producción, revisar primero migración `session_type` en Supabase Cloud.
+**Contexto:** Sprint 6 cerrado ([6i]/[6j] en `3100664`). [7b]–[7i] apoyan en upload estable y trazabilidad de extracciones.
 
 **Prompt sugerido:**
 
 ```text
-/ship 6j
+/ship 7a
 
-Validar session-card con datos reales: dashboard + sesiones PRE_CLASS post-wizard cursada; tips, badges y estados edge. Si hace falta, ajustar types o queries sin romper otros session_type. Build + smoke manual documentado en nota de commit.
+Sprint 7 — PDF Upload Infraestructura: revisar bucket program-pdfs, políticas RLS, action uploadPDF, límites 10MB/MIME, signed URLs y flujo ai_extractions vs Supabase Cloud y Vercel. Documentar variables y gaps; build + checklist deploy.
 ```
 
-**Uso:** `/ship 6j`
+**Uso:** `/ship 7a`
 
 ---
 
@@ -127,8 +127,10 @@ Validar session-card con datos reales: dashboard + sesiones PRE_CLASS post-wizar
 | ~~6f~~ | ~~Cursada + Parciales~~ | ~~6h~~ | ✅ |
 | ~~6g~~ | ~~Migración `session_type` + pre-clase en flujo cursada~~ | ~~8h~~ | ✅ (`dd853e3`) |
 | ~~6h~~ | ~~Distribución temas (`topic-distributor`) en wizard cursada~~ | ~~6h~~ | ✅ (`743bf6b`) |
-| ~~6i~~ | ~~Página nueva materia (dashboard)~~ | ~~4h~~ | ✅ |
-| **6j** | **Session Card pre-clase + tips** | **3h** | 🔄 **Próximo:** validar con datos reales (post-[6h], migración Cloud OK) |
+| ~~6i~~ | ~~Página nueva materia / CTA dashboard + copy wizard~~ | ~~4h~~ | ✅ (`3100664`) |
+| ~~6j~~ | ~~Session card pre-clase + tips + filtro tipo + calendario + repo sesiones~~ | ~~3h~~ | ✅ (`3100664`) |
+
+**Nota:** Sprint 6 al 100% en repo; próximo bloque operativo: **Sprint 7** (7a en adelante) o **Extras** si priorizás deuda técnica.
 
 ### Sprint 7 — Procesamiento IA de PDFs (~44h)
 
