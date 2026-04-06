@@ -13,12 +13,14 @@ interface Session {
     id: string;
     name: string;
     difficulty?: string | null;
+    source_date?: string | null;
   } | null;
   number: number;
   scheduled_at: string;
   duration: number;
   priority: string | null;
   status: string | null;
+  session_type?: 'REVIEW' | 'PRE_CLASS' | string | null;
   adjusted_for_conflict?: boolean | null;
   original_scheduled_at?: string | null;
 }
@@ -90,7 +92,9 @@ function SessionCardItem({ session, loadingSession, onComplete }: SessionCardIte
   
   const topicName = session.topic?.name || 'Tema';
   const isCompleted = session.status === 'COMPLETED';
-  
+  const isPreClass = session.session_type === 'PRE_CLASS' || session.number === 0;
+  const sessionKindLabel = isPreClass ? 'Pre-clase' : `R${session.number}`;
+
   return (
     <div
       className={`rounded-lg border-l-2 p-2 mb-1 ${
@@ -101,7 +105,7 @@ function SessionCardItem({ session, loadingSession, onComplete }: SessionCardIte
     >
       <div className="flex items-center justify-between">
         <div className="text-xs font-semibold truncate flex items-center gap-1">
-          {topicName} - R{session.number}
+          {topicName} {isPreClass ? '·' : '-'} {sessionKindLabel}
           {session.adjusted_for_conflict && (
             <span
               className="material-symbols-outlined text-[12px] text-primary flex-shrink-0"

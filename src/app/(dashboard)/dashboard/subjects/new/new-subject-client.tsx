@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { completeSubjectWizard } from '@/lib/actions/onboarding-wizard';
 import type { SubjectWizardInput } from '@/lib/actions/onboarding-wizard';
 import { Wizard } from '@/components/shared/wizard';
@@ -162,7 +163,7 @@ export function NewSubjectClient() {
       const { sessionsGenerated, subjectId } = result.data!;
 
       setSuccessMessage(
-        `Plan de estudio creado. ${sessionsGenerated} sesiones programadas.`,
+        `Plan de estudio listo. Se programaron ${sessionsGenerated} sesiones.`,
       );
 
       await new Promise(resolve => setTimeout(resolve, 2500));
@@ -196,6 +197,16 @@ export function NewSubjectClient() {
           <p className="flex items-center justify-center gap-2 text-sm font-medium text-on-secondary-container">
             <span className="material-symbols-outlined text-[20px] text-secondary">check_circle</span>
             {successMessage}
+          </p>
+          <p className="mt-2 text-xs text-on-secondary-container/90">
+            Revisá la agenda en{' '}
+            <Link
+              href="/dashboard/sessions"
+              className="font-semibold text-secondary underline underline-offset-2 hover:text-secondary-dim"
+            >
+              Sesiones
+            </Link>
+            .
           </p>
         </div>
       )}

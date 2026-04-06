@@ -14,26 +14,43 @@ type SessionStatus = Database['public']['Enums']['session_status'];
 
 export interface UpcomingSession {
   id: string;
+  subject_id: string;
   topic_id: string;
   scheduled_at: string;
   number: number;
   duration: number;
   priority: SessionRow['priority'];
+  session_type: SessionRow['session_type'];
   status: SessionStatus | null;
   adjusted_for_conflict: boolean | null;
   original_scheduled_at: string | null;
-  topic: { id: string; name: string; difficulty: string | null } | null;
+  topic: {
+    id: string;
+    name: string;
+    difficulty: string | null;
+    source_date: string | null;
+  } | null;
   subject: { id: string; name: string } | null;
   exam: { id: string; category: string; modality: string; date: string } | null;
 }
 
 export interface SessionWithTopicSubject extends SessionRow {
-  topic: { id: string; name: string } | null;
+  topic: {
+    id: string;
+    name: string;
+    difficulty: string | null;
+    source_date: string | null;
+  } | null;
   subject: { id: string; name: string } | null;
 }
 
 export interface SessionWithFullJoins extends SessionRow {
-  topic: { id: string; name: string } | null;
+  topic: {
+    id: string;
+    name: string;
+    difficulty: string | null;
+    source_date: string | null;
+  } | null;
   subject: { id: string; name: string } | null;
   exam: { id: string; category: string; modality: string; date: string } | null;
 }
@@ -95,15 +112,17 @@ export async function findUpcomingSessions(
     .from('sessions')
     .select(`
       id,
+      subject_id,
       topic_id,
       scheduled_at,
       number,
       duration,
       priority,
+      session_type,
       status,
       adjusted_for_conflict,
       original_scheduled_at,
-      topic:topics(id, name, difficulty),
+      topic:topics(id, name, difficulty, source_date),
       subject:subjects(id, name),
       exam:exams(id, category, modality, date)
     `)
@@ -137,7 +156,7 @@ export async function findTodaySessions(
     .from('sessions')
     .select(`
       *,
-      topic:topics(id, name),
+      topic:topics(id, name, difficulty, source_date),
       subject:subjects(id, name)
     `)
     .eq('user_id', userId)
@@ -164,7 +183,7 @@ export async function findSessionsBySubjectId(
     .from('sessions')
     .select(`
       *,
-      topic:topics(id, name),
+      topic:topics(id, name, difficulty, source_date),
       subject:subjects(id, name)
     `)
     .eq('user_id', userId)
@@ -190,7 +209,7 @@ export async function findSessionsByDateRange(
     .from('sessions')
     .select(`
       *,
-      topic:topics(id, name),
+      topic:topics(id, name, difficulty, source_date),
       subject:subjects(id, name),
       exam:exams(id, category, modality, date)
     `)

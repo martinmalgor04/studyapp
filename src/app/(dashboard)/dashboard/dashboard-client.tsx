@@ -11,6 +11,8 @@ import { QuickAddTopic } from '@/components/features/dashboard/quick-add-topic';
 import { UnifiedCalendar } from '@/components/shared/calendar/unified-calendar';
 import { MotivationalQuote } from '@/components/shared/motivational-quote';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils/cn';
 
 type DashboardData = Awaited<ReturnType<typeof getDashboardData>>;
 
@@ -30,11 +32,23 @@ export function DashboardClient({ userName, initialData }: DashboardClientProps)
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="font-headline text-2xl text-on-surface">Bienvenido, {userName}</h2>
-        <p className="mt-1 text-on-surface-variant">
-          Acá tenés un resumen de tu progreso de estudio
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="font-headline text-2xl text-on-surface">Bienvenido, {userName}</h2>
+          <p className="mt-1 text-on-surface-variant">
+            Acá tenés un resumen de tu progreso de estudio
+          </p>
+        </div>
+        <Link
+          href="/dashboard/subjects/new"
+          className={cn(
+            buttonVariants({ variant: 'secondary', size: 'sm' }),
+            'shrink-0 self-start no-underline',
+          )}
+        >
+          <span className="material-symbols-outlined text-[18px]">add</span>
+          Nueva materia
+        </Link>
       </div>
 
       <StatsCards stats={data.stats} />
@@ -83,7 +97,16 @@ export function DashboardClient({ userName, initialData }: DashboardClientProps)
           <CardContent className="pt-6">
             <h3 className="font-semibold text-on-tertiary-container">¿Por dónde empezar?</h3>
             <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-on-tertiary-container/80 marker:text-tertiary">
-              <li>Creá una <strong>materia</strong> haciendo click en &quot;Materias&quot; en el menú</li>
+              <li>
+                Creá una <strong>materia</strong> con{' '}
+                <Link
+                  href="/dashboard/subjects/new"
+                  className="font-semibold text-tertiary underline underline-offset-2 hover:text-tertiary-dim"
+                >
+                  Nueva materia
+                </Link>{' '}
+                (o desde &quot;Materias&quot; en el menú)
+              </li>
               <li>Agregá los <strong>exámenes</strong> de esa materia con sus fechas</li>
               <li>Registrá los <strong>temas</strong> a medida que vas teniendo clases</li>
               <li>El sistema generará automáticamente tus <strong>sesiones de repaso</strong></li>

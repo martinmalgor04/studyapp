@@ -7,7 +7,7 @@ interface SessionWithTopicSubject {
   scheduled_at: string;
   duration_minutes?: number | null;
   duration?: number | null;
-  topic?: { id: string; name: string } | null;
+  topic?: { id: string; name: string; source_date?: string | null } | null;
   subject?: { id: string; name: string } | null;
   priority?: string | null;
   status: string;

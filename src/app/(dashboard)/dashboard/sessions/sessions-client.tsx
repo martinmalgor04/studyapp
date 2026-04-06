@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UnifiedCalendar } from '@/components/shared/calendar/unified-calendar';
-import { SessionFilters } from '@/components/features/sessions/session-filters';
+import { SessionFilters, type SessionTypeFilter } from '@/components/features/sessions/session-filters';
 import { RescheduleDialog } from '@/components/features/sessions/reschedule-dialog';
 import { MotivationalQuote } from '@/components/shared/motivational-quote';
 
@@ -15,12 +15,18 @@ interface SessionWithRelations {
   number: number;
   status: string | null;
   priority: string | null;
+  session_type?: 'REVIEW' | 'PRE_CLASS' | string | null;
   adjusted_for_conflict?: boolean | null;
   original_scheduled_at?: string | null;
-  topic?: { id: string; name: string; difficulty?: string | null } | null;
-  subject?: { name: string } | null;
+  topic?: { id: string; name: string; difficulty?: string | null; source_date?: string | null } | null;
+  subject?: { id: string; name: string } | null;
   subject_id?: string | null;
   topic_id?: string | null;
+}
+
+function effectiveSessionType(s: SessionWithRelations): SessionTypeFilter {
+  if (s.session_type === 'PRE_CLASS') return 'PRE_CLASS';
+  return 'REVIEW';
 }
 
 interface SessionsClientProps {
@@ -33,7 +39,12 @@ export function SessionsClient({ initialSessions, initialSubjects }: SessionsCli
   const [sessions, setSessions] = useState<SessionWithRelations[]>(initialSessions);
   const [filteredSessions, setFilteredSessions] = useState<SessionWithRelations[]>(initialSessions);
   const [subjects, setSubjects] = useState<Array<{ id: string; name: string }>>(initialSubjects);
-  const [filters, setFilters] = useState<{ status?: string; priority?: string; subjectId?: string }>({});
+  const [filters, setFilters] = useState<{
+    status?: string;
+    priority?: string;
+    subjectId?: string;
+    sessionType?: SessionTypeFilter;
+  }>({});
   const [rescheduleSession, setRescheduleSession] = useState<SessionWithRelations | null>(null);
 
   useEffect(() => {
@@ -57,7 +68,13 @@ export function SessionsClient({ initialSessions, initialSubjects }: SessionsCli
     }
 
     if (filters.subjectId) {
-      filtered = filtered.filter((s) => s.subject_id === filters.subjectId);
+      filtered = filtered.filter(
+        (s) => (s.subject_id ?? s.subject?.id) === filters.subjectId,
+      );
+    }
+
+    if (filters.sessionType) {
+      filtered = filtered.filter((s) => effectiveSessionType(s) === filters.sessionType);
     }
 
     setFilteredSessions(filtered);
@@ -140,7 +157,7 @@ export function SessionsClient({ initialSessions, initialSubjects }: SessionsCli
           onChange={setFilters}
         />
 
-        {(filters.status || filters.priority || filters.subjectId) && (
+        {(filters.status || filters.priority || filters.subjectId || filters.sessionType) && (
           <button
             onClick={() => setFilters({})}
             className="mt-4 text-xs text-tertiary hover:text-tertiary-dim"

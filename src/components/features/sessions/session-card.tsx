@@ -19,7 +19,7 @@ type SessionType = 'REVIEW' | 'PRE_CLASS';
 
 const REVIEW_TIPS: Record<number, string> = {
   1: 'Enfocate en lectura activa del material',
-  2: 'Hacé un resumen de los puntos clave',
+  2: 'Intentá hacer un resumen de los puntos clave',
   3: 'Practicá con ejercicios y casos',
   4: 'Intentá recordar sin mirar apuntes (evocación)',
 };
@@ -28,7 +28,7 @@ interface Session {
   id: string;
   adjusted_for_conflict?: boolean | null;
   original_scheduled_at?: string | null;
-  topic?: { id: string; name: string } | null;
+  topic?: { id: string; name: string; source_date?: string | null } | null;
   subject?: { id: string; name: string } | null;
   scheduled_at: string;
   duration?: number | null;
@@ -80,10 +80,19 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
   const timeStr = sessionDate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
   const topicName = session.topic?.name ?? 'Sin tema';
+  const classDateShort = session.topic?.source_date
+    ? new Date(session.topic.source_date).toLocaleDateString('es-AR', {
+        day: '2-digit',
+        month: 'short',
+        timeZone: 'America/Argentina/Buenos_Aires',
+      })
+    : null;
   const sessionTitle = isPreClass
-    ? `Pre-Clase: ${topicName}`
+    ? classDateShort
+      ? `Pre-Clase: ${topicName} — ${classDateShort}`
+      : `Pre-Clase: ${topicName}`
     : `${topicName} - R${session.number ?? 1}`;
-  const sessionIcon = isPreClass ? 'auto_stories' : 'sticky_note_2';
+  const sessionIcon = isPreClass ? 'school' : 'replay';
   const contextualTip = isPreClass
     ? 'Preparación previa a la clase'
     : REVIEW_TIPS[session.number ?? 0] ?? null;
@@ -165,7 +174,7 @@ export function SessionCard({ session, onStatusChange, onReschedule }: SessionCa
             'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5',
             'bg-tertiary-container/30 text-tertiary text-[10px] font-bold uppercase tracking-wider'
           )}>
-            <span className="material-symbols-outlined text-[12px]">auto_stories</span>
+            <span className="material-symbols-outlined text-[12px]">school</span>
             Pre-Clase
           </span>
         )}

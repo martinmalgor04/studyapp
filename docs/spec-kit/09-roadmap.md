@@ -619,7 +619,7 @@ El MVP se considera exitoso si:
 | Sprint 4 | ✅ | 100% | Free Study + Google Calendar + emitCompleted activado |
 | **Refactoring Arquitectural** | ✅ | **100%** | **4 capas: Repositories + Services puros + Actions + RSC** |
 | Sprint 5 (The Curator) | ✅ | 100% | Rediseño visual; ver `NEW_SPRINTS_PLAN` |
-| Sprint 6 (Onboarding) | 🔄 | ~94% | Wizard + flujos; ✅ [6g] cursada/pre-clases; ✅ [6h] `topic-distributor` + `CursadaDistributionStep` + clients (`onboarding-client`, `new-subject-client`) + `topicClassDates` → `completeSubjectWizard` (`743bf6b`). **Próximo:** [6j] validar `session-card` con datos reales. |
+| Sprint 6 (Onboarding) | 🔄 | ~96% | Wizard + flujos; ✅ [6g]–[6h]; ✅ [6i] CTA Nueva materia + onboarding card + mensaje post-wizard; ✅ [6j] `session-card` (pre-clase + tips + `source_date`), filtro tipo en sesiones, calendario `Pre-clase` vs R0. **Próximo:** smoke manual / E2E cursada opcional. |
 | Sprint 7 (IA PDFs) | ⏳ | 0% | Plan en `NEW_SPRINTS_PLAN` |
 | Sprint 8 (Dark Mode) | ✅ | 100% | Theme + app |
 | Sprint 9 (Gamificación, ex §9.4 “Sprint 5”) | ⏳ | 0% | |
@@ -631,11 +631,11 @@ El MVP se considera exitoso si:
 
 ## Summary
 
-**Estado actual (2026-04-06):** Sprint 1–4 ✅, **Refactoring Arquitectural ✅**, **Sprint 5 The Curator ✅**, Sprint 6 onboarding 🔄 (~94%), Sprint 8 ✅  
+**Estado actual (2026-04-06):** Sprint 1–4 ✅, **Refactoring Arquitectural ✅**, **Sprint 5 The Curator ✅**, Sprint 6 onboarding 🔄 (~96%), Sprint 8 ✅  
 **Pulido (2026-03-19):** ✅ 0 `as any` (TypeScript strict), ✅ CI/CD GitHub Actions, ✅ Error boundaries, ✅ Security headers, ✅ Logger centralizado, ✅ Google token helper deduplicado, ✅ Aria-labels en nav/notificaciones/sesiones/pomodoro  
 **Refactoring (2026-03-23):** ✅ Capa de Repositories, ✅ Services puros (sin Supabase), ✅ Actions adelgazadas, ✅ RSC para pages, ✅ Helper `getAuthenticatedUser()`
 
-**Próximo paso (plan nuevo):** [6j] smoke de `session-card` con `PRE_CLASS` y datos post-wizard; migración `20260404120000_add_session_type.sql` en Supabase Cloud si aún no está; opcional: E2E paso distribución cursada.
+**Próximo paso (plan nuevo):** Smoke manual post-wizard (PRE_CLASS + filtros + calendario); migración `20260404120000_add_session_type.sql` en Cloud si falta; opcional: E2E distribución cursada.
 
 **MVP + v1.0 (parcial):** ✅ COMPLETADO al 90%. Arquitectura de 4 capas ✅ COMPLETADA al 100%.
 
