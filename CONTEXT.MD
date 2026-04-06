@@ -4,8 +4,8 @@
 ---
 
 ## 🗓 Última actualización
-**Fecha:** 2026-04-04  
-**Actualizado por:** Cierre sesión — Sprint 6 **[6g]** migración `session_type` + pre-clase en wizard cursada (`onboarding-wizard` + `pre-class-generator`), commit `dd853e3`
+**Fecha:** 2026-04-06  
+**Actualizado por:** Cierre sesión — Sprint 6 **[6h]** distribución de temas (`topic-distributor`) en wizard cursada + clients onboarding/nueva materia, commit `743bf6b`
 
 ---
 
@@ -22,7 +22,7 @@
 | Sprint 3 — Tracking + Reschedule + Week View | ✅ | 100% |
 | Sprint 4 — Free Study + Google Calendar | ✅ | 100% |
 | Sprint 5 — **Rediseño Visual The Curator** | ✅ | 100% |
-| Sprint 6 — **Onboarding Inteligente** | 🔄 | ~85% |
+| Sprint 6 — **Onboarding Inteligente** | 🔄 | ~94% |
 | Sprint 7 — **Procesamiento IA de PDFs** | ⏳ | 0% |
 | Sprint 8 — **Dark Mode** | ✅ | 100% |
 | Sprint 9 — Gamificación (ex Sprint 5) | ⏳ | 0% |
@@ -34,47 +34,49 @@
 
 ## 🔧 Última sesión de trabajo
 
-**Trabajé en:** Sprint 6 — **[6g]** migración **`session_type`** en DB + integración de **pre-clase** en el flujo **cursada** del onboarding wizard (`generatePreClassSessions` / insert / alineación con GCal según implementación en actions).
+**Trabajé en:** Sprint 6 — **[6h]** **distribución de temas** (`topic-distributor`) en el flujo **cursada** del wizard: paso UI `CursadaDistributionStep`, `topicClassDates` en `buildWizardInput` → `completeSubjectWizard`, clients de **onboarding** y **nueva materia**, tests del servicio.
 
-**Archivos tocados (commit `dd853e3`):**
-- `supabase/migrations/20260404120000_add_session_type.sql`
-- `src/lib/actions/onboarding-wizard.ts`
-- `src/lib/services/pre-class-generator.ts`
-- `src/types/database.types.ts`
+**Archivos tocados (commit `743bf6b`):**
+- `src/lib/services/topic-distributor.ts`
+- `src/__tests__/unit/services/topic-distributor.test.ts`
+- `src/components/shared/subject-wizard/cursada-distribution-step.tsx`
+- `src/lib/actions/onboarding-wizard.ts` (`topicClassDates` / `completeSubjectWizard`)
+- `src/app/(auth)/onboarding/onboarding-client.tsx`
+- `src/app/(dashboard)/dashboard/subjects/new/new-subject-client.tsx`
+- `src/components/shared/subject-wizard/subject-wizard-types.ts`
 - `docs/spec-kit/09-roadmap.md`
-- `CONTEXT.MD`
 
-**Commit:** `dd853e3`
+**Commit:** `743bf6b`
 
-**Quedó a medias:** nada en 6g.
+**Quedó a medias:** nada en 6h.
 
-**Notas:** Aplicá la migración en **Supabase Cloud** si el proyecto remoto aún no la tiene (ver `09-roadmap` — próximo paso operativo). Siguiente foco: **[6h]** `topic-distributor` en wizard cursada.
+**Notas:** [6g] + migración `session_type` en Cloud siguen siendo prerequisito operativo si el remoto no está al día. Siguiente foco: **[6j]** validar **session-card** con datos reales (PRE_CLASS + tips) tras flujo cursada completo.
 
 ---
 
 ## ✅ Próxima tarea
 
-### [6h] — Distribución de temas (`topic-distributor`) en wizard cursada (Sprint 6)
+### [6j] — Validar Session Card con datos reales (PRE_CLASS + tips) (Sprint 6)
 
 | Campo | Valor |
 |--------|--------|
-| **Archivo principal** | `src/lib/services/topic-distributor.ts`, `src/lib/actions/onboarding-wizard.ts` |
-| **Estimación** | 6h |
-| **Prioridad** | Alta (cierra el flujo cursada antes de pulidos) |
-| **Estado backend** | Servicio existe; falta **cablear** al completar wizard (asignar temas ↔ fechas de clase). |
-| **Estado UI** | Depende de cómo se persistan fechas/temas; revisar wizard y panel de temas. |
+| **Archivo principal** | `src/components/features/sessions/session-card.tsx`, `src/lib/actions/dashboard.ts` (o facade que arma la sesión para el card) |
+| **Estimación** | 3h |
+| **Prioridad** | Media-alta (pulido de cursada; depende de migración Cloud + datos generados por [6h]/[6g]) |
+| **Estado backend** | `PRE_CLASS` y campos asociados ya en flujo si migración y wizard están aplicados; validar shape en runtime. |
+| **Estado UI** | Implementación lista; falta **smoke** con cuenta real / fixtures que reflejen pre-clase y tips. |
 
-**Contexto:** [6g] ya dejó `session_type` + pre-clases generadas en el flujo cursada. [6j] en `session-card` ya contempla `PRE_CLASS` cuando hay datos.
+**Contexto:** [6h] cableó `topic-distributor` + `topicClassDates` al completar wizard cursada. Si algo falla en producción, revisar primero migración `session_type` en Supabase Cloud.
 
 **Prompt sugerido:**
 
 ```text
-/ship 6h
+/ship 6j
 
-Cablear topic-distributor al flujo cursada/onboarding: al completar el wizard, distribuir temas según fechas de clase (NEW_SPRINTS_PLAN + patrones existentes en actions). Tests/build; no duplicar lógica si ya hay helpers.
+Validar session-card con datos reales: dashboard + sesiones PRE_CLASS post-wizard cursada; tips, badges y estados edge. Si hace falta, ajustar types o queries sin romper otros session_type. Build + smoke manual documentado en nota de commit.
 ```
 
-**Uso:** `/ship 6h`
+**Uso:** `/ship 6j`
 
 ---
 
@@ -124,9 +126,9 @@ Cablear topic-distributor al flujo cursada/onboarding: al completar el wizard, d
 | ~~6e~~ | ~~Flujo Estudio Libre~~ | ~~4h~~ | ✅ |
 | ~~6f~~ | ~~Cursada + Parciales~~ | ~~6h~~ | ✅ |
 | ~~6g~~ | ~~Migración `session_type` + pre-clase en flujo cursada~~ | ~~8h~~ | ✅ (`dd853e3`) |
-| **6h** | **Distribución temas (`topic-distributor`)** | **6h** | 🔄 sin cablear al wizard |
+| ~~6h~~ | ~~Distribución temas (`topic-distributor`) en wizard cursada~~ | ~~6h~~ | ✅ (`743bf6b`) |
 | ~~6i~~ | ~~Página nueva materia (dashboard)~~ | ~~4h~~ | ✅ |
-| 6j | Session Card pre-clase + tips | 3h | 🟡 UI lista; validar con datos reales post-6g / tras migración en Cloud |
+| **6j** | **Session Card pre-clase + tips** | **3h** | 🔄 **Próximo:** validar con datos reales (post-[6h], migración Cloud OK) |
 
 ### Sprint 7 — Procesamiento IA de PDFs (~44h)
 
@@ -206,6 +208,7 @@ src/
 │   └── notifications.ts      ← Notificaciones (email implementado)
 ├── lib/services/             → Lógica de negocio pura (sin Next.js ni Supabase)
 │   ├── session-generator.ts  ← Algoritmo spaced repetition
+│   ├── topic-distributor.ts  ← Temas ↔ fechas de clase (wizard cursada)
 │   ├── priority-calculator.ts← Scoring de prioridad (función pura)
 │   ├── slot-finder.ts        ← Busca slots libres en disponibilidad
 │   └── [google-calendar-*]   ← Servicios de Calendar
