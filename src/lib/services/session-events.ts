@@ -1,3 +1,5 @@
+import { logger } from '@/lib/utils/logger';
+
 /**
  * Session Event System (Observer Pattern + OCP)
  * 
@@ -51,12 +53,19 @@ class SessionEventRegistryClass {
     this.handlers.push(handler);
   }
 
+  /**
+   * Secuencial: gamificación (racha → puntos → materia → logros) depende del orden;
+   * Google Calendar no compite por filas locales pero se mantiene estable con el mismo orden de registro.
+   */
   async emitCompleted(event: SessionCompletedEvent) {
-    await Promise.allSettled(
-      this.handlers
-        .filter(h => h.onSessionCompleted)
-        .map(h => h.onSessionCompleted!(event))
-    );
+    for (const h of this.handlers) {
+      if (!h.onSessionCompleted) continue;
+      try {
+        await h.onSessionCompleted(event);
+      } catch (e) {
+        logger.error('[SessionEventRegistry] onSessionCompleted handler failed:', e);
+      }
+    }
   }
 
   async emitAbandoned(event: SessionAbandonedEvent) {
@@ -109,6 +118,14 @@ export const SessionEventRegistry = new SessionEventRegistryClass();
 // ============================================================
 
 import { googleCalendarEventHandler } from './google-calendar-event-handler';
+import { streakEventHandler } from './gamification/streak-event-handler';
+import { pointsEventHandler } from './gamification/points-event-handler';
+import { subjectLevelEventHandler } from './gamification/subject-level-event-handler';
+import { achievementsEventHandler } from './gamification/achievements-event-handler';
 
 // Registrar handler de Google Calendar para sincronización bidireccional
 SessionEventRegistry.register(googleCalendarEventHandler);
+SessionEventRegistry.register(streakEventHandler);
+SessionEventRegistry.register(pointsEventHandler);
+SessionEventRegistry.register(subjectLevelEventHandler);
+SessionEventRegistry.register(achievementsEventHandler);

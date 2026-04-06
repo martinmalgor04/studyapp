@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getDashboardData } from '@/lib/actions/dashboard';
 import { StatsCards } from '@/components/features/dashboard/stats-cards';
+import { GamificationSummary } from '@/components/features/dashboard/gamification-summary';
 import { RecentSubjects } from '@/components/features/dashboard/recent-subjects';
 import { RecentTopics } from '@/components/features/dashboard/recent-topics';
 import { QuickAddTopic } from '@/components/features/dashboard/quick-add-topic';
@@ -52,6 +53,13 @@ export function DashboardClient({ userName, initialData }: DashboardClientProps)
       </div>
 
       <StatsCards stats={data.stats} />
+
+      <GamificationSummary
+        currentStreak={data.gamification.currentStreak}
+        longestStreak={data.gamification.longestStreak}
+        totalPoints={data.gamification.totalPoints}
+        achievementsUnlocked={data.gamification.achievementsUnlocked}
+      />
 
       <QuickAddTopic
         subjects={data.subjects.map((s) => ({ id: s.id, name: s.name }))}

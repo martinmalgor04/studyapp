@@ -692,3 +692,68 @@ export async function updateSessionGoogleEventId(
 
   return { error: null };
 }
+
+export async function findSessionGamificationContext(
+  sessionId: string,
+  userId: string,
+): Promise<{
+  subjectId: string;
+  priority: SessionRow['priority'];
+  topicDifficulty: Difficulty;
+} | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('sessions')
+    .select(
+      `
+      subject_id,
+      priority,
+      topic:topics ( difficulty )
+    `,
+    )
+    .eq('id', sessionId)
+    .eq('user_id', userId)
+    .single();
+
+  if (error || !data) {
+    logger.error('Error fetching session gamification context:', error);
+    return null;
+  }
+
+  const topic = data.topic as { difficulty: Difficulty } | null;
+  if (!topic?.difficulty || !data.subject_id) {
+    return null;
+  }
+
+  return {
+    subjectId: data.subject_id,
+    priority: data.priority,
+    topicDifficulty: topic.difficulty,
+  };
+}
+
+/** Fechas UTC (YYYY-MM-DD) con al menos una sesión COMPLETED para rachas. */
+export async function listCompletedSessionUtcDateKeys(userId: string): Promise<string[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('sessions')
+    .select('completed_at')
+    .eq('user_id', userId)
+    .eq('status', 'COMPLETED')
+    .not('completed_at', 'is', null);
+
+  if (error) {
+    logger.error('Error listing completed session dates:', error);
+    return [];
+  }
+
+  const keys = new Set<string>();
+  for (const row of data ?? []) {
+    if (row.completed_at) {
+      keys.add(new Date(row.completed_at).toISOString().slice(0, 10));
+    }
+  }
+  return [...keys];
+}

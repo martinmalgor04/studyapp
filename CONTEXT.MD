@@ -4,8 +4,8 @@
 ---
 
 ## 🗓 Última actualización
-**Fecha:** 2026-04-04  
-**Actualizado por:** Sprint 7 marcado **100%** en repo (7a–7h previos + **[7i]** `0fd8ff2`); próxima tarea **Sprint 9 [9a]**
+**Fecha:** 2026-04-06  
+**Actualizado por:** **Sprint 9 completo** (9a–9e): gamificación en `SessionEventRegistry`, repos, dashboard `GamificationSummary`; próximo **Sprint 10 [10a]** (commit pendiente confirmación usuario).
 
 ---
 
@@ -25,7 +25,7 @@
 | Sprint 6 — **Onboarding Inteligente** | ✅ | 100% |
 | Sprint 7 — **Procesamiento IA de PDFs** | ✅ | 100% |
 | Sprint 8 — **Dark Mode** | ✅ | 100% |
-| Sprint 9 — Gamificación (ex Sprint 5) | ⏳ | 0% |
+| Sprint 9 — Gamificación (ex Sprint 5) | ✅ | 100% |
 | Sprint 10 — Analytics + Tasks (ex Sprint 6) | ⏳ | 0% |
 
 > **Plan detallado:** [`docs/spec-kit/NEW_SPRINTS_PLAN.md`](docs/spec-kit/NEW_SPRINTS_PLAN.md)
@@ -34,44 +34,30 @@
 
 ## 🔧 Última sesión de trabajo
 
-**Trabajé en:** Sprint 7 — **[7i]** **Paridad PDF/IA** en el wizard **«Nueva materia»** (dashboard): `buildSubjectWizardInput` compartido entre onboarding y Nueva materia; tipos raw en `subject-wizard-types`; `toWizardModality`; PDF opcional → `pdfMetadata`.
+**Trabajé en:** **Sprint 9 — Gamificación [9a]–[9e]**: rachas UTC (`streak-calculator`, `streak-event-handler`), puntos (`points-calculator`, `gamification-rewards`), niveles por materia (`level-calculator`, `subject-stats.repository`), logros (`achievements-event-handler`, códigos seed), UI resumen en dashboard; **`emitCompleted` secuencial** para orden correcto entre handlers.
 
-**Archivos tocados (commit `0fd8ff2`):**
-- `src/components/shared/subject-wizard/build-subject-wizard-input.ts` (nuevo)
-- `src/components/shared/subject-wizard/subject-wizard-types.ts`
-- `src/components/shared/subject-wizard/index.ts`
-- `src/app/(auth)/onboarding/onboarding-client.tsx`
-- `src/app/(dashboard)/dashboard/subjects/new/new-subject-client.tsx`
-- `docs/spec-kit/09-roadmap.md`
+**Archivos principales:** `src/lib/services/gamification/*`, `src/lib/repositories/user-stats.repository.ts`, `subject-stats.repository.ts`, `achievements.repository.ts`, `session-events.ts`, `dashboard.ts`, `gamification-summary.tsx`, tests unit streak/points/level.
 
-**Commit:** `0fd8ff2`
+**Commit:** pendiente (un solo commit sprint — confirmar en chat).
 
-**Quedó a medias:** nada en [7i].
+**Quedó a medias:** nada en Sprint 9; Notion 9a–9e marcados Hecho con notas.
 
-**Notas:** Sprint 7 quedó **completo en repo**: 7a–7h ya estaban implementados; [7i] (`0fd8ff2`) cerró la paridad wizard Nueva materia / onboarding. Próximo bloque planificado: **Sprint 9 — [9a]**.
+**Notas:** Logros implementados: `FIRST_SESSION`, `STREAK_7`, `STREAK_30`, `MASTER_SUBJECT` (resto del seed queda para iteraciones). Galería de logros / badges por materia en detalle: mejora futura.
 
 ---
 
 ## ✅ Próxima tarea
 
-### [9a] — Streaks calculator (Sprint 9)
+### [10a] — E2E tests UC-008/009 (Sprint 10)
 
 | Campo | Valor |
 |--------|--------|
-| **Archivo principal** | Servicios/gamificación en `src/lib/services/` (streaks), stats en DB según spec; revisar `user_stats` y acciones que actualicen rachas. |
-| **Estimación** | 4h |
-| **Prioridad** | Alta (inicio Sprint 9; sin dependencias en el plan). |
-| **Dependencias** | Ninguna (`NEW_SPRINTS_PLAN`). |
+| **Archivo principal** | Playwright / `src/__tests__` según convención del repo; spec-kit UC-008/009. |
+| **Estimación** | 9h |
+| **Prioridad** | Alta al cerrar gamificación. |
+| **Dependencias** | UC-008 + UC-009 hechos en producto. |
 
-**Prompt sugerido:**
-
-```text
-/ship 9a
-
-Sprint 9 — Streaks calculator: implementar cálculo de rachas según spec-kit y patrones existentes en lib/services/; tipos estrictos; tests donde ya haya Vitest para servicios. No tocar helpers de Google Calendar.
-```
-
-**Uso:** `/ship 9a`
+**Uso:** `/ship 10a` o `/ship sprint 10`
 
 ---
 
@@ -143,15 +129,17 @@ Sprint 9 — Streaks calculator: implementar cálculo de rachas según spec-kit 
 
 **Nota:** Sprint 7 al 100% en repo; cierre formal de sub-sprints con [7i] `0fd8ff2` (paridad `buildSubjectWizardInput` + PDF → `pdfMetadata`).
 
-### Sprint 9 — Gamificación (ex Sprint 5, ~26h)
+### Sprint 9 — ✅ Completo (Gamificación, ~26h)
 
-| Sub-sprint | Tarea | Tiempo | Dependencias |
-|-----------|-------|--------|-------------|
-| 9a | Streaks calculator | 4h | Ninguna |
-| 9b | Points system | 3h | Requiere: 9a |
-| 9c | Levels per subject | 5h | Ninguna (paralelo con 9b) |
-| 9d | Achievements system | 6h | Requiere: 9a + 9b |
-| 9e | Gamification UI | 8h | Requiere: 9a-9d |
+| Sub-sprint | Tarea | Tiempo | Estado (repo) |
+|-----------|-------|--------|---------------|
+| ~~9a~~ | ~~Streaks calculator~~ | ~~4h~~ | ✅ |
+| ~~9b~~ | ~~Points system~~ | ~~3h~~ | ✅ |
+| ~~9c~~ | ~~Levels per subject~~ | ~~5h~~ | ✅ |
+| ~~9d~~ | ~~Achievements system~~ | ~~6h~~ | ✅ |
+| ~~9e~~ | ~~Gamification UI~~ | ~~8h~~ | ✅ |
+
+**Nota:** Racha/puntos/niveles/logros enganchados a `SessionEventRegistry.emitCompleted` (orden secuencial); resumen gamificación en dashboard.
 
 ### Sprint 10 — Analytics + Tasks (ex Sprint 6, ~40h)
 
