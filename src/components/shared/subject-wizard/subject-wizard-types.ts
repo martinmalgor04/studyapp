@@ -29,3 +29,22 @@ export interface TopicInput {
 export interface CursadaDistributionData {
   topicClassDates: string[];
 }
+
+/** Alias para payload crudo del wizard (`data.cursadaDistribution`), usado por `buildSubjectWizardInput`. */
+export type CursadaDistributionRawData = CursadaDistributionData;
+
+/** Parcial en estado intermedio del paso cursada (antes de mapear a `topicIndices`). */
+export interface ParcialRawData {
+  id: string;
+  name: string;
+  date: string;
+  modality: string;
+  assignedTopicIds: string[];
+}
+
+/** Payload crudo `data.cursada` antes de normalizar a `SubjectWizardInput.cursada`. */
+export interface CursadaRawData {
+  schedule: ClassBlock[];
+  topics: TopicInput[];
+  parciales: ParcialRawData[];
+}

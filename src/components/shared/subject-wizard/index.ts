@@ -14,4 +14,8 @@ export type {
   ClassScheduleData,
   TopicInput,
   CursadaDistributionData,
+  ParcialRawData,
+  CursadaRawData,
+  CursadaDistributionRawData,
 } from './subject-wizard-types';
+export { buildSubjectWizardInput } from './build-subject-wizard-input';

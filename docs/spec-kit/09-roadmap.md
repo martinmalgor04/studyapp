@@ -620,7 +620,7 @@ El MVP se considera exitoso si:
 | **Refactoring Arquitectural** | ✅ | **100%** | **4 capas: Repositories + Services puros + Actions + RSC** |
 | Sprint 5 (The Curator) | ✅ | 100% | Rediseño visual; ver `NEW_SPRINTS_PLAN` |
 | Sprint 6 (Onboarding) | 🔄 | ~96% | Wizard + flujos; ✅ [6g]–[6h]; ✅ [6i] CTA Nueva materia + onboarding card + mensaje post-wizard; ✅ [6j] `session-card` (pre-clase + tips + `source_date`), filtro tipo en sesiones, calendario `Pre-clase` vs R0. **Próximo:** smoke manual / E2E cursada opcional. |
-| Sprint 7 (IA PDFs) | ⏳ | 0% | Plan en `NEW_SPRINTS_PLAN` |
+| Sprint 7 (IA PDFs) | ⏳ | ~5% | Plan en `NEW_SPRINTS_PLAN`; ✅ [7i] `buildSubjectWizardInput` compartido (onboarding + Nueva materia, PDF → `pdfMetadata`). |
 | Sprint 8 (Dark Mode) | ✅ | 100% | Theme + app |
 | Sprint 9 (Gamificación, ex §9.4 “Sprint 5”) | ⏳ | 0% | |
 | Sprint 10 (Analytics + Tasks, ex §9.4 “Sprint 6”) | ⏳ | 0% | Incluye E2E UC-008/009 y Telegram en backlog |
