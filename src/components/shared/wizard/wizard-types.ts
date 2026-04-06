@@ -5,6 +5,8 @@ export interface StepProps {
   onBack?: () => void;
   isFirstStep: boolean;
   isLastStep: boolean;
+  /** True mientras corre `onComplete` en el último paso (evita doble envío). */
+  isCompleting?: boolean;
   wizardData: Record<string, unknown>;
   updateWizardData: (key: string, value: unknown) => void;
 }

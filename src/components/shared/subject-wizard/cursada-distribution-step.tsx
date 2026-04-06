@@ -88,6 +88,7 @@ function distributionResetKey(cursada: CursadaSavedData | undefined): string {
 function CursadaDistributionStepInner({
   onNext,
   onBack,
+  isCompleting,
   wizardData,
   updateWizardData,
 }: StepProps) {
@@ -304,16 +305,21 @@ function CursadaDistributionStepInner({
 
       <div className="mt-8 flex justify-center gap-4">
         {onBack && (
-          <Button variant="outline" onClick={onBack}>
+          <Button variant="outline" onClick={onBack} disabled={isCompleting}>
             Volver
           </Button>
         )}
         <Button
           onClick={handleFinish}
           size="lg"
-          disabled={!!validationError || !distResult || distResult.schedule.length === 0}
+          disabled={
+            !!validationError ||
+            !distResult ||
+            distResult.schedule.length === 0 ||
+            isCompleting
+          }
         >
-          Siguiente
+          {isCompleting ? 'Creando materia…' : 'Siguiente'}
         </Button>
       </div>
     </div>

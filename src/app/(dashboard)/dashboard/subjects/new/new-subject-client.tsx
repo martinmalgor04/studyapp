@@ -76,8 +76,6 @@ export function NewSubjectClient() {
         `Plan de estudio listo. Se programaron ${sessionsGenerated} sesiones.`,
       );
 
-      await new Promise(resolve => setTimeout(resolve, 2500));
-
       router.push(`/dashboard/subjects/${subjectId}`);
       router.refresh();
     },

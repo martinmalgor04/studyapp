@@ -10,10 +10,13 @@ export function Wizard({ steps, onComplete, onDataChange, initialStep = 0, class
   const [currentStep, setCurrentStep] = useState(safeInitial);
   const [wizardData, setWizardData] = useState<Record<string, unknown>>({});
   const [isValidating, setIsValidating] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
   const [direction, setDirection] = useState<SlideDirection>('forward');
   const [isAnimating, setIsAnimating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const wizardDataRef = useRef<Record<string, unknown>>({});
+  /** Evita doble `onComplete` antes de que React aplique `isCompleting`. */
+  const completingRef = useRef(false);
 
   const safeCurrentStep = Math.min(currentStep, steps.length - 1);
   const step = steps[safeCurrentStep];
@@ -31,7 +34,7 @@ export function Wizard({ steps, onComplete, onDataChange, initialStep = 0, class
   }, [wizardData, onDataChange]);
 
   const handleNext = useCallback(async () => {
-    if (isValidating || isAnimating) return;
+    if (isValidating || isAnimating || isCompleting || completingRef.current) return;
     setError(null);
 
     const latestData = wizardDataRef.current;
@@ -52,9 +55,13 @@ export function Wizard({ steps, onComplete, onDataChange, initialStep = 0, class
     }
 
     if (isLastStep) {
+      completingRef.current = true;
+      setIsCompleting(true);
       try {
         await onComplete(latestData);
       } catch (err) {
+        completingRef.current = false;
+        setIsCompleting(false);
         setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado');
       }
       return;
@@ -66,10 +73,10 @@ export function Wizard({ steps, onComplete, onDataChange, initialStep = 0, class
       setCurrentStep(prev => prev + 1);
       setTimeout(() => setIsAnimating(false), 300);
     });
-  }, [isLastStep, isValidating, isAnimating, onComplete, step]);
+  }, [isLastStep, isValidating, isAnimating, isCompleting, onComplete, step]);
 
   const handleBack = useCallback(() => {
-    if (isFirstStep || isAnimating) return;
+    if (isFirstStep || isAnimating || isCompleting) return;
 
     setDirection('backward');
     setIsAnimating(true);
@@ -77,7 +84,7 @@ export function Wizard({ steps, onComplete, onDataChange, initialStep = 0, class
       setCurrentStep(prev => prev - 1);
       setTimeout(() => setIsAnimating(false), 300);
     });
-  }, [isFirstStep, isAnimating]);
+  }, [isFirstStep, isAnimating, isCompleting]);
 
   const StepComponent = step.component;
 
@@ -109,6 +116,7 @@ export function Wizard({ steps, onComplete, onDataChange, initialStep = 0, class
             onBack={isFirstStep ? undefined : handleBack}
             isFirstStep={isFirstStep}
             isLastStep={isLastStep}
+            isCompleting={isCompleting}
             wizardData={wizardData}
             updateWizardData={updateWizardData}
           />

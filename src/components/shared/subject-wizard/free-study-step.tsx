@@ -43,6 +43,7 @@ function getInitialExamDate(saved?: FreeStudySavedData, pdfExtraction?: PdfExtra
 export function FreeStudyStep({
   onNext,
   onBack,
+  isCompleting,
   wizardData,
   updateWizardData,
 }: StepProps) {
@@ -124,12 +125,12 @@ export function FreeStudyStep({
 
       <div className="mt-8 flex justify-center gap-4">
         {onBack && (
-          <Button variant="outline" onClick={onBack}>
+          <Button variant="outline" onClick={onBack} disabled={isCompleting}>
             Volver
           </Button>
         )}
-        <Button onClick={handleFinish} size="lg">
-          Finalizar
+        <Button onClick={handleFinish} size="lg" disabled={isCompleting}>
+          {isCompleting ? 'Creando materia…' : 'Finalizar'}
         </Button>
       </div>
     </div>
