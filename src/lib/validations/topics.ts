@@ -37,6 +37,8 @@ export const createTopicSchema = z
       errorMap: () => ({ message: 'Fuente inválida' }),
     }),
     source_date: z.string().optional(),
+    /** Solo server-side (wizard bulk): evita N notificaciones; undefined = notificar como siempre */
+    skip_sessions_created_notification: z.boolean().optional(),
   })
   .refine(
     (data) => {

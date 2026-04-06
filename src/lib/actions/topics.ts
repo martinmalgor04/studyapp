@@ -46,8 +46,13 @@ export async function createTopic(input: CreateTopicInput) {
     };
   }
 
+  const {
+    skip_sessions_created_notification: skipSessionsCreatedNotification,
+    ...topicPayload
+  } = validationResult.data;
+
   const subject = await findSubjectByIdAndUserId(
-    validationResult.data.subject_id,
+    topicPayload.subject_id,
     user.id,
   );
   if (!subject) {
@@ -56,10 +61,10 @@ export async function createTopic(input: CreateTopicInput) {
     };
   }
 
-  if (validationResult.data.exam_id) {
+  if (topicPayload.exam_id) {
     const exam = await findExamByIdAndSubjectId(
-      validationResult.data.exam_id,
-      validationResult.data.subject_id,
+      topicPayload.exam_id,
+      topicPayload.subject_id,
     );
     if (!exam) {
       return {
@@ -69,14 +74,14 @@ export async function createTopic(input: CreateTopicInput) {
   }
 
   const { data, error } = await insertTopic({
-    subject_id: validationResult.data.subject_id,
-    exam_id: validationResult.data.exam_id || null,
-    name: validationResult.data.name,
-    description: validationResult.data.description,
-    difficulty: validationResult.data.difficulty,
-    hours: validationResult.data.hours,
-    source: validationResult.data.source,
-    source_date: validationResult.data.source_date || null,
+    subject_id: topicPayload.subject_id,
+    exam_id: topicPayload.exam_id || null,
+    name: topicPayload.name,
+    description: topicPayload.description,
+    difficulty: topicPayload.difficulty,
+    hours: topicPayload.hours,
+    source: topicPayload.source,
+    source_date: topicPayload.source_date || null,
   });
 
   if (error) {
@@ -91,7 +96,11 @@ export async function createTopic(input: CreateTopicInput) {
     const sessionsResult = await generateSessions(data.id);
     if (sessionsResult.error) {
       logger.warn('Warning: Could not generate sessions:', sessionsResult.error);
-    } else if (sessionsResult.success && sessionsResult.count) {
+    } else if (
+      sessionsResult.success &&
+      sessionsResult.count &&
+      skipSessionsCreatedNotification !== true
+    ) {
       await sendNotification({
         userId: user.id,
         type: 'SESSION_REMINDER',
@@ -107,7 +116,7 @@ export async function createTopic(input: CreateTopicInput) {
   }
 
   revalidatePath('/dashboard/subjects');
-  revalidatePath(`/dashboard/subjects/${validationResult.data.subject_id}`);
+  revalidatePath(`/dashboard/subjects/${topicPayload.subject_id}`);
   return { data };
 }
 

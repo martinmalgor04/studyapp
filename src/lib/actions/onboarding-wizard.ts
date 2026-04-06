@@ -13,9 +13,11 @@ import {
 import { findAvailabilityByUserId } from '@/lib/repositories/availability.repository';
 import { findUserSettings } from '@/lib/repositories/user-settings.repository';
 import { insertSessions, findPendingSessionSlots } from '@/lib/repositories/sessions.repository';
+import { getAuthenticatedUser } from '@/lib/utils/auth';
 import { createSubject } from './subjects';
 import { createExam } from './exams';
 import { createTopic } from './topics';
+import { sendNotification } from './notifications';
 
 // --- Types ---
 
@@ -85,6 +87,33 @@ export interface SubjectWizardResult {
 }
 
 const SESSIONS_PER_TOPIC = 4;
+
+async function notifyWizardBulkSessionsSummary(params: {
+  subjectId: string;
+  subjectName: string;
+  topicsCreated: number;
+  sessionsCount: number;
+}): Promise<void> {
+  const { subjectId, subjectName, topicsCreated, sessionsCount } = params;
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    logger.warn(
+      '[completeSubjectWizard] Usuario no autenticado; se omite notificación de resumen de sesiones generadas.',
+    );
+    return;
+  }
+  await sendNotification({
+    userId: user.id,
+    type: 'SESSION_REMINDER',
+    title: 'Nuevas sesiones generadas',
+    message: `Se generaron sesiones para la materia "${subjectName}": ${topicsCreated} temas, ${sessionsCount} sesiones`,
+    metadata: {
+      subject_id: subjectId,
+      topics_created: topicsCreated,
+      sessions_count: sessionsCount,
+    },
+  });
+}
 
 function formatUtcYmd(d: Date): string {
   const y = d.getUTCFullYear();
@@ -199,6 +228,16 @@ async function handleLibrePath(
     'FREE_STUDY',
   );
 
+  const sessionsGenerated = topicsCreated * SESSIONS_PER_TOPIC;
+  if (topicsCreated > 0) {
+    await notifyWizardBulkSessionsSummary({
+      subjectId,
+      subjectName,
+      topicsCreated,
+      sessionsCount: sessionsGenerated,
+    });
+  }
+
   revalidatePath('/dashboard');
 
   return {
@@ -206,7 +245,7 @@ async function handleLibrePath(
       subjectId,
       subjectName,
       topicsCreated,
-      sessionsGenerated: topicsCreated * SESSIONS_PER_TOPIC,
+      sessionsGenerated,
     },
   };
 }
@@ -300,6 +339,7 @@ async function handleCursadaPath(
       hours: topicSpec.hours,
       source: 'CLASS',
       source_date: sourceDateStr,
+      skip_sessions_created_notification: true,
     });
 
     if (topicResult.error || !topicResult.data) {
@@ -412,6 +452,16 @@ async function handleCursadaPath(
     }
   }
 
+  const sessionsGenerated = topicsCreated * SESSIONS_PER_TOPIC + preClassInserted;
+  if (topicsCreated > 0) {
+    await notifyWizardBulkSessionsSummary({
+      subjectId,
+      subjectName,
+      topicsCreated,
+      sessionsCount: sessionsGenerated,
+    });
+  }
+
   revalidatePath('/dashboard');
 
   return {
@@ -419,7 +469,7 @@ async function handleCursadaPath(
       subjectId,
       subjectName,
       topicsCreated,
-      sessionsGenerated: topicsCreated * SESSIONS_PER_TOPIC + preClassInserted,
+      sessionsGenerated,
       ...(warning ? { warning } : {}),
     },
   };
@@ -445,6 +495,7 @@ async function createTopicsBatch(
       hours: topic.hours,
       source,
       source_date: sourceDate,
+      skip_sessions_created_notification: true,
     });
 
     if (result.error) {
