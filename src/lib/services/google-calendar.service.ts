@@ -71,6 +71,7 @@ export class GoogleCalendarService {
 
       const response = await calendar.events.insert({
         calendarId: 'primary',
+        sendUpdates: 'none',
         requestBody: {
           summary: `${session.topic.name} - R${session.number}`,
           description: `Materia: ${session.subject.name}\nDuración estimada: ${session.duration} minutos\n\nGenerado por StudyApp`,
@@ -105,6 +106,7 @@ export class GoogleCalendarService {
       await calendar.events.delete({
         calendarId: 'primary',
         eventId,
+        sendUpdates: 'none',
       });
 
       return true;
@@ -271,6 +273,7 @@ export class GoogleCalendarService {
       await calendar.events.patch({
         calendarId: 'primary',
         eventId,
+        sendUpdates: 'none',
         requestBody,
       });
 
