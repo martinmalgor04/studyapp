@@ -16,7 +16,10 @@ export {
   getExtractionJsonSchema,
 } from './extraction-prompt';
 
-export { processExtractionResult } from './extraction-processor';
+export {
+  processExtractionResult,
+  mergeExamsWithScheduleDates,
+} from './extraction-processor';
 export type {
   ProcessedExtraction,
   NormalizedScheduleEntry,

@@ -195,12 +195,14 @@ export function processExtractionResult(raw: unknown): ProcessedExtraction {
     ? buildNormalizedSchedule(schedule, units)
     : undefined;
 
+  const mergedExams = mergeExamsWithScheduleDates(exams, normalizedSchedule);
+
   const extraction: RawExtraction = {
     documentType,
     subjectMetadata,
     units,
     ...(schedule?.length ? { schedule } : {}),
-    ...(exams?.length ? { exams } : {}),
+    ...(mergedExams?.length ? { exams: mergedExams } : {}),
   };
 
   const confidence = calculateConfidence(extraction);
@@ -332,7 +334,13 @@ function toExtractedExam(raw: z.infer<typeof examSchema>): ExtractedExam {
     unitsIncluded: raw.unitsIncluded,
     type: EXAM_TYPE_MAP[raw.type.toUpperCase()] ?? 'PARCIAL',
   };
-  if (raw.date) exam.date = raw.date;
+  if (raw.date) {
+    const trimmed = raw.date.trim();
+    if (trimmed) {
+      const iso = normalizeDate(raw.date);
+      exam.date = iso ?? trimmed;
+    }
+  }
   return exam;
 }
 
@@ -480,6 +488,198 @@ function buildNormalizedSchedule(
   }
 
   return entries;
+}
+
+// ---------------------------------------------------------------------------
+// Exams ↔ Normalized schedule (fechas del cronograma → exams[])
+// ---------------------------------------------------------------------------
+
+const MIN_EXAM_SCHEDULE_MATCH_SCORE = 10;
+const SCORE_UNIT_OVERLAP = 22;
+const SCORE_TYPE_ALIGN = 14;
+const SCORE_SUBSTRING_MATCH = 12;
+const SCORE_WORD_MATCH = 4;
+const SCORE_KEYWORD_PARCIAL = 6;
+const SCORE_KEYWORD_RECUP = 6;
+
+function examDateMissing(exam: ExtractedExam): boolean {
+  const d = exam.date;
+  if (d == null) return true;
+  return d.trim() === '';
+}
+
+function inferFinalFromTopicText(text: string): boolean {
+  const t = text.toLowerCase();
+  return (
+    /\bfinal(es)?\b/.test(t) ||
+    /\bexamen\s+final\b/.test(t) ||
+    /\bcoloquio\b/.test(t)
+  );
+}
+
+function syntheticExamFromScheduleEntry(
+  entry: NormalizedScheduleEntry,
+): ExtractedExam {
+  const topicText = entry.topics[0] ?? '';
+  const trimmed = topicText.trim();
+  const name =
+    trimmed ||
+    (entry.type === 'RECOVERY' ? 'Recuperatorio' : 'Parcial');
+  const type: ExtractedExam['type'] =
+    entry.type === 'RECOVERY'
+      ? 'RECUPERATORIO'
+      : inferFinalFromTopicText(topicText)
+        ? 'FINAL'
+        : 'PARCIAL';
+  return {
+    name,
+    date: entry.date,
+    unitsIncluded: [...entry.unitNumbers],
+    type,
+  };
+}
+
+function scheduleTypeAlignsExam(
+  examType: ExtractedExam['type'],
+  scheduleType: NormalizedScheduleEntry['type'],
+): boolean {
+  if (scheduleType === 'RECOVERY') return examType === 'RECUPERATORIO';
+  if (scheduleType === 'EXAM')
+    return examType === 'PARCIAL' || examType === 'FINAL';
+  return false;
+}
+
+function unitSetsOverlap(a: number[], b: number[]): boolean {
+  if (a.length === 0 || b.length === 0) return false;
+  const setB = new Set(b);
+  return a.some((u) => setB.has(u));
+}
+
+/**
+ * No duplicar al append si ya hay un examen con fecha que cubre las mismas unidades,
+ * o ambos sin unidades pero tipo alineado.
+ */
+function scheduleCandidateCoveredByExisting(
+  existing: ExtractedExam[],
+  candidate: NormalizedScheduleEntry,
+): boolean {
+  for (const e of existing) {
+    if (examDateMissing(e)) continue;
+    const eu = e.unitsIncluded;
+    const cu = candidate.unitNumbers;
+    if (unitSetsOverlap(eu, cu)) return true;
+    if (
+      eu.length === 0 &&
+      cu.length === 0 &&
+      scheduleTypeAlignsExam(e.type, candidate.type)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function topicBlob(entry: NormalizedScheduleEntry): string {
+  return entry.topics.join(' ').toLowerCase();
+}
+
+function scoreExamToScheduleCandidate(
+  exam: ExtractedExam,
+  candidate: NormalizedScheduleEntry,
+): number {
+  let score = 0;
+  const examUnits = exam.unitsIncluded;
+  const candUnits = candidate.unitNumbers;
+  const overlapCount = examUnits.filter((u) => candUnits.includes(u)).length;
+  score += overlapCount * SCORE_UNIT_OVERLAP;
+
+  if (exam.type === 'RECUPERATORIO' && candidate.type === 'RECOVERY') {
+    score += SCORE_TYPE_ALIGN;
+  } else if (
+    (exam.type === 'PARCIAL' || exam.type === 'FINAL') &&
+    candidate.type === 'EXAM'
+  ) {
+    score += SCORE_TYPE_ALIGN;
+    if (exam.type === 'FINAL' && inferFinalFromTopicText(topicBlob(candidate))) {
+      score += 4;
+    } else if (exam.type === 'PARCIAL' && !inferFinalFromTopicText(topicBlob(candidate))) {
+      score += 2;
+    }
+  }
+
+  const name = exam.name.toLowerCase().trim();
+  const topic = topicBlob(candidate);
+  if (name && topic && (topic.includes(name) || name.includes(topic))) {
+    score += SCORE_SUBSTRING_MATCH;
+  } else if (name && topic) {
+    for (const w of name.split(/\s+/)) {
+      if (w.length > 2 && topic.includes(w)) score += SCORE_WORD_MATCH;
+    }
+  }
+
+  if (exam.type === 'PARCIAL' && /\bparcial\b/.test(topic)) {
+    score += SCORE_KEYWORD_PARCIAL;
+  }
+  if (exam.type === 'RECUPERATORIO' && /\brecup/.test(topic)) {
+    score += SCORE_KEYWORD_RECUP;
+  }
+
+  return score;
+}
+
+/**
+ * Enriquece `exams` con fechas ISO del cronograma normalizado (EXAM / RECOVERY).
+ * Si el modelo no devolvió exams pero el schedule sí, sintetiza entradas.
+ */
+export function mergeExamsWithScheduleDates(
+  exams: ExtractedExam[] | undefined,
+  normalizedSchedule: NormalizedScheduleEntry[] | undefined,
+): ExtractedExam[] | undefined {
+  if (!normalizedSchedule?.length) return exams;
+
+  const candidates = normalizedSchedule.filter(
+    (e) =>
+      (e.type === 'EXAM' || e.type === 'RECOVERY') &&
+      typeof e.date === 'string' &&
+      e.date.trim() !== '',
+  );
+  if (candidates.length === 0) return exams;
+
+  if (!exams?.length) {
+    return candidates.map(syntheticExamFromScheduleEntry);
+  }
+
+  const result = exams.map((e) => ({ ...e }));
+  const used = new Set<number>();
+
+  for (let i = 0; i < result.length; i++) {
+    if (!examDateMissing(result[i])) continue;
+
+    let bestJ = -1;
+    let bestScore = -1;
+    for (let j = 0; j < candidates.length; j++) {
+      if (used.has(j)) continue;
+      const s = scoreExamToScheduleCandidate(result[i], candidates[j]);
+      if (s > bestScore) {
+        bestScore = s;
+        bestJ = j;
+      }
+    }
+
+    if (bestJ >= 0 && bestScore >= MIN_EXAM_SCHEDULE_MATCH_SCORE) {
+      const chosen = candidates[bestJ];
+      result[i] = { ...result[i], date: chosen.date };
+      used.add(bestJ);
+    }
+  }
+
+  for (let j = 0; j < candidates.length; j++) {
+    if (used.has(j)) continue;
+    if (scheduleCandidateCoveredByExisting(result, candidates[j])) continue;
+    result.push(syntheticExamFromScheduleEntry(candidates[j]));
+  }
+
+  return result;
 }
 
 // ---------------------------------------------------------------------------

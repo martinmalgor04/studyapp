@@ -54,6 +54,7 @@ Clasificá el documento en una de estas categorías:
 - Fecha (si está disponible)
 - Números de unidades incluidas
 - Tipo: PARCIAL, RECUPERATORIO, FINAL
+- Si un parcial o recuperatorio figura en el **cronograma (schedule)** con fecha, replicá esa misma fecha en el objeto correspondiente dentro de **exams[].date** (además de la entrada en schedule), para que evaluación y agenda queden alineadas.
 
 ## Estimación de Horas
 
