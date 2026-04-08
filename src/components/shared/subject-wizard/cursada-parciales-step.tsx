@@ -8,6 +8,7 @@ import type { ClassBlock, TopicInput } from './subject-wizard-types';
 import { TopicEntryPanel } from './topic-entry-panel';
 import type { ExamModality } from '@/lib/validations/exams';
 import { MODALITY_LABELS } from '@/lib/validations/exams';
+import { normalizeExamDateToIso } from '@/lib/utils/exam-date-normalize';
 
 const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'] as const;
 type Day = (typeof DAYS)[number];
@@ -62,7 +63,7 @@ function getInitialParciales(saved?: CursadaSavedData, pdfExtraction?: PdfExtrac
       .map(e => ({
         id: crypto.randomUUID(),
         name: e.name,
-        date: e.date ?? '',
+        date: normalizeExamDateToIso(e.date?.trim() ?? '') ?? '',
         modality: 'THEORY_PRACTICE' as ExamModality,
         assignedTopicIds: [],
       }));

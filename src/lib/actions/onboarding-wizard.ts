@@ -18,6 +18,7 @@ import { createSubject } from './subjects';
 import { createExam } from './exams';
 import { createTopic } from './topics';
 import { sendNotification } from './notifications';
+import { normalizeExamDateToIso } from '@/lib/utils/exam-date-normalize';
 
 // --- Types ---
 
@@ -137,14 +138,13 @@ function formatUtcYmd(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-const STRICT_YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-/** Medianoche UTC para strings tipo YYYY-MM-DD o ISO. */
+/** Medianoche UTC: DD/MM, guiones o ISO vía `normalizeExamDateToIso`; fallback legado si aplica. */
 function parseParcialDateUtcMidnight(dateStr: string): Date {
   const trimmed = dateStr.trim();
-  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(trimmed);
-  if (match) {
-    return new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  const iso = normalizeExamDateToIso(trimmed);
+  if (iso) {
+    const [y, mo, d] = iso.split('-').map(Number);
+    return new Date(Date.UTC(y, mo - 1, d));
   }
   const parsed = new Date(trimmed);
   if (Number.isNaN(parsed.getTime())) {
@@ -349,7 +349,7 @@ async function handleCursadaPath(
     const confirmedTrimmed =
       typeof confirmedRaw === 'string' ? confirmedRaw.trim() : '';
     const classDateUsed =
-      confirmedTrimmed !== '' && STRICT_YMD_RE.test(confirmedTrimmed)
+      confirmedTrimmed !== '' && normalizeExamDateToIso(confirmedTrimmed) !== null
         ? parseParcialDateUtcMidnight(confirmedTrimmed)
         : (classDates[i] ?? new Date(rangeStart.getTime()));
     const sourceDateStr = formatUtcYmd(classDateUsed);

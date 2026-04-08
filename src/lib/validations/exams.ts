@@ -1,4 +1,8 @@
 import { z } from 'zod';
+import { normalizeExamDateToIso } from '@/lib/utils/exam-date-normalize';
+
+const EXAM_DATE_INVALID_MSG =
+  'Formato de fecha inválido. Usá DD/MM/AAAA o AAAA-MM-DD (día y mes coherentes).';
 
 export const examCategories = [
   'PARCIAL',
@@ -63,7 +67,13 @@ export const createExamSchema = z.object({
     errorMap: () => ({ message: 'Modalidad de examen inválida' }),
   }),
   number: z.number().int().min(1).max(10).optional(),
-  date: z.string().min(1, 'La fecha es requerida'),
+  date: z
+    .string()
+    .min(1, 'La fecha es requerida')
+    .refine((s) => normalizeExamDateToIso(s.trim()) !== null, {
+      message: EXAM_DATE_INVALID_MSG,
+    })
+    .transform((s) => normalizeExamDateToIso(s.trim())!),
   description: z
     .string()
     .max(500, 'La descripción no puede exceder 500 caracteres')
@@ -79,7 +89,18 @@ export const updateExamSchema = z.object({
   category: z.enum(examCategories).optional(),
   modality: z.enum(examModalities).optional(),
   number: z.number().int().min(1).max(10).optional(),
-  date: z.string().optional(),
+  date: z.preprocess(
+    (val) => (val === '' || val === undefined ? undefined : val),
+    z
+      .string()
+      .optional()
+      .refine((s) => s === undefined || normalizeExamDateToIso(s.trim()) !== null, {
+        message: EXAM_DATE_INVALID_MSG,
+      })
+      .transform((s) =>
+        s === undefined ? undefined : normalizeExamDateToIso(s.trim())!,
+      ),
+  ),
   description: z.string().max(500, 'La descripción no puede exceder 500 caracteres').optional(),
 });
 
