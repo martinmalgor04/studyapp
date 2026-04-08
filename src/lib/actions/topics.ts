@@ -48,6 +48,7 @@ export async function createTopic(input: CreateTopicInput) {
 
   const {
     skip_sessions_created_notification: skipSessionsCreatedNotification,
+    skip_google_calendar_sync: skipGoogleCalendarSync,
     ...topicPayload
   } = validationResult.data;
 
@@ -93,7 +94,9 @@ export async function createTopic(input: CreateTopicInput) {
   // - source=FREE_STUDY: usa today como referencia, no necesita source_date
   const shouldGenerateSessions = data?.source_date || data?.source === 'FREE_STUDY';
   if (shouldGenerateSessions) {
-    const sessionsResult = await generateSessions(data.id);
+    const sessionsResult = await generateSessions(data.id, {
+      skipGoogleCalendarSync: skipGoogleCalendarSync === true,
+    });
     if (sessionsResult.error) {
       logger.warn('Warning: Could not generate sessions:', sessionsResult.error);
     } else if (

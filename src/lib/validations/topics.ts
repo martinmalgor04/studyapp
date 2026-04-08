@@ -39,6 +39,8 @@ export const createTopicSchema = z
     source_date: z.string().optional(),
     /** Solo server-side (wizard bulk): evita N notificaciones; undefined = notificar como siempre */
     skip_sessions_created_notification: z.boolean().optional(),
+    /** Solo server-side (wizard bulk): evita N sync a Google Calendar por tema; luego un sync único al cerrar el wizard */
+    skip_google_calendar_sync: z.boolean().optional(),
   })
   .refine(
     (data) => {

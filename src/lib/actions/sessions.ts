@@ -399,7 +399,10 @@ export async function getSessionsByDateRange(startDate: string, endDate: string)
  * Genera sesiones automáticamente para un topic
  * Llama al service session-generator y las inserta en DB
  */
-export async function generateSessions(topicId: string) {
+export async function generateSessions(
+  topicId: string,
+  options?: { skipGoogleCalendarSync?: boolean },
+) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -466,17 +469,19 @@ export async function generateSessions(topicId: string) {
       return { error: insertError };
     }
 
-    try {
-      const { getGoogleCalendarService } = await import('@/lib/services/google-calendar.service');
-      const { getGoogleTokens } = await import('@/lib/services/google-tokens.helper');
-      const tokens = await getGoogleTokens(user.id);
-      if (tokens) {
-        const service = getGoogleCalendarService();
-        await service.syncSessions(user.id);
-        logger.debug(`[generateSessions] Google Calendar synced for topic ${topicId}`);
+    if (!options?.skipGoogleCalendarSync) {
+      try {
+        const { getGoogleCalendarService } = await import('@/lib/services/google-calendar.service');
+        const { getGoogleTokens } = await import('@/lib/services/google-tokens.helper');
+        const tokens = await getGoogleTokens(user.id);
+        if (tokens) {
+          const service = getGoogleCalendarService();
+          await service.syncSessions(user.id);
+          logger.debug(`[generateSessions] Google Calendar synced for topic ${topicId}`);
+        }
+      } catch (gcalError) {
+        logger.warn('[generateSessions] Could not sync to Google Calendar:', gcalError);
       }
-    } catch (gcalError) {
-      logger.warn('[generateSessions] Could not sync to Google Calendar:', gcalError);
     }
 
     revalidatePath('/dashboard');

@@ -88,6 +88,21 @@ export interface SubjectWizardResult {
 
 const SESSIONS_PER_TOPIC = 4;
 
+/** Un solo sync al cerrar el wizard (SA-95: evitar N sync por tema → ráfagas en Calendar/API). */
+async function syncGoogleCalendarAfterWizard(userId: string): Promise<void> {
+  try {
+    const { getGoogleCalendarService } = await import('@/lib/services/google-calendar.service');
+    const { getGoogleTokens } = await import('@/lib/services/google-tokens.helper');
+    const tokens = await getGoogleTokens(userId);
+    if (!tokens) return;
+    const service = getGoogleCalendarService();
+    await service.syncSessions(userId);
+    logger.debug('[completeSubjectWizard] Google Calendar sincronizado (post-wizard único)');
+  } catch (gcalError) {
+    logger.warn('[completeSubjectWizard] No se pudo sincronizar Google Calendar:', gcalError);
+  }
+}
+
 async function notifyWizardBulkSessionsSummary(params: {
   subjectId: string;
   subjectName: string;
@@ -230,6 +245,14 @@ async function handleLibrePath(
 
   const sessionsGenerated = topicsCreated * SESSIONS_PER_TOPIC;
   if (topicsCreated > 0) {
+    const supabaseLibre = await createClient();
+    const {
+      data: { user: userLibre },
+    } = await supabaseLibre.auth.getUser();
+    if (userLibre) {
+      await syncGoogleCalendarAfterWizard(userLibre.id);
+    }
+    revalidatePath('/dashboard/sessions');
     await notifyWizardBulkSessionsSummary({
       subjectId,
       subjectName,
@@ -340,6 +363,7 @@ async function handleCursadaPath(
       source: 'CLASS',
       source_date: sourceDateStr,
       skip_sessions_created_notification: true,
+      skip_google_calendar_sync: true,
     });
 
     if (topicResult.error || !topicResult.data) {
@@ -426,24 +450,6 @@ async function handleCursadaPath(
               'Las sesiones de pre-clase no se pudieron guardar; los repasos del tema sí están creados.';
           } else {
             preClassInserted = preSessions.length;
-            try {
-              const { getGoogleCalendarService } = await import(
-                '@/lib/services/google-calendar.service'
-              );
-              const { getGoogleTokens } = await import('@/lib/services/google-tokens.helper');
-              const tokens = await getGoogleTokens(user.id);
-              if (tokens) {
-                const service = getGoogleCalendarService();
-                await service.syncSessions(user.id);
-                logger.debug('[completeSubjectWizard] Google Calendar sincronizado tras pre-clases');
-              }
-            } catch (gcalError) {
-              logger.warn(
-                '[completeSubjectWizard] No se pudo sincronizar Google Calendar:',
-                gcalError,
-              );
-            }
-            revalidatePath('/dashboard/sessions');
           }
         }
       } catch (err) {
@@ -455,6 +461,14 @@ async function handleCursadaPath(
 
   const sessionsGenerated = topicsCreated * SESSIONS_PER_TOPIC + preClassInserted;
   if (topicsCreated > 0) {
+    const supabaseForSync = await createClient();
+    const {
+      data: { user: userForSync },
+    } = await supabaseForSync.auth.getUser();
+    if (userForSync) {
+      await syncGoogleCalendarAfterWizard(userForSync.id);
+    }
+    revalidatePath('/dashboard/sessions');
     await notifyWizardBulkSessionsSummary({
       subjectId,
       subjectName,
@@ -497,6 +511,7 @@ async function createTopicsBatch(
       source,
       source_date: sourceDate,
       skip_sessions_created_notification: true,
+      skip_google_calendar_sync: true,
     });
 
     if (result.error) {
