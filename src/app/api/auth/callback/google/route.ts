@@ -58,11 +58,10 @@ export async function GET(request: Request) {
     };
 
     if (returnTo === 'onboarding') {
-      // UPSERT: crea la fila con onboarding_completed=true si no existía (usuario nuevo que solo conectó Google)
+      // UPSERT: crea o actualiza tokens; no marcar onboarding_completed (lo setea el wizard al terminar).
       const upsertData: UserSettingsInsert = {
         user_id: userId,
         ...basePayload,
-        onboarding_completed: true,
         email_notifications: true,
         telegram_notifications: false,
         in_app_notifications: true,
@@ -90,7 +89,7 @@ export async function GET(request: Request) {
     }
 
     if (returnTo === 'onboarding') {
-      return NextResponse.redirect(`${origin}/dashboard`);
+      return NextResponse.redirect(`${origin}/onboarding?google_connected=true`);
     }
     return NextResponse.redirect(`${origin}/dashboard/settings?google_connected=true`);
   } catch (error) {
