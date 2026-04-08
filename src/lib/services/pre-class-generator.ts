@@ -123,6 +123,22 @@ function isSameDay(a: Date, b: Date): boolean {
   );
 }
 
+/** Día civil en Argentina (alineado con horarios de cursada / slots locales). */
+function isSameCalendarDayArgentina(a: Date, b: Date): boolean {
+  const key = (d: Date) =>
+    d.toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
+  return key(a) === key(b);
+}
+
+/**
+ * El slot cae en el "día de clase" esperado: mismo día UTC (fechas a medianoche UTC del wizard)
+ * o mismo día civil AR (evita falsos negativos cuando el slot local cae en otro día UTC).
+ */
+function isSlotOnClassDay(slot: Date, classDate: Date): boolean {
+  if (isSameDay(slot, classDate)) return true;
+  return isSameCalendarDayArgentina(slot, classDate);
+}
+
 function utcMidnight(d: Date): Date {
   const x = new Date(d);
   x.setUTCHours(0, 0, 0, 0);
@@ -300,9 +316,9 @@ export function generatePreClassSessions(
     const slotResult = resolveHour(schedulingDate, duration, options, occupiedExtra);
 
     const mustStayOnClassUtcDay = isSameDay(schedulingDate, topic.classDate);
-    if (mustStayOnClassUtcDay && !isSameDay(slotResult.date, topic.classDate)) {
+    if (mustStayOnClassUtcDay && !isSlotOnClassDay(slotResult.date, topic.classDate)) {
       logger.warn(
-        `[PreClassGenerator] No hubo slot el mismo día UTC que la clase para "${topic.name}"; se omite pre-clase.`,
+        `[PreClassGenerator] No hubo slot el mismo día que la clase (UTC o AR) para "${topic.name}"; se omite pre-clase.`,
       );
       continue;
     }
@@ -314,7 +330,7 @@ export function generatePreClassSessions(
       continue;
     }
 
-    if (isSameDay(slotResult.date, topic.classDate) && classStart !== null) {
+    if (isSlotOnClassDay(slotResult.date, topic.classDate) && classStart !== null) {
       const endMin = dateToLocalArgentinaMinutes(slotResult.date) + duration;
       if (endMin > classStart) {
         logger.warn(

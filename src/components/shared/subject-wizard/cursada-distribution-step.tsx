@@ -30,6 +30,16 @@ interface CursadaSavedData {
 
 const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+/** Warnings de topic-distributor que indican que el plan no cabe en el calendario tentativo. */
+function isBlockingDistributionWarning(w: string): boolean {
+  if (w.includes('No hay suficientes clases')) return true;
+  if (w.includes('requieren') && w.includes('pero solo hay')) return true;
+  if (w.includes('No hay clases disponibles para distribuir')) return true;
+  if (w.includes('No se encontraron clases disponibles')) return true;
+  if (w.includes('No hay tiempo suficiente para distribuir')) return true;
+  return false;
+}
+
 const DAY_SHORT: Record<string, string> = {
   Domingo: 'Dom',
   Lunes: 'Lun',
@@ -182,6 +192,12 @@ function CursadaDistributionStepInner({
     if (!distResult || distResult.schedule.length === 0) {
       setStepError(
         'No hay fechas de clase disponibles en la distribución. Volvé atrás y revisá horarios o parciales.',
+      );
+      return;
+    }
+    if (distResult.warnings.some(isBlockingDistributionWarning)) {
+      setStepError(
+        'Hay más minutos de temas que horas de clase hasta el parcial (o no entran en las fechas disponibles). Volvé al paso anterior para reducir temas, unir ítems del programa o ajustar fechas de parciales y horarios.',
       );
       return;
     }

@@ -335,6 +335,9 @@ async function handleCursadaPath(
     rangeEnd,
   );
 
+  const lastClassDateInRange =
+    classDates.length > 0 ? classDates[classDates.length - 1]! : rangeStart;
+
   const topicClassDates = cursada.topicClassDates;
   const useConfirmedTopicDates =
     topicClassDates != null && topicClassDates.length === cursada.topics.length;
@@ -348,10 +351,20 @@ async function handleCursadaPath(
     const confirmedRaw = useConfirmedTopicDates ? topicClassDates[i] : undefined;
     const confirmedTrimmed =
       typeof confirmedRaw === 'string' ? confirmedRaw.trim() : '';
-    const classDateUsed =
-      confirmedTrimmed !== '' && normalizeExamDateToIso(confirmedTrimmed) !== null
-        ? parseParcialDateUtcMidnight(confirmedTrimmed)
-        : (classDates[i] ?? new Date(rangeStart.getTime()));
+    let classDateUsed: Date;
+    if (
+      confirmedTrimmed !== '' &&
+      normalizeExamDateToIso(confirmedTrimmed) !== null
+    ) {
+      classDateUsed = parseParcialDateUtcMidnight(confirmedTrimmed);
+    } else if (classDates[i] !== undefined) {
+      classDateUsed = classDates[i]!;
+    } else {
+      classDateUsed = new Date(lastClassDateInRange.getTime());
+      logger.warn(
+        `[completeSubjectWizard] Tema "${topicSpec.name}": hay más temas que fechas de clase en el rango hasta el parcial; se usa la última fecha de clase disponible (${formatUtcYmd(lastClassDateInRange)}), no la fecha de hoy.`,
+      );
+    }
     const sourceDateStr = formatUtcYmd(classDateUsed);
 
     const topicResult = await createTopic({
