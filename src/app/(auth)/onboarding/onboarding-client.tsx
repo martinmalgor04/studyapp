@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { saveOnboardingAvailability } from '@/lib/actions/onboarding';
 import { completeSubjectWizard } from '@/lib/actions/onboarding-wizard';
@@ -29,8 +29,17 @@ interface AvailabilityData {
   studyEndHour: string;
 }
 
+const GOOGLE_ONBOARDING_DEFAULT_AVAILABILITY: AvailabilityData = {
+  shifts: ['MORNING', 'AFTERNOON', 'NIGHT'],
+  includeWeekends: false,
+  studyStartHour: '08:00',
+  studyEndHour: '23:00',
+};
+
 function AvailabilityStep({ onNext, updateWizardData, wizardData }: StepProps) {
+  const searchParams = useSearchParams();
   const saved = wizardData.availability as AvailabilityData | undefined;
+  const didAutoAdvanceFromGoogle = useRef(false);
 
   const [mode, setMode] = useState<OnboardingMode>('selection');
   const [selectedShifts, setSelectedShifts] = useState<Shift[]>(saved?.shifts ?? []);
@@ -39,6 +48,16 @@ function AvailabilityStep({ onNext, updateWizardData, wizardData }: StepProps) {
   const [studyEndHour, setStudyEndHour] = useState(saved?.studyEndHour ?? '23:00');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Tras OAuth, el callback vuelve con ?google_connected=true: hay que avanzar al paso Materia
+  // y dejar availability en wizardData para que el cierre del wizard persista slots.
+  useEffect(() => {
+    if (didAutoAdvanceFromGoogle.current) return;
+    if (searchParams?.get('google_connected') !== 'true') return;
+    didAutoAdvanceFromGoogle.current = true;
+    updateWizardData('availability', GOOGLE_ONBOARDING_DEFAULT_AVAILABILITY);
+    onNext();
+  }, [searchParams, onNext, updateWizardData]);
 
   const toggleShift = (shift: Shift) => {
     setSelectedShifts(prev =>
@@ -337,7 +356,10 @@ export function OnboardingClient() {
         {googleConnectedSuccess && (
           <div className="mb-6 rounded-xl border border-secondary/20 bg-secondary-container/20 p-4 text-center text-on-secondary-container">
             <p className="font-medium">Google Calendar conectado.</p>
-            <p className="text-sm mt-1 text-on-secondary-container/80">Podés elegir otra opción o continuar al dashboard.</p>
+            <p className="text-sm mt-1 text-on-secondary-container/80">
+              Te llevamos al paso <strong>Materia</strong>. Tus turnos quedan en un rango amplio (mañana, tarde y noche); el calendario de Google ayuda a evitar
+              conflictos. Podés volver atrás en el wizard si preferís definir turnos a mano.
+            </p>
           </div>
         )}
 
