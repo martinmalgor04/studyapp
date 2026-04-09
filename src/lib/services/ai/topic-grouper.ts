@@ -15,6 +15,16 @@ export interface TopicGroupingInput {
   units: ExtractedUnit[];
   estimatedDifficulty: Map<number, Difficulty>;
   totalEstimatedHours: number;
+  /**
+   * Cursada: cantidad objetivo de temas por unidad (p. ej. alineada a clases hasta el 1er parcial).
+   */
+  targetTopicsPerUnit?: Map<number, number>;
+  /** Unidades no incluidas en el 1er parcial: tope de temas por unidad (merge más agresivo). */
+  outOfScopeMaxTopicsPerUnit?: number;
+  /** Estudio libre: tope duro de temas por unidad. */
+  freeStudyMaxTopicsPerUnit?: number;
+  /** Unidades del 1er parcial (re-examen del PDF). Fuera de este set → outOfScopeMaxTopicsPerUnit. */
+  firstParcialScopedUnits?: Set<number>;
 }
 
 export interface GroupedTopic {
@@ -35,7 +45,7 @@ const MIN_MINUTES = 30;
 const MAX_MINUTES = 150;
 const TARGET_MINUTES = 105;
 const HOURS_PER_SUBTOPIC_FALLBACK = 1.5;
-const MAX_NAME_LENGTH = 80;
+const MAX_NAME_LENGTH = 120;
 
 // ---------------------------------------------------------------------------
 // groupTopics — Agrupación determinista local
@@ -54,7 +64,21 @@ export function groupTopics(input: TopicGroupingInput): GroupedTopic[] {
 
   for (const unit of units) {
     const difficulty = estimatedDifficulty.get(unit.number) ?? 'MEDIUM';
-    const unitTopics = groupSingleUnit(unit, difficulty, order);
+    const scoped = input.firstParcialScopedUnits;
+    const inScope = !scoped || scoped.has(unit.number);
+    const forced = inScope ? input.targetTopicsPerUnit?.get(unit.number) : undefined;
+    let maxChunk: number | undefined;
+    if (forced === undefined) {
+      if (input.freeStudyMaxTopicsPerUnit !== undefined) {
+        maxChunk = input.freeStudyMaxTopicsPerUnit;
+      } else if (!inScope && input.outOfScopeMaxTopicsPerUnit !== undefined) {
+        maxChunk = input.outOfScopeMaxTopicsPerUnit;
+      }
+    }
+    const unitTopics = groupSingleUnit(unit, difficulty, order, {
+      forcedChunkCount: forced,
+      maxChunkCount: maxChunk,
+    });
     rawTopics.push(...unitTopics);
     order += unitTopics.length;
   }
@@ -86,8 +110,23 @@ export async function groupTopicsWithAI(
       const difficulty =
         input.estimatedDifficulty.get(unit.number) ?? 'MEDIUM';
 
+      const scoped = input.firstParcialScopedUnits;
+      const inScope = !scoped || scoped.has(unit.number);
+      const forced = inScope ? input.targetTopicsPerUnit?.get(unit.number) : undefined;
+      let maxChunk: number | undefined;
+      if (forced === undefined) {
+        if (input.freeStudyMaxTopicsPerUnit !== undefined) {
+          maxChunk = input.freeStudyMaxTopicsPerUnit;
+        } else if (!inScope && input.outOfScopeMaxTopicsPerUnit !== undefined) {
+          maxChunk = input.outOfScopeMaxTopicsPerUnit;
+        }
+      }
+
       if (unit.subtopics.length <= 2) {
-        const topics = groupSingleUnit(unit, difficulty, order);
+        const topics = groupSingleUnit(unit, difficulty, order, {
+          forcedChunkCount: forced,
+          maxChunkCount: maxChunk,
+        });
         allGrouped.push(...topics);
         order += topics.length;
         continue;
@@ -99,13 +138,17 @@ export async function groupTopicsWithAI(
         provider,
         order,
         input.totalEstimatedHours,
+        forced,
       );
 
       if (aiTopics.length > 0) {
         allGrouped.push(...aiTopics);
         order += aiTopics.length;
       } else {
-        const topics = groupSingleUnit(unit, difficulty, order);
+        const topics = groupSingleUnit(unit, difficulty, order, {
+          forcedChunkCount: forced,
+          maxChunkCount: maxChunk,
+        });
         allGrouped.push(...topics);
         order += topics.length;
       }
@@ -130,26 +173,44 @@ function groupSingleUnit(
   unit: ExtractedUnit,
   difficulty: Difficulty,
   startOrder: number,
+  options?: { forcedChunkCount?: number; maxChunkCount?: number },
 ): GroupedTopic[] {
   const totalMinutes = resolveUnitMinutes(unit);
   const subtopics =
     unit.subtopics.length > 0 ? unit.subtopics : [unit.name];
 
-  let topicCount = calculateTopicCount(totalMinutes);
+  let topicCount: number;
+  if (options?.forcedChunkCount !== undefined) {
+    topicCount = Math.min(
+      subtopics.length,
+      Math.max(1, options.forcedChunkCount),
+    );
+  } else {
+    topicCount = calculateTopicCount(totalMinutes);
+    if (options?.maxChunkCount !== undefined) {
+      topicCount = Math.min(topicCount, options.maxChunkCount);
+    }
+  }
+
   let chunks = distributeSubtopics(subtopics, topicCount);
   let perTopic = totalMinutes / chunks.length;
 
-  while (perTopic > MAX_MINUTES && chunks.length < subtopics.length) {
-    topicCount = chunks.length + 1;
-    chunks = distributeSubtopics(subtopics, topicCount);
-    perTopic = totalMinutes / chunks.length;
+  if (options?.forcedChunkCount === undefined) {
+    while (perTopic > MAX_MINUTES && chunks.length < subtopics.length) {
+      topicCount = chunks.length + 1;
+      if (options?.maxChunkCount !== undefined) {
+        topicCount = Math.min(topicCount, options.maxChunkCount);
+      }
+      chunks = distributeSubtopics(subtopics, topicCount);
+      perTopic = totalMinutes / chunks.length;
+    }
   }
 
   return chunks.map((chunk, i) => ({
     name: buildTopicName(unit.number, chunk),
     unitNumber: unit.number,
     subtopics: chunk,
-    estimatedMinutes: Math.round(perTopic),
+    estimatedMinutes: Math.round(clampMinutes(perTopic)),
     difficulty,
     order: startOrder + i,
   }));
@@ -284,10 +345,12 @@ function buildTopicName(
     return truncate(`${prefix} — ${subtopics[0]}`, MAX_NAME_LENGTH);
   }
 
-  return truncate(
-    `${prefix} — ${subtopics[0]} a ${subtopics[subtopics.length - 1]}`,
-    MAX_NAME_LENGTH,
-  );
+  const head = subtopics.slice(0, 3).join(' · ');
+  const tail =
+    subtopics.length > 3
+      ? ` · … (+${subtopics.length - 3})`
+      : '';
+  return truncate(`${prefix} — ${head}${tail}`, MAX_NAME_LENGTH);
 }
 
 function truncate(text: string, maxLen: number): string {
@@ -305,9 +368,15 @@ async function tryAIGroupUnit(
   provider: AIProvider,
   startOrder: number,
   totalHours: number,
+  exactGroupCount?: number,
 ): Promise<GroupedTopic[]> {
   try {
     const totalMinutes = resolveUnitMinutes(unit);
+
+    const countRule =
+      exactGroupCount !== undefined && exactGroupCount > 0
+        ? `Debés devolver EXACTAMENTE ${exactGroupCount} objetos en el array (uno por bloque de estudio alineado a la cursada). Fusioná subtemas hasta cumplir eso.`
+        : '';
 
     const systemPrompt = [
       'Sos un asistente que agrupa subtopics universitarios en sesiones de estudio.',
@@ -315,11 +384,17 @@ async function tryAIGroupUnit(
       'El JSON debe ser un array de objetos con: { "name": string, "subtopics": string[], "estimatedMinutes": number }.',
       'Cada sesión debe durar entre 30 y 150 minutos.',
       'Agrupá por coherencia conceptual: temas relacionados van juntos.',
-    ].join('\n');
+      countRule,
+    ]
+      .filter(Boolean)
+      .join('\n');
 
     const userPrompt = [
       `Agrupá estos subtopics de la unidad "${unit.name}" en sesiones de estudio de 30-150 minutos,`,
       'agrupando por coherencia conceptual.',
+      exactGroupCount !== undefined && exactGroupCount > 0
+        ? `Cantidad obligatoria de grupos: ${exactGroupCount}.`
+        : '',
       '',
       `Subtopics: ${JSON.stringify(unit.subtopics)}`,
       `Tiempo total estimado de la unidad: ${Math.round(totalMinutes)} minutos`,
@@ -327,7 +402,9 @@ async function tryAIGroupUnit(
       '',
       'Respondé con un JSON array. Ejemplo:',
       '[{"name": "Nombre descriptivo", "subtopics": ["sub1", "sub2"], "estimatedMinutes": 90}]',
-    ].join('\n');
+    ]
+      .filter(Boolean)
+      .join('\n');
 
     const inputBuffer = Buffer.from(
       JSON.stringify({ unit }),
@@ -348,12 +425,25 @@ async function tryAIGroupUnit(
       return [];
     }
 
-    return parseAIResponse(
+    const parsed = parseAIResponse(
       result.data,
       unit.number,
       difficulty,
       startOrder,
     );
+
+    if (
+      exactGroupCount !== undefined &&
+      exactGroupCount > 0 &&
+      parsed.length !== exactGroupCount
+    ) {
+      logger.warn(
+        `[TopicGrouper] IA devolvió ${parsed.length} grupos para unidad ${unit.number}, se esperaban ${exactGroupCount}; fallback determinista.`,
+      );
+      return [];
+    }
+
+    return parsed;
   } catch (error) {
     logger.warn(
       `[TopicGrouper] Error IA para unidad ${unit.number}:`,

@@ -12,10 +12,111 @@ import type {
   ProcessedExtraction,
   NormalizedScheduleEntry,
 } from '@/lib/services/ai/extraction-processor';
-import { groupTopics } from '@/lib/services/ai/topic-grouper';
-import type { GroupedTopic } from '@/lib/services/ai/topic-grouper';
+import {
+  groupTopics,
+  groupTopicsWithAI,
+} from '@/lib/services/ai/topic-grouper';
+import type {
+  GroupedTopic,
+  TopicGroupingInput,
+} from '@/lib/services/ai/topic-grouper';
+import {
+  countClassSessionsBetween,
+  allocateTopicCountPerUnit,
+} from '@/lib/services/cursada-class-budget';
+import { normalizeExamDateToIso } from '@/lib/utils/exam-date-normalize';
 import type { SubjectMetadata, ExtractedExam } from '@/lib/services/ai/types';
 import type { Json } from '@/types/database.types';
+
+export type ProcessPDFCursadaContext = {
+  studyPath: 'CURSANDO' | 'LIBRE';
+  schedule?: Array<{ day: string; startTime: string; endTime: string }>;
+  parciales?: Array<{ date: string }>;
+};
+
+function buildTopicGroupingInput(
+  processed: ProcessedExtraction,
+  cursadaContext?: ProcessPDFCursadaContext,
+): TopicGroupingInput {
+  const base: TopicGroupingInput = {
+    units: processed.units,
+    estimatedDifficulty: processed.estimatedDifficulty,
+    totalEstimatedHours: processed.totalEstimatedHours,
+  };
+
+  if (!cursadaContext) {
+    return base;
+  }
+
+  if (cursadaContext.studyPath === 'LIBRE') {
+    base.freeStudyMaxTopicsPerUnit = 5;
+    return base;
+  }
+
+  const { schedule, parciales } = cursadaContext;
+  if (!schedule?.length || !parciales?.length) {
+    return base;
+  }
+
+  const isoDates = parciales
+    .map((p) => normalizeExamDateToIso(p.date.trim()))
+    .filter((x): x is string => x != null)
+    .sort();
+
+  if (isoDates.length === 0) {
+    return base;
+  }
+
+  const firstParcialDay = isoDates[0]!;
+  const rangeStart = new Date();
+  rangeStart.setUTCHours(0, 0, 0, 0);
+  const rangeEndExclusive = new Date(`${firstParcialDay}T00:00:00.000Z`);
+
+  const K = countClassSessionsBetween(schedule, rangeStart, rangeEndExclusive);
+  if (K <= 0) {
+    return base;
+  }
+
+  const parcialExams = (processed.exams ?? []).filter(
+    (e) => e.type === 'PARCIAL' || e.type === 'RECUPERATORIO',
+  );
+  const byDate = [...parcialExams].sort((a, b) => {
+    const da = normalizeExamDateToIso(a.date?.trim() ?? '') ?? '9999-12-31';
+    const db = normalizeExamDateToIso(b.date?.trim() ?? '') ?? '9999-12-31';
+    return da.localeCompare(db);
+  });
+  const anchorExam = byDate.find((e) => e.type === 'PARCIAL') ?? byDate[0];
+
+  const scoped = new Set<number>();
+  if (anchorExam?.unitsIncluded?.length) {
+    anchorExam.unitsIncluded.forEach((u) => scoped.add(u));
+  } else {
+    processed.units.forEach((u) => scoped.add(u.number));
+  }
+
+  const unitsInScope = processed.units.filter((u) => scoped.has(u.number));
+  if (unitsInScope.length === 0) {
+    base.freeStudyMaxTopicsPerUnit = 5;
+    return base;
+  }
+
+  const weights = new Map(
+    unitsInScope.map((u) => [u.number, Math.max(1, u.subtopics.length)]),
+  );
+  const subCounts = new Map(
+    unitsInScope.map((u) => [u.number, Math.max(1, u.subtopics.length)]),
+  );
+
+  base.targetTopicsPerUnit = allocateTopicCountPerUnit(
+    unitsInScope.map((u) => u.number).sort((a, b) => a - b),
+    weights,
+    subCounts,
+    K,
+  );
+  base.firstParcialScopedUnits = scoped;
+  base.outOfScopeMaxTopicsPerUnit = 4;
+  return base;
+}
 
 const BUCKET_NAME = 'program-pdfs';
 const PROCESSING_TIMEOUT_MS = 60_000;
@@ -39,6 +140,7 @@ type ProcessPDFResult = {
 
 export async function processPDF(
   extractionId: string,
+  cursadaContext?: ProcessPDFCursadaContext,
 ): Promise<ProcessPDFResult> {
   if (!extractionId) {
     return { error: 'ID de extracción no proporcionado' };
@@ -123,11 +225,21 @@ export async function processPDF(
 
     const processedResult = processExtractionResult(rawResult.data);
 
-    const groupedTopics = groupTopics({
-      units: processedResult.units,
-      estimatedDifficulty: processedResult.estimatedDifficulty,
-      totalEstimatedHours: processedResult.totalEstimatedHours,
-    });
+    const groupingInput = buildTopicGroupingInput(
+      processedResult,
+      cursadaContext,
+    );
+
+    let groupedTopics: GroupedTopic[];
+    try {
+      groupedTopics = await groupTopicsWithAI(groupingInput, provider);
+    } catch (err) {
+      logger.warn(
+        'processPDF: groupTopicsWithAI falló, usando groupTopics determinista',
+        err,
+      );
+      groupedTopics = groupTopics(groupingInput);
+    }
 
     const processingTimeMs = Math.round(performance.now() - startTime);
 

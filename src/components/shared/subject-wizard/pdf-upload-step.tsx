@@ -8,7 +8,7 @@ import { ExtractionReview } from './extraction-review';
 import { uploadPDF } from '@/lib/actions/pdf';
 import { processPDF } from '@/lib/actions/ai-extraction';
 import type { StepProps } from '@/components/shared/wizard';
-import type { TopicInput } from './subject-wizard-types';
+import type { TopicInput, SubjectWizardData, CursadaRawData } from './subject-wizard-types';
 
 type StepState = 'idle' | 'uploading' | 'processing' | 'reviewing' | 'error';
 
@@ -55,6 +55,7 @@ export function PdfUploadStep({
   onNext,
   onBack,
   updateWizardData,
+  wizardData,
 }: StepProps) {
   const [state, setState] = useState<StepState>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -83,7 +84,22 @@ export function PdfUploadStep({
     setUploadResult(result.data);
     setState('processing');
 
-    const processResponse = await processPDF(result.data.extractionId);
+    const subject = wizardData.subject as SubjectWizardData | undefined;
+    const cursada = wizardData.cursada as CursadaRawData | undefined;
+    const cursadaContext =
+      subject?.studyPath === 'CURSANDO' &&
+      cursada?.schedule?.length &&
+      cursada?.parciales?.some(p => p.date?.trim())
+        ? {
+            studyPath: 'CURSANDO' as const,
+            schedule: cursada.schedule,
+            parciales: cursada.parciales.map(p => ({ date: p.date })),
+          }
+        : subject?.studyPath === 'LIBRE'
+          ? { studyPath: 'LIBRE' as const }
+          : undefined;
+
+    const processResponse = await processPDF(result.data.extractionId, cursadaContext);
 
     if (processResponse.error || !processResponse.data) {
       setState('error');
@@ -93,7 +109,7 @@ export function PdfUploadStep({
 
     setProcessResult(processResponse.data);
     setState('reviewing');
-  }, []);
+  }, [wizardData]);
 
   const handleFileRemoved = useCallback(() => {
     setState('idle');

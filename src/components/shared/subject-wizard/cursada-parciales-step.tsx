@@ -122,26 +122,40 @@ function formatTime(time: string): string {
   return time.slice(0, 5);
 }
 
-export function CursadaParcialesStep({
+type CursadaWizardVariant = 'basics' | 'afterPdf';
+
+function CursadaWizardStepInner({
+  variant,
   onNext,
   onBack,
   wizardData,
   updateWizardData,
-}: StepProps) {
+}: StepProps & { variant: CursadaWizardVariant }) {
+  const isBasics = variant === 'basics';
+  const isAfterPdf = variant === 'afterPdf';
+
   const saved = wizardData.cursada as CursadaSavedData | undefined;
   const pdfExtraction = wizardData.pdfExtraction as PdfExtractionData | undefined;
 
-  const [classBlocks, setClassBlocks] = useState<ClassBlock[]>(saved?.schedule ?? []);
-  const [topics, setTopics] = useState<TopicInput[]>(() => getInitialTopics(saved, pdfExtraction));
-  const [parciales, setParciales] = useState<ParcialInput[]>(() => getInitialParciales(saved, pdfExtraction));
+  const [classBlocks, setClassBlocks] = useState<ClassBlock[]>(() => saved?.schedule ?? []);
+  const [topics, setTopics] = useState<TopicInput[]>(() =>
+    isBasics ? [] : getInitialTopics(saved, pdfExtraction),
+  );
+  const [parciales, setParciales] = useState<ParcialInput[]>(() =>
+    getInitialParciales(saved, pdfExtraction),
+  );
 
   const hasPdfTopics = !saved?.topics?.length && !!pdfExtraction?.topics?.length;
   const hasPdfParciales = !saved?.parciales?.length && !!pdfExtraction?.exams?.length;
-  const [sections, setSections] = useState({
-    schedule: true,
-    topics: hasPdfTopics,
-    parciales: hasPdfParciales,
-  });
+  const [sections, setSections] = useState(() =>
+    isBasics
+      ? { schedule: true, topics: false, parciales: true }
+      : {
+          schedule: true,
+          topics: hasPdfTopics,
+          parciales: hasPdfParciales,
+        },
+  );
 
   const [addingDay, setAddingDay] = useState<Day | null>(null);
   const [addStart, setAddStart] = useState('18:00');
@@ -231,6 +245,18 @@ export function CursadaParcialesStep({
       setSections(prev => ({ ...prev, schedule: true }));
       return;
     }
+    if (isBasics) {
+      if (parciales.length === 0 || parciales.every(p => !p.date)) {
+        setError('Agregá al menos un parcial con fecha');
+        setSections(prev => ({ ...prev, parciales: true }));
+        return;
+      }
+      setError(null);
+      updateWizardData('cursada', { schedule: classBlocks, topics: [], parciales });
+      onNext();
+      return;
+    }
+
     if (topics.length === 0) {
       setError('Agregá al menos un tema de estudio');
       setSections(prev => ({ ...prev, topics: true }));
@@ -247,20 +273,24 @@ export function CursadaParcialesStep({
     onNext();
   };
 
+  const scheduleReadOnly = isAfterPdf;
+
   return (
     <div>
       <h2 className="font-headline text-xl text-on-surface mb-2 text-center">
-        Configurar cursada
+        {isBasics ? 'Cursada' : 'Temas y parciales'}
       </h2>
       <p className="text-sm text-on-surface-variant mb-6 text-center">
-        Horario, temas y parciales de la materia
+        {isBasics
+          ? 'Horario de clase y fechas de parciales (después cargás el programa en PDF)'
+          : 'Revisá temas del PDF, asignalos a parciales y ajustá lo que necesites'}
       </p>
 
-      {pdfExtraction?.topics?.length ? (
+      {!isBasics && pdfExtraction?.topics?.length ? (
         <div className="mb-4 flex items-center gap-2 rounded-xl bg-secondary-container/15 px-4 py-3">
           <span className="material-symbols-outlined text-[18px] text-secondary">check_circle</span>
           <p className="text-xs text-on-secondary-container">
-            Temas y parciales pre-cargados desde el PDF. Podés editarlos abajo.
+            Temas pre-cargados desde el PDF. Podés editarlos abajo.
           </p>
         </div>
       ) : null}
@@ -278,10 +308,15 @@ export function CursadaParcialesStep({
           />
           {sections.schedule && (
             <div className="px-4 pb-4">
+              {scheduleReadOnly ? (
+                <p className="mb-3 text-xs text-on-surface-variant/70">
+                  Horario definido en el paso anterior (solo lectura).
+                </p>
+              ) : null}
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
                 {DAYS.map(day => {
                   const dayBlocks = classBlocks.filter(b => b.day === day);
-                  const isAddingThisDay = addingDay === day;
+                  const isAddingThisDay = !scheduleReadOnly && addingDay === day;
                   const timeError = isAddingThisDay && addStart >= addEnd;
 
                   return (
@@ -298,72 +333,81 @@ export function CursadaParcialesStep({
                         return (
                           <div
                             key={`${block.startTime}-${idx}`}
-                            className="group mb-1.5 flex items-center justify-between rounded-md bg-tertiary-container/20 px-2 py-1"
+                            className={cn(
+                              'mb-1.5 flex items-center rounded-md bg-tertiary-container/20 px-2 py-1',
+                              scheduleReadOnly ? '' : 'group justify-between',
+                            )}
                           >
                             <span className="text-xs text-on-surface">
                               {formatTime(block.startTime)}–{formatTime(block.endTime)}
                             </span>
-                            <button
-                              type="button"
-                              onClick={() => removeBlock(globalIdx)}
-                              className="ml-1 text-on-surface-variant/40 opacity-0 group-hover:opacity-100 hover:text-error transition-all"
-                              aria-label={`Eliminar bloque ${formatTime(block.startTime)}–${formatTime(block.endTime)} de ${day}`}
-                            >
-                              <span className="material-symbols-outlined text-[14px]">close</span>
-                            </button>
+                            {!scheduleReadOnly ? (
+                              <button
+                                type="button"
+                                onClick={() => removeBlock(globalIdx)}
+                                className="ml-1 text-on-surface-variant/40 opacity-0 group-hover:opacity-100 hover:text-error transition-all"
+                                aria-label={`Eliminar bloque ${formatTime(block.startTime)}–${formatTime(block.endTime)} de ${day}`}
+                              >
+                                <span className="material-symbols-outlined text-[14px]">close</span>
+                              </button>
+                            ) : null}
                           </div>
                         );
                       })}
 
-                      {isAddingThisDay ? (
-                        <div className="space-y-1.5 rounded-md border border-tertiary/30 bg-tertiary-container/10 p-2">
-                          <input
-                            type="time"
-                            value={addStart}
-                            onChange={e => setAddStart(e.target.value)}
-                            className="block w-full rounded border border-outline-variant/40 bg-surface-container-lowest px-1.5 py-1 text-xs text-on-surface focus:border-tertiary focus:outline-none"
-                            aria-label={`Hora inicio para ${day}`}
-                          />
-                          <input
-                            type="time"
-                            value={addEnd}
-                            onChange={e => setAddEnd(e.target.value)}
-                            className="block w-full rounded border border-outline-variant/40 bg-surface-container-lowest px-1.5 py-1 text-xs text-on-surface focus:border-tertiary focus:outline-none"
-                            aria-label={`Hora fin para ${day}`}
-                          />
-                          {timeError && (
-                            <p className="text-[10px] text-error">Fin debe ser posterior a inicio</p>
-                          )}
-                          <div className="flex gap-1">
-                            <button
-                              type="button"
-                              onClick={confirmAdding}
-                              disabled={timeError}
-                              className="flex h-6 w-6 items-center justify-center rounded-full bg-tertiary text-on-tertiary disabled:opacity-50"
-                              aria-label="Confirmar bloque"
-                            >
-                              <span className="material-symbols-outlined text-[14px]">check</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setAddingDay(null)}
-                              className="flex h-6 w-6 items-center justify-center rounded-full border border-outline-variant/40 text-on-surface-variant"
-                              aria-label="Cancelar"
-                            >
-                              <span className="material-symbols-outlined text-[14px]">close</span>
-                            </button>
+                      {!scheduleReadOnly ? (
+                        isAddingThisDay ? (
+                          <div className="space-y-1.5 rounded-md border border-tertiary/30 bg-tertiary-container/10 p-2">
+                            <input
+                              type="time"
+                              value={addStart}
+                              onChange={e => setAddStart(e.target.value)}
+                              className="block w-full rounded border border-outline-variant/40 bg-surface-container-lowest px-1.5 py-1 text-xs text-on-surface focus:border-tertiary focus:outline-none"
+                              aria-label={`Hora inicio para ${day}`}
+                            />
+                            <input
+                              type="time"
+                              value={addEnd}
+                              onChange={e => setAddEnd(e.target.value)}
+                              className="block w-full rounded border border-outline-variant/40 bg-surface-container-lowest px-1.5 py-1 text-xs text-on-surface focus:border-tertiary focus:outline-none"
+                              aria-label={`Hora fin para ${day}`}
+                            />
+                            {timeError && (
+                              <p className="text-[10px] text-error">Fin debe ser posterior a inicio</p>
+                            )}
+                            <div className="flex gap-1">
+                              <button
+                                type="button"
+                                onClick={confirmAdding}
+                                disabled={timeError}
+                                className="flex h-6 w-6 items-center justify-center rounded-full bg-tertiary text-on-tertiary disabled:opacity-50"
+                                aria-label="Confirmar bloque"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">check</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setAddingDay(null)}
+                                className="flex h-6 w-6 items-center justify-center rounded-full border border-outline-variant/40 text-on-surface-variant"
+                                aria-label="Cancelar"
+                              >
+                                <span className="material-symbols-outlined text-[14px]">close</span>
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => startAdding(day)}
-                          className="flex w-full items-center justify-center gap-0.5 rounded-md border border-dashed border-outline-variant/40 py-1.5 text-xs text-on-surface-variant hover:border-tertiary hover:text-tertiary transition-colors"
-                          aria-label={`Agregar bloque a ${day}`}
-                        >
-                          <span className="material-symbols-outlined text-[14px]">add</span>
-                        </button>
-                      )}
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => startAdding(day)}
+                            className="flex w-full items-center justify-center gap-0.5 rounded-md border border-dashed border-outline-variant/40 py-1.5 text-xs text-on-surface-variant hover:border-tertiary hover:text-tertiary transition-colors"
+                            aria-label={`Agregar bloque a ${day}`}
+                          >
+                            <span className="material-symbols-outlined text-[14px]">add</span>
+                          </button>
+                        )
+                      ) : dayBlocks.length === 0 ? (
+                        <p className="text-[10px] text-on-surface-variant/50">—</p>
+                      ) : null}
                     </div>
                   );
                 })}
@@ -372,27 +416,29 @@ export function CursadaParcialesStep({
           )}
         </div>
 
-        {/* ── Section 2: Topics ── */}
-        <div className="rounded-xl border border-outline-variant/20 bg-surface-container-lowest overflow-hidden">
-          <SectionHeader
-            number={2}
-            title="Temas de estudio"
-            badge={topics.length > 0 ? `${topics.length} tema${topics.length !== 1 ? 's' : ''}` : undefined}
-            expanded={sections.topics}
-            onToggle={() => toggleSection('topics')}
-            completed={topics.length > 0}
-          />
-          {sections.topics && (
-            <div className="px-4 pb-4">
-              <TopicEntryPanel topics={topics} onChange={setTopics} />
-            </div>
-          )}
-        </div>
+        {/* ── Section 2: Topics (solo después del PDF) ── */}
+        {!isBasics ? (
+          <div className="rounded-xl border border-outline-variant/20 bg-surface-container-lowest overflow-hidden">
+            <SectionHeader
+              number={2}
+              title="Temas de estudio"
+              badge={topics.length > 0 ? `${topics.length} tema${topics.length !== 1 ? 's' : ''}` : undefined}
+              expanded={sections.topics}
+              onToggle={() => toggleSection('topics')}
+              completed={topics.length > 0}
+            />
+            {sections.topics && (
+              <div className="px-4 pb-4">
+                <TopicEntryPanel topics={topics} onChange={setTopics} />
+              </div>
+            )}
+          </div>
+        ) : null}
 
-        {/* ── Section 3: Parciales ── */}
+        {/* ── Parciales ── */}
         <div className="rounded-xl border border-outline-variant/20 bg-surface-container-lowest overflow-hidden">
           <SectionHeader
-            number={3}
+            number={isBasics ? 2 : 3}
             title="Parciales"
             badge={parciales.length > 0 ? `${parciales.length} parcial${parciales.length !== 1 ? 'es' : ''}` : undefined}
             expanded={sections.parciales}
@@ -546,4 +592,12 @@ export function CursadaParcialesStep({
       </div>
     </div>
   );
+}
+
+export function CursadaBasicsStep(props: StepProps) {
+  return <CursadaWizardStepInner {...props} variant="basics" />;
+}
+
+export function CursadaParcialesStep(props: StepProps) {
+  return <CursadaWizardStepInner {...props} variant="afterPdf" />;
 }

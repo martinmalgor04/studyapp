@@ -8,6 +8,7 @@ import { Wizard } from '@/components/shared/wizard';
 import {
   CreateSubjectStep,
   FreeStudyStep,
+  CursadaBasicsStep,
   CursadaParcialesStep,
   CursadaDistributionStep,
   PdfUploadStep,
@@ -27,7 +28,10 @@ export function NewSubjectClient() {
       { id: 'subject', title: 'Materia', component: CreateSubjectStep },
     ];
 
-    // Mismo orden que onboarding: PDF opcional antes del plan (cursada / estudio libre)
+    if (studyPath === 'CURSANDO') {
+      base.push({ id: 'cursadaBasics', title: 'Cursada', component: CursadaBasicsStep });
+    }
+
     if (studyPath === 'LIBRE' || studyPath === 'CURSANDO') {
       base.push({
         id: 'pdfUpload',
@@ -40,7 +44,7 @@ export function NewSubjectClient() {
     if (studyPath === 'LIBRE') {
       base.push({ id: 'freeStudy', title: 'Plan de Estudio', component: FreeStudyStep });
     } else if (studyPath === 'CURSANDO') {
-      base.push({ id: 'cursada', title: 'Cursada', component: CursadaParcialesStep });
+      base.push({ id: 'cursada', title: 'Temas y parciales', component: CursadaParcialesStep });
       base.push({
         id: 'cursadaDistribution',
         title: 'Distribución',
