@@ -42,9 +42,11 @@ export type Database = {
         Row: {
           created_at: string;
           document_type: string | null;
+          error_detail: Json | null;
           error_message: string | null;
           file_name: string;
           file_url: string;
+          grouping_used_ai: boolean | null;
           id: string;
           model_used: string | null;
           processed_result: Json | null;
@@ -59,9 +61,11 @@ export type Database = {
         Insert: {
           created_at?: string;
           document_type?: string | null;
+          error_detail?: Json | null;
           error_message?: string | null;
           file_name: string;
           file_url: string;
+          grouping_used_ai?: boolean | null;
           id?: string;
           model_used?: string | null;
           processed_result?: Json | null;
@@ -76,9 +80,11 @@ export type Database = {
         Update: {
           created_at?: string;
           document_type?: string | null;
+          error_detail?: Json | null;
           error_message?: string | null;
           file_name?: string;
           file_url?: string;
+          grouping_used_ai?: boolean | null;
           id?: string;
           model_used?: string | null;
           processed_result?: Json | null;

@@ -18,6 +18,7 @@ import {
 } from '@/lib/services/ai/topic-grouper';
 import type {
   GroupedTopic,
+  GroupTopicsWithAIResult,
   TopicGroupingInput,
 } from '@/lib/services/ai/topic-grouper';
 import {
@@ -119,7 +120,9 @@ function buildTopicGroupingInput(
 }
 
 const BUCKET_NAME = 'program-pdfs';
-const PROCESSING_TIMEOUT_MS = 60_000;
+
+/** Alineado con `DEFAULT_TIMEOUT_MS` en proveedores OpenAI/Google. */
+const DEFAULT_AI_TIMEOUT_MS = 60_000;
 
 const FRIENDLY_ERROR =
   'No pudimos procesar el PDF. ¿Es un documento escaneado? Intentá con otro archivo o ingresá los datos manualmente.';
@@ -192,7 +195,11 @@ export async function processPDF(
         'processPDF: error descargando PDF de Storage',
         downloadError?.message,
       );
-      await markFailed(supabase, extractionId, user.id, 'Error descargando archivo');
+      await markFailed(supabase, extractionId, user.id, 'Error descargando archivo', {
+        phase: 'extraction',
+        provider: 'supabase_storage',
+        category: 'unknown',
+      });
       return { error: 'Error al descargar el archivo. Intentá subirlo de nuevo.' };
     }
 
@@ -204,22 +211,40 @@ export async function processPDF(
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Provider IA no disponible';
       logger.error('processPDF: error obteniendo AI provider', msg);
-      await markFailed(supabase, extractionId, user.id, msg);
+      await markFailed(supabase, extractionId, user.id, msg, {
+        phase: 'extraction',
+        provider: 'config',
+        category: 'unknown',
+      });
       return { error: 'Servicio de IA no disponible. Contactá al administrador.' };
     }
 
     const systemPrompt = getExtractionSystemPrompt();
     const userPrompt = getExtractionUserPrompt();
 
+    const extractionRaceMs = getPdfExtractionRaceTimeoutMs(provider.name);
+
     const rawResult = await Promise.race([
       provider.extractFromPDF(buffer, 'application/pdf', systemPrompt, userPrompt),
-      rejectAfterTimeout(PROCESSING_TIMEOUT_MS),
+      rejectAfterTimeout(extractionRaceMs),
     ]);
 
     if (!rawResult.success || !rawResult.data) {
       const errorMsg = rawResult.error ?? 'La IA no devolvió resultados';
       logger.error('processPDF: extracción IA fallida', errorMsg);
-      await markFailed(supabase, extractionId, user.id, errorMsg);
+      await markFailed(
+        supabase,
+        extractionId,
+        user.id,
+        errorMsg,
+        rawResult.errorDetail ??
+          {
+            phase: 'extraction',
+            provider: provider.name,
+            category: 'unknown',
+            model: rawResult.model,
+          },
+      );
       return { error: FRIENDLY_ERROR };
     }
 
@@ -230,16 +255,20 @@ export async function processPDF(
       cursadaContext,
     );
 
-    let groupedTopics: GroupedTopic[];
+    let groupingResult: GroupTopicsWithAIResult;
     try {
-      groupedTopics = await groupTopicsWithAI(groupingInput, provider);
+      groupingResult = await groupTopicsWithAI(groupingInput, provider);
     } catch (err) {
       logger.warn(
         'processPDF: groupTopicsWithAI falló, usando groupTopics determinista',
         err,
       );
-      groupedTopics = groupTopics(groupingInput);
+      groupingResult = {
+        topics: groupTopics(groupingInput),
+        usedAI: false,
+      };
     }
+    const { topics: groupedTopics, usedAI: groupingUsedAI } = groupingResult;
 
     const processingTimeMs = Math.round(performance.now() - startTime);
 
@@ -253,6 +282,8 @@ export async function processPDF(
         provider: provider.name,
         tokens_used: rawResult.tokensUsed ?? null,
         processing_time_ms: processingTimeMs,
+        grouping_used_ai: groupingUsedAI,
+        error_detail: null,
       })
       .eq('id', extractionId)
       .eq('user_id', user.id);
@@ -279,7 +310,11 @@ export async function processPDF(
         : 'Error desconocido';
 
     logger.error('processPDF: error inesperado', errorMsg);
-    await markFailed(supabase, extractionId, user.id, errorMsg);
+    await markFailed(supabase, extractionId, user.id, errorMsg, {
+      phase: 'extraction',
+      provider: 'app',
+      category: isTimeout ? 'timeout' : 'unknown',
+    });
 
     return {
       error: isTimeout
@@ -298,10 +333,15 @@ async function markFailed(
   extractionId: string,
   userId: string,
   errorMessage: string,
+  errorDetail?: unknown,
 ): Promise<void> {
   const { error } = await supabase
     .from('ai_extractions')
-    .update({ status: 'FAILED', error_message: errorMessage })
+    .update({
+      status: 'FAILED',
+      error_message: errorMessage,
+      error_detail: errorDetail != null ? toJson(errorDetail) : null,
+    })
     .eq('id', extractionId)
     .eq('user_id', userId);
 
@@ -318,6 +358,38 @@ function rejectAfterTimeout(ms: number): Promise<never> {
   return new Promise((_, reject) => {
     setTimeout(() => reject(new Error('PROCESSING_TIMEOUT')), ms);
   });
+}
+
+/**
+ * Tiempo máximo para `Promise.race` de la extracción PDF.
+ * Si hay `AI_FALLBACK_MODEL` distinto del primario (misma lógica que OpenAI/Google),
+ * el proveedor encadena dos intentos en serie → el presupuesto es 2× `AI_TIMEOUT_MS`.
+ * Override opcional: `AI_EXTRACTION_RACE_MS` (ms, >0).
+ */
+function getPdfExtractionRaceTimeoutMs(providerName: string): number {
+  const overrideRaw = process.env.AI_EXTRACTION_RACE_MS?.trim();
+  if (overrideRaw) {
+    const parsed = Number(overrideRaw);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return Math.floor(parsed);
+    }
+  }
+
+  const perAttempt = Number(process.env.AI_TIMEOUT_MS) || DEFAULT_AI_TIMEOUT_MS;
+
+  if (providerName !== 'openai' && providerName !== 'google') {
+    return perAttempt;
+  }
+
+  const primaryModel =
+    process.env.AI_MODEL ||
+    (providerName === 'google' ? 'gemini-2.0-flash' : 'gpt-4o-mini');
+  const fallbackRaw = process.env.AI_FALLBACK_MODEL?.trim();
+  const hasDistinctFallback = Boolean(
+    fallbackRaw && fallbackRaw !== primaryModel,
+  );
+
+  return perAttempt * (hasDistinctFallback ? 2 : 1);
 }
 
 /**

@@ -1,5 +1,7 @@
 export type {
   AIProvider,
+  AIExtractionErrorDetail,
+  AIErrorCategory,
   ExtractionRawResult,
   RawExtraction,
   SubjectMetadata,
@@ -28,5 +30,6 @@ export type {
 export { groupTopics, groupTopicsWithAI } from './topic-grouper';
 export type {
   GroupedTopic,
+  GroupTopicsWithAIResult,
   TopicGroupingInput,
 } from './topic-grouper';

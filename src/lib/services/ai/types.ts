@@ -24,6 +24,29 @@ export interface AIProvider {
   ): Promise<ExtractionRawResult>
 }
 
+/** Categoría estable para persistir en `ai_extractions.error_detail` y logs. */
+export type AIErrorCategory =
+  | 'rate_limit'
+  | 'auth'
+  | 'timeout'
+  | 'api'
+  | 'parse'
+  | 'connection'
+  | 'blocked'
+  | 'unknown'
+
+/** Detalle estructurado de fallo (extracción o agrupación). */
+export interface AIExtractionErrorDetail {
+  phase: 'extraction' | 'grouping'
+  provider: string
+  category: AIErrorCategory
+  model?: string
+  httpStatus?: number
+  /** Si hubo intento con AI_FALLBACK_MODEL tras fallar el primario. */
+  fallbackFromModel?: string
+  primaryAttemptError?: string
+}
+
 /** Resultado crudo devuelto por el provider */
 export interface ExtractionRawResult {
   success: boolean
@@ -31,6 +54,7 @@ export interface ExtractionRawResult {
   error?: string
   tokensUsed?: number
   model?: string
+  errorDetail?: AIExtractionErrorDetail
 }
 
 /** Estructura de datos extraídos de un documento universitario */

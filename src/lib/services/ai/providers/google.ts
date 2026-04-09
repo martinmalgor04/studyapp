@@ -5,7 +5,12 @@ import {
   BlockReason,
 } from '@google/generative-ai';
 import { logger } from '@/lib/utils/logger';
-import type { AIProvider, ExtractionRawResult, RawExtraction } from '../types';
+import type {
+  AIProvider,
+  AIExtractionErrorDetail,
+  ExtractionRawResult,
+  RawExtraction,
+} from '../types';
 
 /** Default: modelo rápido con soporte multimodal (PDF/imagen) vía Google AI Studio. */
 const DEFAULT_MODEL = 'gemini-2.0-flash';
@@ -19,6 +24,9 @@ const IMAGE_MIME_TYPES = new Set([
   'image/gif',
   'image/webp',
 ]);
+
+/** JSON/texto UTF-8 (p. ej. `TopicGrouper` envía `application/json` vía buffer, no PDF). */
+const TEXT_MIME_TYPES = new Set(['application/json', 'text/plain']);
 
 export class GoogleProvider implements AIProvider {
   readonly name = 'google';
@@ -41,20 +49,96 @@ export class GoogleProvider implements AIProvider {
     systemPrompt: string,
     userPrompt: string,
   ): Promise<ExtractionRawResult> {
-    const base64 = fileBuffer.toString('base64');
-
     if (!this.isSupportedMimeType(mimeType)) {
       return {
         success: false,
         error: `Tipo MIME no soportado para Gemini: ${mimeType}`,
         model: this.model,
+        errorDetail: {
+          phase: 'extraction',
+          provider: 'google',
+          category: 'unknown',
+          model: this.model,
+        },
       };
     }
 
+    const primaryModel = this.model;
+    const fallbackRaw = process.env.AI_FALLBACK_MODEL?.trim();
+    const fallbackModel =
+      fallbackRaw && fallbackRaw !== primaryModel ? fallbackRaw : undefined;
+
+    const first = await this.extractWithModel(
+      fileBuffer,
+      mimeType,
+      systemPrompt,
+      userPrompt,
+      primaryModel,
+    );
+    if (first.success) return first;
+
+    if (fallbackModel) {
+      logger.warn(
+        `[AI:Google] Falló extracción con ${primaryModel}, probando AI_FALLBACK_MODEL=${fallbackModel}`,
+      );
+      const second = await this.extractWithModel(
+        fileBuffer,
+        mimeType,
+        systemPrompt,
+        userPrompt,
+        fallbackModel,
+      );
+      if (second.success) return second;
+
+      const cat =
+        second.errorDetail?.category ??
+        first.errorDetail?.category ??
+        'unknown';
+      const merged: AIExtractionErrorDetail = {
+        phase: 'extraction',
+        provider: 'google',
+        category: cat,
+        model: second.model ?? fallbackModel,
+        httpStatus:
+          second.errorDetail?.httpStatus ?? first.errorDetail?.httpStatus,
+        fallbackFromModel: primaryModel,
+        primaryAttemptError: first.error,
+      };
+      return {
+        success: false,
+        error: second.error ?? first.error,
+        model: second.model ?? fallbackModel,
+        tokensUsed: second.tokensUsed ?? first.tokensUsed,
+        errorDetail: merged,
+      };
+    }
+
+    return {
+      ...first,
+      errorDetail:
+        first.errorDetail ??
+        ({
+          phase: 'extraction',
+          provider: 'google',
+          category: 'unknown',
+          model: primaryModel,
+        } satisfies AIExtractionErrorDetail),
+    };
+  }
+
+  private async extractWithModel(
+    fileBuffer: Buffer,
+    mimeType: string,
+    systemPrompt: string,
+    userPrompt: string,
+    modelName: string,
+  ): Promise<ExtractionRawResult> {
+    const useTextPayload = TEXT_MIME_TYPES.has(mimeType);
+
     try {
-      const model = this.client.getGenerativeModel(
+      const genModel = this.client.getGenerativeModel(
         {
-          model: this.model,
+          model: modelName,
           systemInstruction: systemPrompt,
           generationConfig: {
             maxOutputTokens: this.maxTokens,
@@ -66,18 +150,22 @@ export class GoogleProvider implements AIProvider {
       );
 
       logger.info(
-        `[AI:Google] Enviando ${mimeType} (${(fileBuffer.length / 1024).toFixed(1)} KB) a ${this.model}`,
+        `[AI:Google] Enviando ${mimeType} (${(fileBuffer.length / 1024).toFixed(1)} KB) a ${modelName}${useTextPayload ? ' [texto]' : ''}`,
       );
 
-      const result = await model.generateContent([
-        {
-          inlineData: {
-            mimeType,
-            data: base64,
-          },
-        },
-        { text: userPrompt },
-      ]);
+      const userParts = useTextPayload
+        ? [{ text: fileBuffer.toString('utf8') }, { text: userPrompt }]
+        : [
+            {
+              inlineData: {
+                mimeType,
+                data: fileBuffer.toString('base64'),
+              },
+            },
+            { text: userPrompt },
+          ];
+
+      const result = await genModel.generateContent(userParts);
 
       const response = result.response;
       const blockError = this.checkPromptBlocked(response);
@@ -85,7 +173,13 @@ export class GoogleProvider implements AIProvider {
         return {
           success: false,
           error: blockError,
-          model: this.model,
+          model: modelName,
+          errorDetail: {
+            phase: 'extraction',
+            provider: 'google',
+            category: 'blocked',
+            model: modelName,
+          },
         };
       }
 
@@ -94,7 +188,13 @@ export class GoogleProvider implements AIProvider {
         return {
           success: false,
           error: finishError,
-          model: this.model,
+          model: modelName,
+          errorDetail: {
+            phase: 'extraction',
+            provider: 'google',
+            category: 'api',
+            model: modelName,
+          },
         };
       }
 
@@ -108,7 +208,13 @@ export class GoogleProvider implements AIProvider {
           success: false,
           error:
             'La respuesta fue bloqueada por políticas de seguridad o no se pudo leer el texto.',
-          model: this.model,
+          model: modelName,
+          errorDetail: {
+            phase: 'extraction',
+            provider: 'google',
+            category: 'blocked',
+            model: modelName,
+          },
         };
       }
 
@@ -116,30 +222,52 @@ export class GoogleProvider implements AIProvider {
         return {
           success: false,
           error: 'El modelo no devolvió contenido en la respuesta',
-          model: this.model,
+          model: modelName,
+          errorDetail: {
+            phase: 'extraction',
+            provider: 'google',
+            category: 'api',
+            model: modelName,
+          },
         };
       }
 
-      const parsed = this.parseResponse(text);
-      const tokensUsed = response.usageMetadata?.totalTokenCount;
-
-      logger.info(
-        `[AI:Google] Extracción exitosa — ${tokensUsed ?? '?'} tokens`,
-      );
-
-      return {
-        success: true,
-        data: parsed,
-        model: this.model,
-        tokensUsed,
-      };
+      try {
+        const parsed = this.parseResponse(text);
+        const tokensUsed = response.usageMetadata?.totalTokenCount;
+        logger.info(
+          `[AI:Google] Extracción exitosa — ${tokensUsed ?? '?'} tokens`,
+        );
+        return {
+          success: true,
+          data: parsed,
+          model: modelName,
+          tokensUsed,
+        };
+      } catch {
+        return {
+          success: false,
+          error: 'Respuesta del modelo no es JSON válido',
+          model: modelName,
+          errorDetail: {
+            phase: 'extraction',
+            provider: 'google',
+            category: 'parse',
+            model: modelName,
+          },
+        };
+      }
     } catch (error) {
-      return this.handleError(error);
+      return this.handleError(error, modelName);
     }
   }
 
   private isSupportedMimeType(mimeType: string): boolean {
-    return mimeType === 'application/pdf' || IMAGE_MIME_TYPES.has(mimeType);
+    return (
+      mimeType === 'application/pdf' ||
+      IMAGE_MIME_TYPES.has(mimeType) ||
+      TEXT_MIME_TYPES.has(mimeType)
+    );
   }
 
   private checkPromptBlocked(
@@ -193,17 +321,11 @@ export class GoogleProvider implements AIProvider {
   }
 
   private parseResponse(content: string): RawExtraction {
-    try {
-      const json = JSON.parse(content) as RawExtraction;
-      return json;
-    } catch {
-      throw new Error(
-        `Respuesta del modelo no es JSON válido: ${content.slice(0, 200)}...`,
-      );
-    }
+    const json = JSON.parse(content) as RawExtraction;
+    return json;
   }
 
-  private handleError(error: unknown): ExtractionRawResult {
+  private handleError(error: unknown, model: string): ExtractionRawResult {
     const message = error instanceof Error ? error.message : String(error);
     const lower = message.toLowerCase();
 
@@ -216,7 +338,13 @@ export class GoogleProvider implements AIProvider {
       return {
         success: false,
         error: `Error de conexión con Google AI: ${message}`,
-        model: this.model,
+        model,
+        errorDetail: {
+          phase: 'extraction',
+          provider: 'google',
+          category: 'connection',
+          model,
+        },
       };
     }
 
@@ -225,7 +353,13 @@ export class GoogleProvider implements AIProvider {
       return {
         success: false,
         error: `Timeout (${this.timeoutMs}ms). Podés aumentar AI_TIMEOUT_MS en .env.local`,
-        model: this.model,
+        model,
+        errorDetail: {
+          phase: 'extraction',
+          provider: 'google',
+          category: 'timeout',
+          model,
+        },
       };
     }
 
@@ -239,7 +373,14 @@ export class GoogleProvider implements AIProvider {
         success: false,
         error:
           'Cuota o límite de velocidad de Google AI alcanzado. Intentá más tarde.',
-        model: this.model,
+        model,
+        errorDetail: {
+          phase: 'extraction',
+          provider: 'google',
+          category: 'rate_limit',
+          model,
+          httpStatus: 429,
+        },
       };
     }
 
@@ -254,7 +395,14 @@ export class GoogleProvider implements AIProvider {
         success: false,
         error:
           'API key de Google AI inválida o sin acceso. Verificá AI_API_KEY en .env.local (Google AI Studio).',
-        model: this.model,
+        model,
+        errorDetail: {
+          phase: 'extraction',
+          provider: 'google',
+          category: 'auth',
+          model,
+          httpStatus: lower.includes('401') ? 401 : 403,
+        },
       };
     }
 
@@ -262,7 +410,13 @@ export class GoogleProvider implements AIProvider {
     return {
       success: false,
       error: `Error inesperado: ${message}`,
-      model: this.model,
+      model,
+      errorDetail: {
+        phase: 'extraction',
+        provider: 'google',
+        category: 'unknown',
+        model,
+      },
     };
   }
 }

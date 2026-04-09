@@ -514,13 +514,18 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 Extracción vía [`src/lib/services/ai/factory.ts`](src/lib/services/ai/factory.ts). Elegís proveedor con `AI_PROVIDER` (no es configurable por usuario final).
 
+**MIME:** PDF e imágenes van multimodal; `TopicGrouper` reenvía un buffer `application/json` (UTF-8) — en Google Gemini se manda como texto, no como `inlineData`, para evitar rechazo por tipo no soportado.
+
 | Variable | Uso |
 |----------|-----|
 | `AI_PROVIDER` | `openai` (default) o `google` (Gemini vía Google AI Studio). `anthropic` existe en código pero no está implementado. |
 | `AI_API_KEY` | **Obligatoria** para extracción. OpenAI: key `sk-...`. Google: key de [Google AI Studio](https://aistudio.google.com/apikey) (no confundir con OAuth de Google Calendar). |
 | `AI_MODEL` | Opcional. OpenAI default `gpt-4o-mini`; Google default `gemini-2.0-flash`. Debe soportar entrada multimodal (PDF/imagen). |
+| `AI_FALLBACK_MODEL` | Opcional. Si la extracción falla con `AI_MODEL`, se reintenta una vez con este modelo (mismo proveedor `AI_PROVIDER`). |
 | `AI_TIMEOUT_MS` | Opcional (default 60000). |
+| `AI_EXTRACTION_RACE_MS` | Opcional. Override del timeout global de `processPDF` (carrera extracción). Si no se define, con `AI_FALLBACK_MODEL` distinto del primario se usa `2 × AI_TIMEOUT_MS` para cubrir dos intentos en serie. |
 | `AI_MAX_TOKENS` | Opcional (default 4096). |
+| `AI_TOPIC_GROUPER_DEBUG` | Opcional. Si es `true`, logs extra en `topic-grouper` (p. ej. preview del user prompt); los INFO/WARN de progreso y fallos siguen activos sin el flag. |
 
 En Vercel: mismas variables para el entorno de deploy. La key nunca debe usar prefijo `NEXT_PUBLIC_`.
 

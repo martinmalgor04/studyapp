@@ -4,8 +4,43 @@
 // ---------------------------------------------------------------------------
 
 import { logger } from '@/lib/utils/logger';
-import type { ExtractedUnit, AIProvider } from './types';
+import type {
+  AIExtractionErrorDetail,
+  ExtractedUnit,
+  AIProvider,
+} from './types';
 import type { Difficulty } from '@/lib/validations/topics';
+
+const ERROR_DETAIL_LOG_MAX = 200;
+const DEBUG_PROMPT_PREVIEW = 300;
+
+function truncateForLog(text: string | undefined, maxLen: number): string {
+  if (text === undefined || text === '') return '';
+  return text.length <= maxLen ? text : `${text.slice(0, maxLen)}…`;
+}
+
+function summarizeErrorDetail(
+  detail: AIExtractionErrorDetail | undefined,
+): string {
+  if (!detail) return '';
+  try {
+    const s = JSON.stringify(detail);
+    return truncateForLog(s, ERROR_DETAIL_LOG_MAX);
+  } catch {
+    return '(detail no serializable)';
+  }
+}
+
+/** Motivo cuando no hay topics tras parsear la respuesta del modelo (para logs). */
+type ParseEmptyReason =
+  | 'json_parse_error'
+  | 'empty_array'
+  | 'no_array_in_payload'
+  | 'unsupported_payload_shape'
+  | 'all_items_filtered_invalid';
+
+const isTopicGrouperDebug =
+  process.env.AI_TOPIC_GROUPER_DEBUG === 'true';
 
 // ---------------------------------------------------------------------------
 // Exported Types
@@ -34,6 +69,12 @@ export interface GroupedTopic {
   estimatedMinutes: number;
   difficulty: Difficulty;
   order: number;
+}
+
+export interface GroupTopicsWithAIResult {
+  topics: GroupedTopic[];
+  /** true solo si todas las unidades “pesadas” (>2 subtemas) obtuvieron grupos vía IA. */
+  usedAI: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -97,7 +138,7 @@ export function groupTopics(input: TopicGroupingInput): GroupedTopic[] {
 export async function groupTopicsWithAI(
   input: TopicGroupingInput,
   provider: AIProvider,
-): Promise<GroupedTopic[]> {
+): Promise<GroupTopicsWithAIResult> {
   try {
     logger.info(
       `[TopicGrouper] Intentando agrupación con IA (${provider.name})`,
@@ -105,6 +146,13 @@ export async function groupTopicsWithAI(
 
     const allGrouped: GroupedTopic[] = [];
     let order = 1;
+    let anyHeavyUnit = false;
+    let allHeavyUsedAI = true;
+
+    const heavyUnitsTotal = input.units.filter(
+      (u) => u.subtopics.length > 2,
+    ).length;
+    let heavyUnitIndex = 0;
 
     for (const unit of input.units) {
       const difficulty =
@@ -132,6 +180,12 @@ export async function groupTopicsWithAI(
         continue;
       }
 
+      anyHeavyUnit = true;
+      heavyUnitIndex += 1;
+      logger.info(
+        `[TopicGrouper] Unidad pesada ${heavyUnitIndex}/${heavyUnitsTotal} — unidad ${unit.number} (${unit.subtopics.length} subtopics)`,
+      );
+
       const aiTopics = await tryAIGroupUnit(
         unit,
         difficulty,
@@ -145,6 +199,10 @@ export async function groupTopicsWithAI(
         allGrouped.push(...aiTopics);
         order += aiTopics.length;
       } else {
+        allHeavyUsedAI = false;
+        logger.info(
+          `[TopicGrouper] Fallback determinista para unidad ${unit.number} (IA sin grupos válidos)`,
+        );
         const topics = groupSingleUnit(unit, difficulty, order, {
           forcedChunkCount: forced,
           maxChunkCount: maxChunk,
@@ -154,14 +212,20 @@ export async function groupTopicsWithAI(
       }
     }
 
-    logger.info(`[TopicGrouper] IA generó ${allGrouped.length} topics`);
-    return consolidateTopics(allGrouped);
+    const usedAI = anyHeavyUnit && allHeavyUsedAI;
+    logger.info(
+      `[TopicGrouper] IA generó ${allGrouped.length} topics (usedAI=${usedAI})`,
+    );
+    return {
+      topics: consolidateTopics(allGrouped),
+      usedAI,
+    };
   } catch (error) {
     logger.error(
       '[TopicGrouper] Error en agrupación IA, fallback determinista:',
       error,
     );
-    return groupTopics(input);
+    return { topics: groupTopics(input), usedAI: false };
   }
 }
 
@@ -370,6 +434,7 @@ async function tryAIGroupUnit(
   totalHours: number,
   exactGroupCount?: number,
 ): Promise<GroupedTopic[]> {
+  let extractStartMs = 0;
   try {
     const totalMinutes = resolveUnitMinutes(unit);
 
@@ -406,21 +471,29 @@ async function tryAIGroupUnit(
       .filter(Boolean)
       .join('\n');
 
+    if (isTopicGrouperDebug) {
+      logger.info(
+        `[TopicGrouper][debug] userPrompt (primeros ${DEBUG_PROMPT_PREVIEW} chars): ${truncateForLog(userPrompt, DEBUG_PROMPT_PREVIEW)}`,
+      );
+    }
+
     const inputBuffer = Buffer.from(
       JSON.stringify({ unit }),
       'utf-8',
     );
 
+    extractStartMs = performance.now();
     const result = await provider.extractFromPDF(
       inputBuffer,
       'application/json',
       systemPrompt,
       userPrompt,
     );
+    const durationMs = Math.round(performance.now() - extractStartMs);
 
     if (!result.success || !result.data) {
       logger.warn(
-        `[TopicGrouper] IA no retornó datos para unidad ${unit.number}`,
+        `[TopicGrouper] extractFromPDF falló unidad ${unit.number} | durationMs=${durationMs} success=${result.success} error=${truncateForLog(result.error, ERROR_DETAIL_LOG_MAX)} model=${result.model ?? 'n/a'} errorDetail=${summarizeErrorDetail(result.errorDetail)}`,
       );
       return [];
     }
@@ -432,21 +505,32 @@ async function tryAIGroupUnit(
       startOrder,
     );
 
-    if (
-      exactGroupCount !== undefined &&
-      exactGroupCount > 0 &&
-      parsed.length !== exactGroupCount
-    ) {
+    if (parsed.topics.length === 0) {
       logger.warn(
-        `[TopicGrouper] IA devolvió ${parsed.length} grupos para unidad ${unit.number}, se esperaban ${exactGroupCount}; fallback determinista.`,
+        `[TopicGrouper] Parse vacío o sin subtopics válidos — unidad ${unit.number} | durationMs=${durationMs} model=${result.model ?? 'n/a'} emptyReason=${parsed.emptyReason ?? 'unknown'}`,
       );
       return [];
     }
 
-    return parsed;
+    if (
+      exactGroupCount !== undefined &&
+      exactGroupCount > 0 &&
+      parsed.topics.length !== exactGroupCount
+    ) {
+      logger.warn(
+        `[TopicGrouper] IA devolvió ${parsed.topics.length} grupos para unidad ${unit.number}, se esperaban ${exactGroupCount}; fallback determinista.`,
+      );
+      return [];
+    }
+
+    return parsed.topics;
   } catch (error) {
+    const durationMs =
+      extractStartMs > 0
+        ? Math.round(performance.now() - extractStartMs)
+        : undefined;
     logger.warn(
-      `[TopicGrouper] Error IA para unidad ${unit.number}:`,
+      `[TopicGrouper] Excepción IA unidad ${unit.number} | durationMs=${durationMs ?? 'n/a'}:`,
       error,
     );
     return [];
@@ -459,65 +543,105 @@ interface AIGroupItem {
   estimatedMinutes?: unknown;
 }
 
+interface ParseAIResponseResult {
+  topics: GroupedTopic[];
+  emptyReason?: ParseEmptyReason;
+}
+
+/**
+ * Obtiene un array de ítems de agrupación desde la forma que devolvió el modelo.
+ */
+function extractGroupItemsFromPayload(
+  data: unknown,
+):
+  | { ok: true; items: AIGroupItem[] }
+  | { ok: false; reason: ParseEmptyReason } {
+  if (Array.isArray(data)) {
+    if (data.length === 0) {
+      return { ok: false, reason: 'empty_array' };
+    }
+    return { ok: true, items: data };
+  }
+
+  if (typeof data === 'string') {
+    try {
+      const cleaned = data
+        .replace(/^```(?:json)?\s*\n?/i, '')
+        .replace(/\n?```\s*$/i, '')
+        .trim();
+      const parsed: unknown = JSON.parse(cleaned);
+      return extractGroupItemsFromPayload(parsed);
+    } catch {
+      return { ok: false, reason: 'json_parse_error' };
+    }
+  }
+
+  if (data !== null && typeof data === 'object') {
+    const arr = Object.values(data).find(Array.isArray);
+    if (!arr) {
+      return { ok: false, reason: 'no_array_in_payload' };
+    }
+    if (arr.length === 0) {
+      return { ok: false, reason: 'empty_array' };
+    }
+    return { ok: true, items: arr as AIGroupItem[] };
+  }
+
+  return { ok: false, reason: 'unsupported_payload_shape' };
+}
+
 function parseAIResponse(
   data: unknown,
   unitNumber: number,
   difficulty: Difficulty,
   startOrder: number,
-): GroupedTopic[] {
+): ParseAIResponseResult {
   try {
-    let items: AIGroupItem[];
-
-    if (Array.isArray(data)) {
-      items = data;
-    } else if (typeof data === 'string') {
-      const cleaned = data
-        .replace(/^```(?:json)?\s*\n?/i, '')
-        .replace(/\n?```\s*$/i, '')
-        .trim();
-      items = JSON.parse(cleaned) as AIGroupItem[];
-    } else if (data !== null && typeof data === 'object') {
-      const arr = Object.values(data).find(Array.isArray);
-      if (!arr) return [];
-      items = arr;
-    } else {
-      return [];
+    const extracted = extractGroupItemsFromPayload(data);
+    if (!extracted.ok) {
+      return { topics: [], emptyReason: extracted.reason };
     }
 
-    if (!Array.isArray(items) || items.length === 0) return [];
+    const filtered = extracted.items.filter(
+      (
+        item,
+      ): item is AIGroupItem & { subtopics: string[] } =>
+        Array.isArray(item.subtopics) && item.subtopics.length > 0,
+    );
 
-    return items
-      .filter(
-        (
-          item,
-        ): item is AIGroupItem & { subtopics: string[] } =>
-          Array.isArray(item.subtopics) &&
-          item.subtopics.length > 0,
-      )
-      .map((item, i) => ({
-        name:
-          typeof item.name === 'string'
-            ? truncate(
-                `Unidad ${unitNumber} — ${item.name}`,
-                MAX_NAME_LENGTH,
-              )
-            : buildTopicName(unitNumber, item.subtopics),
-        unitNumber,
-        subtopics: item.subtopics.filter(
-          (s): s is string => typeof s === 'string',
+    if (filtered.length === 0) {
+      return {
+        topics: [],
+        emptyReason: 'all_items_filtered_invalid',
+      };
+    }
+
+    const topics = filtered.map((item, i) => ({
+      name:
+        typeof item.name === 'string'
+          ? truncate(
+              `Unidad ${unitNumber} — ${item.name}`,
+              MAX_NAME_LENGTH,
+            )
+          : buildTopicName(unitNumber, item.subtopics),
+      unitNumber,
+      subtopics: item.subtopics.filter(
+        (s): s is string => typeof s === 'string',
+      ),
+      estimatedMinutes: Math.round(
+        clampMinutes(
+          typeof item.estimatedMinutes === 'number'
+            ? item.estimatedMinutes
+            : TARGET_MINUTES,
         ),
-        estimatedMinutes: Math.round(
-          clampMinutes(
-            typeof item.estimatedMinutes === 'number'
-              ? item.estimatedMinutes
-              : TARGET_MINUTES,
-          ),
-        ),
-        difficulty,
-        order: startOrder + i,
-      }));
+      ),
+      difficulty,
+      order: startOrder + i,
+    }));
+
+    return { topics };
   } catch (error) {
     logger.warn('[TopicGrouper] Error parseando respuesta IA:', error);
-    return [];
+    return { topics: [], emptyReason: 'json_parse_error' };
   }
 }
