@@ -192,14 +192,10 @@ function getCalendarDays(year: number, month: number) {
 
 function getEventsForDay(date: Date, sessions: Session[], exams: Exam[] = []) {
   const dateStr = date.toISOString().split('T')[0];
-  const today = new Date().toISOString().split('T')[0];
-  
-  const daySessions = sessions.filter(s => {
+
+  const daySessions = sessions.filter((s) => {
     const sessionDate = new Date(s.scheduled_at).toISOString().split('T')[0];
-    return sessionDate === dateStr && (
-      s.status === 'PENDING' || 
-      (s.status === 'COMPLETED' && sessionDate === today)
-    );
+    return sessionDate === dateStr;
   });
   
   const dayExams = exams.filter(e => {

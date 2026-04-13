@@ -96,21 +96,8 @@ export interface OverdueSession {
 // Queries
 // ---------------------------------------------------------------------------
 
-export async function findUpcomingSessions(
-  userId: string,
-  days: number,
-): Promise<UpcomingSession[]> {
-  const supabase = await createClient();
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const endDate = new Date(today);
-  endDate.setDate(endDate.getDate() + days);
-
-  const { data, error } = await supabase
-    .from('sessions')
-    .select(`
+/** Mismo shape que `findUpcomingSessions` / ventana calendario (lista en UI de sesiones). */
+const UPCOMING_SESSIONS_LIST_SELECT = `
       id,
       subject_id,
       topic_id,
@@ -125,7 +112,27 @@ export async function findUpcomingSessions(
       topic:topics(id, name, difficulty, source_date),
       subject:subjects(id, name),
       exam:exams(id, category, modality, date)
-    `)
+    `;
+
+/** Por defecto: ~6 meses de historial + 30 días futuros (navegación calendario semanal/mensual). */
+export const SESSIONS_PAGE_DEFAULT_PAST_DAYS = 183;
+export const SESSIONS_PAGE_DEFAULT_FUTURE_DAYS = 30;
+
+export async function findUpcomingSessions(
+  userId: string,
+  days: number,
+): Promise<UpcomingSession[]> {
+  const supabase = await createClient();
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const endDate = new Date(today);
+  endDate.setDate(endDate.getDate() + days);
+
+  const { data, error } = await supabase
+    .from('sessions')
+    .select(UPCOMING_SESSIONS_LIST_SELECT)
     .eq('user_id', userId)
     .gte('scheduled_at', today.toISOString())
     .lt('scheduled_at', endDate.toISOString())
@@ -133,6 +140,42 @@ export async function findUpcomingSessions(
 
   if (error) {
     logger.error('Error fetching upcoming sessions:', error);
+    return [];
+  }
+
+  return (data ?? []) as unknown as UpcomingSession[];
+}
+
+/**
+ * Sesiones en rango local [medianoche hoy − pastDays, medianoche hoy + futureDays),
+ * mismo select que `findUpcomingSessions` (incluye pasadas dentro de la ventana).
+ */
+export async function findSessionsCalendarWindow(
+  userId: string,
+  pastDays: number,
+  futureDays: number,
+): Promise<UpcomingSession[]> {
+  const supabase = await createClient();
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const startDate = new Date(today);
+  startDate.setDate(startDate.getDate() - pastDays);
+
+  const endDate = new Date(today);
+  endDate.setDate(endDate.getDate() + futureDays);
+
+  const { data, error } = await supabase
+    .from('sessions')
+    .select(UPCOMING_SESSIONS_LIST_SELECT)
+    .eq('user_id', userId)
+    .gte('scheduled_at', startDate.toISOString())
+    .lt('scheduled_at', endDate.toISOString())
+    .order('scheduled_at', { ascending: true });
+
+  if (error) {
+    logger.error('Error fetching sessions calendar window:', error);
     return [];
   }
 

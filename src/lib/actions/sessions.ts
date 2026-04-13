@@ -7,8 +7,12 @@ import type { OccupiedRange } from '@/lib/services/slot-resolver';
 import { logger } from '@/lib/utils/logger';
 import { findAvailabilityByUserId } from '@/lib/repositories/availability.repository';
 import { findUserSettings } from '@/lib/repositories/user-settings.repository';
+import type { UpcomingSession } from '@/lib/repositories/sessions.repository';
 import {
   findUpcomingSessions,
+  findSessionsCalendarWindow,
+  SESSIONS_PAGE_DEFAULT_FUTURE_DAYS,
+  SESSIONS_PAGE_DEFAULT_PAST_DAYS,
   findTodaySessions,
   findSessionsBySubjectId,
   findSessionsByDateRange,
@@ -40,6 +44,21 @@ export async function getUpcomingSessions(days = 7) {
   }
 
   return findUpcomingSessions(user.id, days);
+}
+
+/** Datos para `/dashboard/sessions`: pasado + futuro (mismo tipo que `getUpcomingSessions`). */
+export async function getSessionsForSessionsPage(
+  pastDays: number = SESSIONS_PAGE_DEFAULT_PAST_DAYS,
+  futureDays: number = SESSIONS_PAGE_DEFAULT_FUTURE_DAYS,
+): Promise<UpcomingSession[]> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return [];
+  }
+
+  return findSessionsCalendarWindow(user.id, pastDays, futureDays);
 }
 
 export async function getTodaySessions() {

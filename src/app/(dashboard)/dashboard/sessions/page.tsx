@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { getUpcomingSessions } from '@/lib/actions/sessions';
+import { getSessionsForSessionsPage } from '@/lib/actions/sessions';
 import { getSubjects } from '@/lib/actions/subjects';
 import { SessionsClient } from './sessions-client';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ export default async function SessionsPage() {
   }
 
   const [sessions, subjects] = await Promise.all([
-    getUpcomingSessions(30),
+    getSessionsForSessionsPage(),
     getSubjects(),
   ]);
 
@@ -23,7 +23,7 @@ export default async function SessionsPage() {
         <div>
           <h1 className="font-headline text-3xl text-on-surface">Sesiones de Estudio</h1>
           <p className="mt-2 text-on-surface-variant">
-            Próximos 30 días - Gestioná tus sesiones de repaso programadas
+            Calendario de sesiones — historial y próximas fechas. Gestioná tus repasos programados.
           </p>
         </div>
         <Button

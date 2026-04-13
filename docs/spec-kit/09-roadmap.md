@@ -397,6 +397,7 @@ e2e/
 41. ✅ **Refactoring Fase 3: Actions adelgazadas** - Todas las Server Actions siguen el patrón: auth → validate → repo/service → revalidatePath. Sin queries directas a Supabase. (commit af03797)
 42. ✅ **Refactoring Fase 4: Migración a RSC** - `subjects/page.tsx`, `subjects/[id]/page.tsx`, `sessions/page.tsx` y `dashboard/page.tsx` son React Server Components. Sin flickeo de carga inicial. (commit af03797)
 43. ✅ **Refactoring Fase 5: Limpieza** - Helper `getAuthenticatedUser()` centralizado, `pnpm lint` pasa, merge a `main`. Arquitectura de 4 capas completada: Presentación → Aplicación → Dominio → Infraestructura. (commit af03797)
+44. ✅ **SA-107 / historial sesiones** - Ventana calendario (`findSessionsCalendarWindow` + `getSessionsForSessionsPage`: ~183 días atrás + 30 adelante); vista mensual muestra todas las sesiones por día (`getEventsForDay` sin filtrar completadas fuera de “hoy”).
 
 ### 🎉 MVP + FREE STUDY MODE + TRACKING + UC-011d + REFACTORING ARQUITECTURAL COMPLETADO
 
